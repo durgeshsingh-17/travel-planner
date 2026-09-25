@@ -21,9 +21,12 @@ import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { Destination } from '../destinations/destination.model';
 import { DestinationsApiService } from '../destinations/destinations-api.service';
+import { Location } from '../locations/location.model';
+import { LocationsApiService } from '../locations/locations-api.service';
 import { SectionCarouselComponent } from '../../shared/ui/section-carousel/section-carousel.component';
 import { TravelCard } from './models/travel-card.model';
 
@@ -40,6 +43,7 @@ const fallbackImageUrl =
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
+    MatTooltipModule,
     ReactiveFormsModule,
     RouterLink,
     SectionCarouselComponent
@@ -52,11 +56,13 @@ export class HomeComponent {
   private readonly destinationsApi = inject(DestinationsApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
+  private readonly locationsApi = inject(LocationsApiService);
   private readonly router = inject(Router);
 
   protected readonly destinations = signal<Destination[]>([]);
-  protected readonly sourceOptions = signal<Destination[]>([]);
-  protected readonly destinationOptions = signal<Destination[]>([]);
+  protected readonly locations = signal<Location[]>([]);
+  protected readonly sourceOptions = signal<Location[]>([]);
+  protected readonly destinationOptions = signal<Location[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitted = signal(false);
@@ -114,25 +120,32 @@ export class HomeComponent {
       .subscribe({
         next: (destinations) => {
           this.destinations.set(destinations);
-          this.sourceOptions.set(destinations);
-          this.destinationOptions.set(destinations);
           this.isLoading.set(false);
-
-          if (destinations[0]) {
-            this.quickForm.controls.source.setValue(destinations[0].name, {
-              emitEvent: false
-            });
-          }
-
-          if (destinations[1]) {
-            this.quickForm.controls.destination.setValue(destinations[1].name, {
-              emitEvent: false
-            });
-          }
         },
         error: (error: Error) => {
           this.errorMessage.set(error.message);
           this.isLoading.set(false);
+        }
+      });
+
+    this.locationsApi
+      .list()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((locations) => {
+        this.locations.set(locations);
+        this.sourceOptions.set(locations);
+        this.destinationOptions.set(locations);
+
+        if (locations[0]) {
+          this.quickForm.controls.source.setValue(locations[0].name, {
+            emitEvent: false
+          });
+        }
+
+        if (locations[1]) {
+          this.quickForm.controls.destination.setValue(locations[1].name, {
+            emitEvent: false
+          });
         }
       });
 
@@ -145,6 +158,24 @@ export class HomeComponent {
     this.quickForm.markAllAsTouched();
 
     if (this.quickForm.invalid) {
+      return;
+    }
+
+    const source = this.findLocation(this.quickForm.controls.source.value);
+    const destination = this.findLocation(this.quickForm.controls.destination.value);
+
+    if (!source) {
+      this.quickForm.controls.source.setErrors({ unknownLocation: true });
+      return;
+    }
+
+    if (!destination) {
+      this.quickForm.controls.destination.setErrors({ unknownLocation: true });
+      return;
+    }
+
+    if (source.id === destination.id) {
+      this.quickForm.controls.destination.setErrors({ sameLocation: true });
       return;
     }
 
@@ -216,17 +247,24 @@ export class HomeComponent {
       .subscribe((query) => target.set(this.filterDestinations(query)));
   }
 
-  private filterDestinations(query: string): Destination[] {
+  private filterDestinations(query: string): Location[] {
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return this.destinations();
+      return this.locations();
     }
 
-    return this.destinations().filter((destination) =>
-      `${destination.name} ${destination.state} ${destination.country}`
+    return this.locations().filter((location) =>
+      `${location.name} ${location.state} ${location.country}`
         .toLowerCase()
         .includes(normalizedQuery)
+    );
+  }
+
+  private findLocation(name: string): Location | undefined {
+    const normalizedName = name.trim().toLowerCase();
+    return this.locations().find(
+      (location) => location.name.trim().toLowerCase() === normalizedName
     );
   }
 

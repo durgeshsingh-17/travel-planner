@@ -58,6 +58,13 @@ enum TripActivityType {
   ACTIVITY
 }
 
+enum TravellerGender {
+  FEMALE
+  MALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
 model User {
   id           String        @id @default(uuid()) @db.Uuid
   name         String
@@ -118,6 +125,22 @@ model Destination {
   updatedAt         DateTime @updatedAt
 }
 
+model Location {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String
+  slug      String   @unique
+  state     String
+  country   String   @default("India")
+  latitude  Decimal  @db.Decimal(9, 6)
+  longitude Decimal  @db.Decimal(9, 6)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([state])
+  @@index([name])
+}
+
 model Place {
   id                  String        @id @default(uuid()) @db.Uuid
   destinationId       String        @db.Uuid
@@ -167,12 +190,27 @@ model Trip {
   estimatedFuelCost        Decimal?   @db.Decimal(10, 2)
   user                     User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
   vehicle                  Vehicle?   @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  travellers               TripTraveller[]
   days                     TripDay[]
   createdAt                DateTime   @default(now())
   updatedAt                DateTime   @updatedAt
 
   @@index([userId])
   @@index([vehicleId])
+}
+
+model TripTraveller {
+  id        String          @id @default(uuid()) @db.Uuid
+  tripId    String          @db.Uuid
+  fullName  String
+  age       Int
+  gender    TravellerGender
+  sortOrder Int
+  trip      Trip            @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([tripId])
 }
 
 model TripDay {

@@ -7,7 +7,7 @@ import {
   signal
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ReactiveFormsModule } from '@angular/forms';
+import { FormArray, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
@@ -17,6 +17,8 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { debounceTime, distinctUntilChanged, finalize, switchMap } from 'rxjs';
 
 import {
@@ -25,8 +27,8 @@ import {
   travelModes
 } from './models/trip-planner-options.model';
 import { CreateTripRequest } from '../trip-result/models/trip.model';
-import { Destination } from '../destinations/destination.model';
-import { DestinationsApiService } from '../destinations/destinations-api.service';
+import { Location } from '../locations/location.model';
+import { LocationsApiService } from '../locations/locations-api.service';
 import { TripsApiService } from '../trip-result/services/trips-api.service';
 import { TripPlannerFormService } from './services/trip-planner-form.service';
 
@@ -42,6 +44,8 @@ import { TripPlannerFormService } from './services/trip-planner-form.service';
     MatFormFieldModule,
     MatInputModule,
     MatProgressBarModule,
+    MatSelectModule,
+    MatTooltipModule,
     ReactiveFormsModule
   ],
   providers: [TripPlannerFormService],
@@ -50,9 +54,9 @@ import { TripPlannerFormService } from './services/trip-planner-form.service';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class TripPlannerComponent {
-  private readonly destinationsApi = inject(DestinationsApiService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formService = inject(TripPlannerFormService);
+  private readonly locationsApi = inject(LocationsApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly tripsApi = inject(TripsApiService);
@@ -60,12 +64,18 @@ export class TripPlannerComponent {
   protected readonly travelModes = travelModes;
   protected readonly interestOptions = interestOptions;
   protected readonly preferenceOptions = preferenceOptions;
+  protected readonly genderOptions = [
+    { label: 'Female', value: 'FEMALE' },
+    { label: 'Male', value: 'MALE' },
+    { label: 'Other', value: 'OTHER' },
+    { label: 'Prefer not to say', value: 'PREFER_NOT_TO_SAY' }
+  ];
   protected readonly submitted = signal(false);
   protected readonly isGenerating = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly sourceOptions = signal<Destination[]>([]);
-  protected readonly destinationOptions = signal<Destination[]>([]);
-  protected readonly knownDestinations = signal<Destination[]>([]);
+  protected readonly sourceOptions = signal<Location[]>([]);
+  protected readonly destinationOptions = signal<Location[]>([]);
+  protected readonly knownLocations = signal<Location[]>([]);
   protected readonly form = this.formService.createForm();
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly selectedTravelMode = computed(
@@ -73,24 +83,24 @@ export class TripPlannerComponent {
   );
 
   constructor() {
-    this.destinationsApi
+    this.locationsApi
       .list()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe((destinations) => {
-        this.knownDestinations.update((current) =>
-          this.mergeDestinations(current, destinations)
+      .subscribe((locations) => {
+        this.knownLocations.update((current) =>
+          this.mergeLocations(current, locations)
         );
-        this.sourceOptions.set(destinations);
-        this.destinationOptions.set(destinations);
+        this.sourceOptions.set(locations);
+        this.destinationOptions.set(locations);
 
-        if (!this.form.controls.source.value && destinations[0]) {
-          this.form.controls.source.setValue(destinations[0].name, {
+        if (!this.form.controls.source.value && locations[0]) {
+          this.form.controls.source.setValue(locations[0].name, {
             emitEvent: false
           });
         }
 
-        if (!this.form.controls.destination.value && destinations[1]) {
-          this.form.controls.destination.setValue(destinations[1].name, {
+        if (!this.form.controls.destination.value && locations[1]) {
+          this.form.controls.destination.setValue(locations[1].name, {
             emitEvent: false
           });
         }
@@ -117,7 +127,10 @@ export class TripPlannerComponent {
       }
 
       if (params.has('travellers')) {
-        patch.travellers = this.toNullableNumber(params.get('travellers'));
+        this.formService.setPassengerCount(
+          this.passengers,
+          this.toNullableNumber(params.get('travellers')) ?? 1
+        );
       }
 
       if (params.has('travelMode')) {
@@ -200,13 +213,38 @@ export class TripPlannerComponent {
       | 'destination'
       | 'startDate'
       | 'endDate'
-      | 'travellers'
       | 'travelMode'
       | 'mileage'
       | 'budget'
   ): boolean {
     const control = this.form.controls[controlName];
     return control.invalid && (control.touched || this.submitted());
+  }
+
+  protected get passengers(): FormArray {
+    return this.form.controls.passengers;
+  }
+
+  protected addPassenger(): void {
+    this.passengers.push(this.formService.createPassengerFormGroup());
+    this.passengers.markAsDirty();
+  }
+
+  protected removePassenger(index: number): void {
+    if (this.passengers.length === 1) {
+      return;
+    }
+
+    this.passengers.removeAt(index);
+    this.passengers.markAsDirty();
+  }
+
+  protected isPassengerInvalid(
+    index: number,
+    controlName: 'fullName' | 'age' | 'gender'
+  ): boolean {
+    const control = this.passengers.at(index).get(controlName);
+    return !!control && control.invalid && (control.touched || this.submitted());
   }
 
   protected generateTrip(): void {
@@ -219,15 +257,24 @@ export class TripPlannerComponent {
       return;
     }
 
-    if (!this.findDestination(this.form.controls.source.value)) {
+    const source = this.findLocation(this.form.controls.source.value);
+    const destination = this.findLocation(this.form.controls.destination.value);
+
+    if (!source) {
       this.errorMessage.set('Select a valid starting point from suggestions.');
       this.form.controls.source.setErrors({ unknownLocation: true });
       return;
     }
 
-    if (!this.findDestination(this.form.controls.destination.value)) {
+    if (!destination) {
       this.errorMessage.set('Select a valid destination from suggestions.');
       this.form.controls.destination.setErrors({ unknownLocation: true });
+      return;
+    }
+
+    if (source.id === destination.id) {
+      this.errorMessage.set('From and Destination cannot be the same location.');
+      this.form.controls.destination.setErrors({ sameLocation: true });
       return;
     }
 
@@ -250,11 +297,11 @@ export class TripPlannerComponent {
 
   private buildPayload(): CreateTripRequest {
     const value = this.form.getRawValue();
-    const source = this.findDestination(value.source);
-    const destination = this.findDestination(value.destination);
+    const source = this.findLocation(value.source);
+    const destination = this.findLocation(value.destination);
 
     if (!source || !destination) {
-      throw new Error('Selected locations were not found in destination data.');
+      throw new Error('Selected locations were not found in location data.');
     }
 
     return {
@@ -270,7 +317,12 @@ export class TripPlannerComponent {
       },
       startDate: value.startDate,
       endDate: value.endDate,
-      travellerCount: Number(value.travellers),
+      travellerCount: value.passengers.length,
+      travellers: value.passengers.map((passenger) => ({
+        fullName: passenger.fullName.trim(),
+        age: Number(passenger.age),
+        gender: passenger.gender
+      })),
       budget: value.budget === null ? undefined : Number(value.budget),
       travelMode: value.travelMode,
       vehicle:
@@ -297,38 +349,38 @@ export class TripPlannerComponent {
         distinctUntilChanged(),
         takeUntilDestroyed(this.destroyRef)
       )
-      .subscribe((query) => target.set(this.filterDestinations(query)));
+      .subscribe((query) => target.set(this.filterLocations(query)));
   }
 
-  private filterDestinations(query: string): Destination[] {
+  private filterLocations(query: string): Location[] {
     const normalizedQuery = query.trim().toLowerCase();
-    const destinations = this.knownDestinations();
+    const locations = this.knownLocations();
 
     if (!normalizedQuery) {
-      return destinations;
+      return locations;
     }
 
-    return destinations.filter((destination) =>
-      `${destination.name} ${destination.state} ${destination.country}`
+    return locations.filter((location) =>
+      `${location.name} ${location.state} ${location.country}`
         .toLowerCase()
         .includes(normalizedQuery)
     );
   }
 
-  private findDestination(name: string): Destination | undefined {
+  private findLocation(name: string): Location | undefined {
     const normalizedName = name.trim().toLowerCase();
-    return this.knownDestinations().find(
-      (destination) => destination.name.trim().toLowerCase() === normalizedName
+    return this.knownLocations().find(
+      (location) => location.name.trim().toLowerCase() === normalizedName
     );
   }
 
-  private mergeDestinations(
-    current: Destination[],
-    incoming: Destination[]
-  ): Destination[] {
-    const destinations = new Map(current.map((destination) => [destination.id, destination]));
-    incoming.forEach((destination) => destinations.set(destination.id, destination));
-    return [...destinations.values()];
+  private mergeLocations(
+    current: Location[],
+    incoming: Location[]
+  ): Location[] {
+    const locations = new Map(current.map((location) => [location.id, location]));
+    incoming.forEach((location) => locations.set(location.id, location));
+    return [...locations.values()];
   }
 
   private toNullableNumber(value: string | null): number | null {

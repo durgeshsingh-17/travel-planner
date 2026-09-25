@@ -43,6 +43,7 @@ async function bootstrap(): Promise<void> {
     .addTag('auth')
     .addTag('users')
     .addTag('trips')
+    .addTag('locations')
     .addTag('destinations')
     .addTag('places')
     .addTag('vehicles')

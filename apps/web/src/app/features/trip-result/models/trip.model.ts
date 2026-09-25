@@ -44,6 +44,14 @@ export interface TripVehicle {
   averageMileage?: number | null;
 }
 
+export interface TripTraveller {
+  id: string;
+  fullName: string;
+  age: number;
+  gender: string;
+  sortOrder: number;
+}
+
 export interface Trip {
   id: string;
   title: string;
@@ -56,6 +64,7 @@ export interface Trip {
   startDate: string;
   endDate: string;
   travellerCount: number;
+  travellers: TripTraveller[];
   travelMode: string;
   budget?: number | null;
   interests: string[];
@@ -85,6 +94,11 @@ export interface CreateTripRequest {
   startDate: string;
   endDate: string;
   travellerCount: number;
+  travellers: Array<{
+    fullName: string;
+    age: number;
+    gender: string;
+  }>;
   budget?: number;
   travelMode: string;
   vehicle?: {
