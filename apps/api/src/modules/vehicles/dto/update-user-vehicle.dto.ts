@@ -12,9 +12,10 @@ import {
 const INDIAN_REGISTRATION_PATTERN =
   /^([A-Z]{2}[\s-]?\d{1,2}[\s-]?[A-Z]{1,3}[\s-]?\d{4}|\d{2}[\s-]?BH[\s-]?\d{4}[\s-]?[A-Z]{1,2})$/i;
 
-export class CreateUserVehicleDto {
+export class UpdateUserVehicleDto {
+  @IsOptional()
   @IsUUID()
-  vehicleId!: string;
+  vehicleId?: string;
 
   @IsOptional()
   @IsString()

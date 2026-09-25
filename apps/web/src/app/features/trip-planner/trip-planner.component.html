@@ -206,21 +206,23 @@
                 <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM7 9h2v10h6v-1h2v1a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9Z" />
               </svg>
             </button>
+            @if (index === passengers.length - 1) {
+              <button
+                mat-icon-button
+                type="button"
+                class="add-passenger"
+                aria-label="Add traveller"
+                matTooltip="Add traveller"
+                (click)="addPassenger()"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z" />
+                </svg>
+              </button>
+            }
           </div>
         }
       </div>
-      <button
-        mat-icon-button
-        type="button"
-        class="add-passenger"
-        aria-label="Add traveller"
-        matTooltip="Add traveller"
-        (click)="addPassenger()"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z" />
-        </svg>
-      </button>
     </mat-card>
 
     <mat-card appearance="outlined" aria-labelledby="travel-heading">
@@ -245,27 +247,28 @@
       <div class="section-title">
         <span>5</span>
         <div>
-          <h2 id="vehicle-heading">Vehicle details</h2>
-          <p>Useful for fuel requirement and estimated fuel cost.</p>
+          <h2 id="vehicle-heading">Saved vehicle</h2>
+          <p>Optional. Use a vehicle from your garage for better fuel estimates.</p>
         </div>
       </div>
-      <div class="field-grid three">
-        <mat-form-field appearance="outline">
-          <mat-label>Brand</mat-label>
-          <input matInput formControlName="vehicleBrand" type="text" />
+      @if (!session().isAuthenticated) {
+        <p class="muted-note">Sign in to use saved vehicles. Trip generation will ask you to sign in anyway.</p>
+      } @else if (userVehicles().length === 0) {
+        <p class="muted-note">No saved vehicles yet. Add one from Vehicles if you want fuel estimates from your own mileage.</p>
+      } @else {
+        <mat-form-field class="vehicle-select" appearance="outline">
+          <mat-label>Choose vehicle</mat-label>
+          <mat-select formControlName="vehicleId">
+            <mat-option value="">No vehicle</mat-option>
+            @for (entry of userVehicles(); track entry.id) {
+              <mat-option [value]="entry.vehicle.id">
+                {{ entry.nickname || entry.vehicle.brand + ' ' + entry.vehicle.model }}
+                • {{ entry.customMileage ?? entry.vehicle.averageMileage ?? 18 }} km/l
+              </mat-option>
+            }
+          </mat-select>
         </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Model</mat-label>
-          <input matInput formControlName="vehicleModel" type="text" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Mileage km/l</mat-label>
-          <input matInput formControlName="mileage" type="number" min="1" />
-          @if (isInvalid('mileage')) {
-            <mat-error>Mileage must be greater than zero.</mat-error>
-          }
-        </mat-form-field>
-      </div>
+      }
     </mat-card>
 
     <mat-card appearance="outlined" aria-labelledby="budget-heading">
@@ -293,7 +296,7 @@
           <p>Select what should shape the itinerary.</p>
         </div>
       </div>
-      <mat-chip-set class="chip-grid" aria-label="Interests">
+      <div class="chip-grid" role="group" aria-label="Interests">
         @for (interest of interestOptions; track interest.value) {
           <button
             mat-stroked-button
@@ -304,7 +307,7 @@
             {{ interest.label }}
           </button>
         }
-      </mat-chip-set>
+      </div>
       @if (form.controls.interests.invalid && submitted()) {
         <p class="error">Select at least one interest.</p>
       }
@@ -318,7 +321,7 @@
           <p>Fine tune the route personality before generation.</p>
         </div>
       </div>
-      <mat-chip-set class="chip-grid" aria-label="Additional preferences">
+      <div class="chip-grid" role="group" aria-label="Additional preferences">
         @for (preference of preferenceOptions; track preference.value) {
           <button
             mat-stroked-button
@@ -329,7 +332,7 @@
             {{ preference.label }}
           </button>
         }
-      </mat-chip-set>
+      </div>
       <mat-form-field class="notes" appearance="outline">
         <mat-label>Notes</mat-label>
         <textarea matInput formControlName="notes" rows="4"></textarea>

@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException
 } from '@nestjs/common';
-import { FuelType, Prisma, TravelMode, Trip, VehicleType } from '@prisma/client';
+import { Prisma, Trip } from '@prisma/client';
 
 import { assertDateRange, toDateOnly, toIsoDate } from '../../common/utils/date.util';
 import { decimalToNumber } from '../../common/utils/number.util';
@@ -56,7 +56,7 @@ export class TripsService {
       travellers: dto.travellers,
       travelMode: dto.travelMode,
       budget: dto.budget ?? null,
-      vehicle: dto.vehicle ?? null,
+      vehicle: null,
       interests: dto.interests,
       preferences: dto.preferences ?? [],
       notes: dto.notes ?? null,
@@ -68,7 +68,6 @@ export class TripsService {
     this.assertValidDateRange(dto.startDate, dto.endDate);
     this.assertTravellerCount(dto.travellerCount, dto.travellers.length);
     await this.assertVehicleExists(dto.vehicleId);
-    const vehicleId = dto.vehicleId ?? (await this.createVehicleFromInput(dto));
 
     const trip = await this.prisma.trip.create({
       data: {
@@ -94,10 +93,10 @@ export class TripsService {
         interests: dto.interests,
         preferences: dto.preferences ?? [],
         notes: dto.notes,
-        vehicle: vehicleId
+        vehicle: dto.vehicleId
           ? {
               connect: {
-                id: vehicleId
+                id: dto.vehicleId
               }
             }
           : undefined,
@@ -318,40 +317,6 @@ export class TripsService {
     });
 
     return this.serializeTripWithRelations(updatedTrip);
-  }
-
-  private async createVehicleFromInput(dto: CreateTripDto): Promise<string | undefined> {
-    if (!dto.vehicle?.brand || !dto.vehicle.model) {
-      return undefined;
-    }
-
-    const vehicle = await this.prisma.vehicle.create({
-      data: {
-        brand: dto.vehicle.brand,
-        model: dto.vehicle.model,
-        type: this.resolveVehicleType(dto.travelMode),
-        fuelType: this.resolveFuelType(dto.travelMode),
-        averageMileage: dto.vehicle.mileage
-      }
-    });
-
-    return vehicle.id;
-  }
-
-  private resolveVehicleType(travelMode: TravelMode): VehicleType {
-    if (travelMode === TravelMode.BIKE) {
-      return VehicleType.BIKE;
-    }
-
-    if (travelMode === TravelMode.CAR) {
-      return VehicleType.CAR;
-    }
-
-    return VehicleType.CAR;
-  }
-
-  private resolveFuelType(travelMode: TravelMode): FuelType {
-    return travelMode === TravelMode.FLIGHT ? FuelType.PETROL : FuelType.PETROL;
   }
 
   private assertValidDateRange(startDate: string, endDate: string): void {

@@ -24,6 +24,7 @@
         <mat-form-field appearance="outline">
           <mat-label>Name</mat-label>
           <input matInput formControlName="name" type="text" autocomplete="name" />
+          <mat-error>Use a valid name with letters and spaces.</mat-error>
         </mat-form-field>
       }
 
@@ -37,6 +38,7 @@
         <mat-form-field appearance="outline">
           <mat-label>Phone</mat-label>
           <input matInput formControlName="phone" type="tel" autocomplete="tel" />
+          <mat-error>Enter a valid Indian mobile number.</mat-error>
         </mat-form-field>
       }
 

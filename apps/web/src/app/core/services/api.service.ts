@@ -29,6 +29,12 @@ export class ApiService {
       .pipe(map((response) => response.data));
   }
 
+  put<T, B = unknown>(path: string, body: B): Observable<T> {
+    return this.http
+      .put<ApiSuccessResponse<T>>(this.buildUrl(path), body)
+      .pipe(map((response) => response.data));
+  }
+
   delete<T>(path: string): Observable<T> {
     return this.http
       .delete<ApiSuccessResponse<T>>(this.buildUrl(path))
