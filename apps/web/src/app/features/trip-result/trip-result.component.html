@@ -103,11 +103,22 @@
               @for (activity of day.activities; track activity.id) {
                 <div class="timeline-item">
                   <time>{{ activity.startTime ?? '--:--' }}</time>
-                  <div>
-                    <h3>{{ activity.title }}</h3>
-                    @if (activity.description) {
-                      <p>{{ activity.description }}</p>
-                    }
+	                  <div>
+	                    <h3>{{ activity.title }}</h3>
+	                    @if (activity.place) {
+	                      <div class="activity-meta">
+	                        <span>{{ activity.place.category }}</span>
+	                        @if (activity.place.rating) {
+	                          <span>{{ activity.place.rating }}/5</span>
+	                        }
+	                        @if (activity.place.averageVisitMinutes) {
+	                          <span>{{ activity.place.averageVisitMinutes }} min</span>
+	                        }
+	                      </div>
+	                    }
+	                    @if (activity.description) {
+	                      <p>{{ activity.description }}</p>
+	                    }
                     <div class="activity-actions" aria-label="Future itinerary actions">
                       <button mat-button type="button" disabled>Edit</button>
                       <button mat-button type="button" disabled>Delete</button>

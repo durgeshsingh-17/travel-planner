@@ -89,12 +89,23 @@ import { TripsApiService } from '../trip-result/services/trips-api.service';
                 <ol>
                   @for (activity of day.activities; track activity.id) {
                     <li>
-                      <time>{{ activity.startTime ?? 'Flexible' }}</time>
-                      <div>
-                        <strong>{{ activity.title }}</strong>
-                        <p>{{ activity.description }}</p>
-                        <small>
-                          {{ activity.activityType }} •
+	                      <time>{{ activity.startTime ?? 'Flexible' }}</time>
+	                      <div>
+	                        <strong>{{ activity.title }}</strong>
+	                        @if (activity.place) {
+	                          <div class="activity-meta">
+	                            <span>{{ activity.place.category }}</span>
+	                            @if (activity.place.rating) {
+	                              <span>{{ activity.place.rating }}/5</span>
+	                            }
+	                            @if (activity.place.averageVisitMinutes) {
+	                              <span>{{ activity.place.averageVisitMinutes }} min</span>
+	                            }
+	                          </div>
+	                        }
+	                        <p>{{ activity.description }}</p>
+	                        <small>
+	                          {{ activity.activityType }} •
                           {{ activity.estimatedCost ?? 0 | currency: 'INR' : 'symbol-narrow' : '1.0-0' }}
                         </small>
                         <div class="activity-actions">
@@ -224,14 +235,31 @@ import { TripsApiService } from '../trip-result/services/trips-api.service';
         font-weight: 900;
       }
 
-      li p,
-      li small {
-        display: block;
-        margin-top: 4px;
-      }
+	      li p,
+	      li small {
+	        display: block;
+	        margin-top: 4px;
+	      }
 
-      .activity-actions {
-        display: flex;
+	      .activity-meta {
+	        display: flex;
+	        flex-wrap: wrap;
+	        gap: 6px;
+	        margin-top: 6px;
+	      }
+
+	      .activity-meta span {
+	        padding: 4px 8px;
+	        color: #16433d;
+	        background: #e8f5f0;
+	        border: 1px solid rgba(12, 94, 84, 0.18);
+	        border-radius: 999px;
+	        font-size: 0.78rem;
+	        font-weight: 800;
+	      }
+
+	      .activity-actions {
+	        display: flex;
         flex-wrap: wrap;
         gap: 4px;
         margin-top: 8px;

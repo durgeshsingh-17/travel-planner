@@ -245,6 +245,30 @@ async function main(): Promise<void> {
         rating: 4.4
       },
       {
+        destinationId: jibhi.id,
+        name: 'Mini Thailand',
+        slug: 'mini-thailand',
+        category: PlaceCategory.ATTRACTION,
+        description: 'Rocky river section near Jibhi known for clear water and photo stops.',
+        latitude: 31.5979,
+        longitude: 77.3498,
+        averageVisitMinutes: 75,
+        estimatedCost: 0,
+        rating: 4.3
+      },
+      {
+        destinationId: jibhi.id,
+        name: 'Local Jibhi Cafe',
+        slug: 'local-jibhi-cafe',
+        category: PlaceCategory.CAFE,
+        description: 'Easy cafe stop for local food, coffee and slow evening time.',
+        latitude: 31.5969,
+        longitude: 77.3508,
+        averageVisitMinutes: 90,
+        estimatedCost: 700,
+        rating: 4.2
+      },
+      {
         destinationId: rishikesh.id,
         name: 'Triveni Ghat',
         slug: 'triveni-ghat',
@@ -255,6 +279,66 @@ async function main(): Promise<void> {
         averageVisitMinutes: 90,
         estimatedCost: 0,
         rating: 4.5
+      },
+      {
+        destinationId: rishikesh.id,
+        name: 'Ram Jhula',
+        slug: 'ram-jhula',
+        category: PlaceCategory.ATTRACTION,
+        description: 'Iconic suspension bridge area with river views, ashrams and walkable lanes.',
+        latitude: 30.1223,
+        longitude: 78.3122,
+        averageVisitMinutes: 90,
+        estimatedCost: 0,
+        rating: 4.5
+      },
+      {
+        destinationId: rishikesh.id,
+        name: 'Lakshman Jhula Viewpoint',
+        slug: 'lakshman-jhula-viewpoint',
+        category: PlaceCategory.VIEWPOINT,
+        description: 'Popular Ganga viewpoint area with cafes, temples and evening walks.',
+        latitude: 30.1264,
+        longitude: 78.3294,
+        averageVisitMinutes: 90,
+        estimatedCost: 0,
+        rating: 4.4
+      },
+      {
+        destinationId: rishikesh.id,
+        name: 'River Rafting Base',
+        slug: 'river-rafting-base',
+        category: PlaceCategory.ACTIVITY,
+        description: 'Adventure activity base for Ganga rafting sessions in season.',
+        latitude: 30.1378,
+        longitude: 78.3345,
+        averageVisitMinutes: 180,
+        estimatedCost: 1800,
+        rating: 4.6
+      },
+      {
+        destinationId: rishikesh.id,
+        name: 'Beatles Ashram',
+        slug: 'beatles-ashram',
+        category: PlaceCategory.ATTRACTION,
+        description: 'Forest-side heritage and art walk inside the former ashram campus.',
+        latitude: 30.1096,
+        longitude: 78.3039,
+        averageVisitMinutes: 120,
+        estimatedCost: 200,
+        rating: 4.4
+      },
+      {
+        destinationId: rishikesh.id,
+        name: 'Ganga View Cafe',
+        slug: 'ganga-view-cafe',
+        category: PlaceCategory.CAFE,
+        description: 'Cafe stop with river views, relaxed food and a softer evening pace.',
+        latitude: 30.1268,
+        longitude: 78.3248,
+        averageVisitMinutes: 75,
+        estimatedCost: 800,
+        rating: 4.2
       }
     ],
     skipDuplicates: true

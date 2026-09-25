@@ -12,9 +12,13 @@ export interface ItineraryGeneratorInput {
   endDate: string;
   travellerCount: number;
   travelMode: TravelMode;
+  interests: string[];
+  preferences: string[];
+  notes?: string | null;
 }
 
 export interface GeneratedTripActivity {
+  placeId?: string;
   title: string;
   description?: string;
   activityType: TripActivityType;
@@ -45,7 +49,7 @@ export interface GeneratedTripPlan {
 }
 
 export interface ItineraryGenerator {
-  generateTripPlan(input: ItineraryGeneratorInput): GeneratedTripPlan;
+  generateTripPlan(input: ItineraryGeneratorInput): Promise<GeneratedTripPlan>;
 }
 
 export const ITINERARY_GENERATOR = Symbol('ITINERARY_GENERATOR');

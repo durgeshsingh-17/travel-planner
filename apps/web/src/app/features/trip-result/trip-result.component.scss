@@ -175,6 +175,23 @@ time {
   line-height: 1.5;
 }
 
+.activity-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.activity-meta span {
+  padding: 4px 8px;
+  color: #16433d;
+  background: #e8f5f0;
+  border: 1px solid rgba(12, 94, 84, 0.18);
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
 .activity-actions {
   display: flex;
   flex-wrap: wrap;
