@@ -1,5 +1,23 @@
+export interface TripPlace {
+  id: string;
+  destinationId: string;
+  name: string;
+  slug: string;
+  category: string;
+  description: string;
+  latitude: number;
+  longitude: number;
+  averageVisitMinutes?: number | null;
+  estimatedCost?: number | null;
+  openingTime?: string | null;
+  closingTime?: string | null;
+  rating?: number | null;
+}
+
 export interface TripActivity {
   id: string;
+  placeId?: string | null;
+  place?: TripPlace | null;
   title: string;
   description?: string | null;
   activityType: string;

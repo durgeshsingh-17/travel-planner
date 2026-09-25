@@ -21,11 +21,15 @@ import { UpdateTripDto } from './dto/update-trip.dto';
 type TripWithRelations = Prisma.TripGetPayload<{
   include: {
     vehicle: true;
-    days: {
-      include: {
-        activities: true;
-      };
-    };
+	days: {
+	  include: {
+	    activities: {
+	      include: {
+	        place: true;
+	      };
+	    };
+	  };
+	};
     travellers: true;
   };
 }>;
@@ -235,7 +239,7 @@ export class TripsService {
       throw new NotFoundException(`Trip '${id}' was not found`);
     }
 
-    const generatedPlan = this.itineraryGenerator.generateTripPlan({
+    const generatedPlan = await this.itineraryGenerator.generateTripPlan({
       tripId: trip.id,
       sourceName: trip.sourceName,
       sourceLatitude: decimalToNumber(trip.sourceLatitude) ?? 0,
@@ -246,7 +250,10 @@ export class TripsService {
       startDate: toIsoDate(trip.startDate),
       endDate: toIsoDate(trip.endDate),
       travellerCount: trip.travellerCount,
-      travelMode: trip.travelMode
+      travelMode: trip.travelMode,
+      interests: trip.interests,
+      preferences: trip.preferences,
+      notes: trip.notes
     });
     const costBreakdown = this.tripCostService.calculate({
       distanceKm: generatedPlan.estimatedDistanceKm,
@@ -284,6 +291,7 @@ export class TripsService {
                   title: activity.title,
                   description: activity.description,
                   activityType: activity.activityType,
+                  placeId: activity.placeId,
                   startTime: activity.startTime,
                   endTime: activity.endTime,
                   latitude: activity.latitude,
@@ -396,13 +404,16 @@ export class TripsService {
           dayNumber: 'asc'
         },
         include: {
-          activities: {
-            orderBy: {
-              sortOrder: 'asc'
-            }
-          }
-        }
-      }
+	          activities: {
+	            orderBy: {
+	              sortOrder: 'asc'
+	            },
+	            include: {
+	              place: true
+	            }
+	          }
+	        }
+	      }
     } satisfies Prisma.TripInclude;
   }
 
@@ -433,11 +444,20 @@ export class TripsService {
         date: toIsoDate(day.date),
         estimatedDistanceKm: decimalToNumber(day.estimatedDistanceKm),
         estimatedCost: decimalToNumber(day.estimatedCost),
-        activities: day.activities.map((activity) => ({
-          ...activity,
-          latitude: decimalToNumber(activity.latitude),
-          longitude: decimalToNumber(activity.longitude),
-          estimatedCost: decimalToNumber(activity.estimatedCost),
+	        activities: day.activities.map((activity) => ({
+	          ...activity,
+	          place: activity.place
+	            ? {
+	                ...activity.place,
+	                latitude: decimalToNumber(activity.place.latitude),
+	                longitude: decimalToNumber(activity.place.longitude),
+	                estimatedCost: decimalToNumber(activity.place.estimatedCost),
+	                rating: decimalToNumber(activity.place.rating)
+	              }
+	            : null,
+	          latitude: decimalToNumber(activity.latitude),
+	          longitude: decimalToNumber(activity.longitude),
+	          estimatedCost: decimalToNumber(activity.estimatedCost),
           distanceFromPreviousKm: decimalToNumber(activity.distanceFromPreviousKm)
         }))
       }))
