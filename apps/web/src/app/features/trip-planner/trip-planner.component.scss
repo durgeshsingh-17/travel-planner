@@ -1,0 +1,170 @@
+.planner-page {
+  min-height: 100vh;
+}
+
+.planner-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 24px;
+  align-items: end;
+  padding: 38px 0;
+}
+
+h2,
+p {
+  margin: 0;
+}
+
+.planner-hero mat-card {
+  display: grid;
+  gap: 8px;
+  padding: 18px;
+  background: #17322d;
+  color: #ffffff;
+  border-radius: 8px;
+}
+
+.planner-hero mat-card span,
+.planner-hero mat-card small {
+  color: #b9dcd4;
+}
+
+.planner-form {
+  display: grid;
+  gap: 18px;
+}
+
+mat-card.form-footer,
+.planner-form > mat-card {
+  padding: 22px;
+  box-shadow: 0 18px 48px rgba(30, 39, 34, 0.06);
+}
+
+.section-title {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.section-title > span {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  place-items: center;
+  color: #09231f;
+  background: #ffcf5a;
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+h2 {
+  font-size: 1.25rem;
+}
+
+.section-title p {
+  margin-top: 5px;
+  color: #66706a;
+  line-height: 1.5;
+}
+
+.field-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.compact {
+  max-width: 260px;
+}
+
+.chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.chip-grid button.selected {
+  color: #ffffff;
+  background: #0b625d;
+  border-color: #0b625d;
+}
+
+.notes {
+  margin-top: 18px;
+}
+
+.error {
+  margin-top: 10px;
+  color: #b42318;
+  font-weight: 700;
+}
+
+.form-footer {
+  position: sticky;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.form-footer div {
+  display: grid;
+  gap: 4px;
+}
+
+.form-footer span {
+  color: #66706a;
+}
+
+button[type='submit'] {
+  min-height: 50px;
+  font-weight: 900;
+}
+
+button[disabled] {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.footer-error {
+  color: #b42318;
+  font-weight: 800;
+}
+
+@media (max-width: 800px) {
+  .planner-hero,
+  .two,
+  .three {
+    grid-template-columns: 1fr;
+  }
+
+  .form-footer {
+    position: static;
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 560px) {
+  .form-footer {
+    padding: 18px;
+  }
+
+  .section-title {
+    gap: 10px;
+  }
+
+  mat-button-toggle-group {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

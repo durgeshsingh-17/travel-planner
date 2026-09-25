@@ -1,0 +1,48 @@
+.carousel-section {
+  display: grid;
+  gap: 24px;
+  padding: 48px 0;
+}
+
+.section-heading {
+  display: grid;
+  gap: 10px;
+  max-width: 720px;
+}
+
+span {
+  color: #0b7a75;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+h2,
+p {
+  margin: 0;
+}
+
+h2 {
+  color: #17211b;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  line-height: 1.05;
+}
+
+p {
+  color: #5f6b64;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.rail {
+  display: flex;
+  gap: 18px;
+  overflow-x: auto;
+  padding: 4px 4px 20px;
+  scroll-snap-type: x mandatory;
+}
+
+app-trip-card {
+  scroll-snap-align: start;
+}

@@ -1,0 +1,32 @@
+{
+  "name": "travel-platform",
+  "version": "0.1.0",
+  "private": true,
+  "description": "India-first travel and road-trip planning platform.",
+  "packageManager": "npm@11.17.0",
+  "workspaces": [
+    "apps/web",
+    "apps/api"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "dev:web": "npm run start --workspace web",
+    "preview:web": "npm run build:web && npm run preview --workspace web",
+    "dev:api": "npm run start:dev --workspace api",
+    "build:web": "npm run build --workspace web",
+    "build:api": "npm run build --workspace api",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "prisma:generate": "npm run prisma:generate --workspace api",
+    "prisma:migrate": "npm run prisma:migrate --workspace api"
+  },
+  "engines": {
+    "node": ">=22.0.0",
+    "npm": ">=11.0.0"
+  },
+  "allowScripts": {
+    "prisma@6.19.3": true,
+    "@prisma/client@6.19.3": true,
+    "@prisma/engines@6.19.3": true
+  }
+}

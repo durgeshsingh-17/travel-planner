@@ -1,0 +1,20 @@
+<section class="carousel-section" [attr.aria-labelledby]="eyebrow()">
+  <div class="section-heading">
+    <span [id]="eyebrow()">{{ eyebrow() }}</span>
+    <h2>{{ title() }}</h2>
+    <p>{{ description() }}</p>
+  </div>
+
+  <div class="rail" tabindex="0" aria-label="Scrollable trip cards">
+    @for (card of cards(); track card.title) {
+      <app-trip-card
+        [title]="card.title"
+        [subtitle]="card.subtitle"
+        [imageUrl]="card.imageUrl"
+        [meta]="card.meta"
+        [tag]="card.tag"
+      />
+    }
+  </div>
+  <mat-divider />
+</section>

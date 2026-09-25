@@ -1,0 +1,11 @@
+<mat-card class="trip-card" appearance="outlined">
+  <img [src]="imageUrl()" [alt]="title()" loading="lazy" />
+  <mat-card-content>
+    <mat-chip-set aria-label="Trip tag">
+      <mat-chip>{{ tag() }}</mat-chip>
+    </mat-chip-set>
+    <h3>{{ title() }}</h3>
+    <p>{{ subtitle() }}</p>
+    <small>{{ meta() }}</small>
+  </mat-card-content>
+</mat-card>

@@ -1,0 +1,41 @@
+.trip-card {
+  display: grid;
+  min-width: 272px;
+  max-width: 320px;
+  overflow: hidden;
+  box-shadow: 0 20px 48px rgba(27, 35, 31, 0.08);
+}
+
+img {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+mat-card-content {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+h3,
+p,
+small {
+  margin: 0;
+}
+
+h3 {
+  color: #17211b;
+  font-size: 1.1rem;
+}
+
+p {
+  min-height: 48px;
+  color: #58645d;
+  line-height: 1.5;
+}
+
+small {
+  color: #7a4b24;
+  font-weight: 700;
+}

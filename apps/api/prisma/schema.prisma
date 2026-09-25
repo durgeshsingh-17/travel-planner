@@ -1,0 +1,215 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum VehicleType {
+  BIKE
+  CAR
+  EV
+}
+
+enum FuelType {
+  PETROL
+  DIESEL
+  ELECTRIC
+  HYBRID
+}
+
+enum PlaceCategory {
+  ATTRACTION
+  FOOD
+  CAFE
+  HOTEL
+  VIEWPOINT
+  FUEL
+  HOSPITAL
+  MECHANIC
+  PARKING
+  ACTIVITY
+}
+
+enum TravelMode {
+  BIKE
+  CAR
+  BUS
+  FLIGHT
+}
+
+enum TripStatus {
+  DRAFT
+  GENERATED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TripActivityType {
+  TRAVEL
+  MEAL
+  SIGHTSEEING
+  CHECK_IN
+  CHECK_OUT
+  BREAK
+  ACTIVITY
+}
+
+model User {
+  id           String        @id @default(uuid()) @db.Uuid
+  name         String
+  email        String        @unique
+  phone        String?
+  avatarUrl    String?
+  passwordHash String?
+  trips        Trip[]
+  vehicles     UserVehicle[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Vehicle {
+  id             String        @id @default(uuid()) @db.Uuid
+  brand          String
+  model          String
+  type           VehicleType
+  fuelType       FuelType
+  engineCc       Int?
+  tankCapacity   Float?
+  averageMileage Float?
+  userVehicles   UserVehicle[]
+  trips          Trip[]
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+model UserVehicle {
+  id                 String   @id @default(uuid()) @db.Uuid
+  userId             String   @db.Uuid
+  vehicleId          String   @db.Uuid
+  nickname           String?
+  customMileage      Float?
+  registrationNumber String?
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle            Vehicle  @relation(fields: [vehicleId], references: [id], onDelete: Restrict)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@index([userId])
+  @@index([vehicleId])
+}
+
+model Destination {
+  id                String   @id @default(uuid()) @db.Uuid
+  name              String
+  slug              String   @unique
+  state             String
+  country           String   @default("India")
+  latitude          Decimal  @db.Decimal(9, 6)
+  longitude         Decimal  @db.Decimal(9, 6)
+  shortDescription  String
+  heroImageUrl      String?
+  bestTimeToVisit   String?
+  places            Place[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model Place {
+  id                  String        @id @default(uuid()) @db.Uuid
+  destinationId       String        @db.Uuid
+  name                String
+  slug                String
+  category            PlaceCategory
+  description         String
+  latitude            Decimal       @db.Decimal(9, 6)
+  longitude           Decimal       @db.Decimal(9, 6)
+  averageVisitMinutes Int?
+  estimatedCost       Decimal?      @db.Decimal(10, 2)
+  openingTime         String?
+  closingTime         String?
+  rating              Decimal?      @db.Decimal(2, 1)
+  destination         Destination   @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  tripActivities      TripActivity[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  @@unique([destinationId, slug])
+  @@index([destinationId])
+}
+
+model Trip {
+  id                       String     @id @default(uuid()) @db.Uuid
+  userId                   String?    @db.Uuid
+  title                    String
+  sourceName               String
+  sourceLatitude           Decimal    @db.Decimal(9, 6)
+  sourceLongitude          Decimal    @db.Decimal(9, 6)
+  destinationName          String
+  destinationLatitude      Decimal    @db.Decimal(9, 6)
+  destinationLongitude     Decimal    @db.Decimal(9, 6)
+  startDate                DateTime   @db.Date
+  endDate                  DateTime   @db.Date
+  travellerCount           Int
+  travelMode               TravelMode
+  budget                   Decimal?   @db.Decimal(10, 2)
+  vehicleId                String?    @db.Uuid
+  status                   TripStatus @default(DRAFT)
+  estimatedDistanceKm      Decimal?   @db.Decimal(10, 2)
+  estimatedDurationMinutes Int?
+  estimatedTotalCost       Decimal?   @db.Decimal(10, 2)
+  estimatedFuelCost        Decimal?   @db.Decimal(10, 2)
+  user                     User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  vehicle                  Vehicle?   @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  days                     TripDay[]
+  createdAt                DateTime   @default(now())
+  updatedAt                DateTime   @updatedAt
+
+  @@index([userId])
+  @@index([vehicleId])
+}
+
+model TripDay {
+  id                  String         @id @default(uuid()) @db.Uuid
+  tripId              String         @db.Uuid
+  dayNumber           Int
+  date                DateTime       @db.Date
+  title               String
+  description         String?
+  estimatedDistanceKm Decimal?       @db.Decimal(10, 2)
+  estimatedCost       Decimal?       @db.Decimal(10, 2)
+  trip                Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  activities          TripActivity[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  @@unique([tripId, dayNumber])
+  @@index([tripId])
+}
+
+model TripActivity {
+  id                            String           @id @default(uuid()) @db.Uuid
+  tripDayId                     String           @db.Uuid
+  placeId                       String?          @db.Uuid
+  title                         String
+  description                   String?
+  activityType                  TripActivityType
+  startTime                     String?
+  endTime                       String?
+  latitude                      Decimal?         @db.Decimal(9, 6)
+  longitude                     Decimal?         @db.Decimal(9, 6)
+  estimatedCost                 Decimal?         @db.Decimal(10, 2)
+  distanceFromPreviousKm        Decimal?         @db.Decimal(10, 2)
+  travelTimeFromPreviousMinutes Int?
+  sortOrder                     Int
+  tripDay                       TripDay          @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
+  place                         Place?           @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  createdAt                     DateTime         @default(now())
+  updatedAt                     DateTime         @updatedAt
+
+  @@index([tripDayId])
+  @@index([placeId])
+}

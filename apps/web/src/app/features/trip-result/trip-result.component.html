@@ -1,0 +1,181 @@
+<main class="result-page app-page">
+  @if (isLoading()) {
+    <app-loading-state label="Loading trip" />
+  } @else if (errorMessage()) {
+    <app-empty-state title="Could not load this trip" [message]="errorMessage() ?? ''" />
+    <a mat-flat-button color="primary" routerLink="/plan">Plan another trip</a>
+  } @else if (trip(); as trip) {
+    <section class="summary" aria-labelledby="trip-title">
+      <div>
+        <p class="page-kicker">Trip Result</p>
+        <h1 class="page-title" id="trip-title">{{ trip.sourceName }} -> {{ trip.destinationName }}</h1>
+        <p class="page-copy">
+          {{ trip.startDate }} to {{ trip.endDate }} • {{ trip.travellerCount }}
+          travellers • {{ trip.travelMode }}
+        </p>
+      </div>
+
+      <div class="summary-actions">
+        <button mat-flat-button color="primary" type="button" (click)="toggleSavedTrip(trip.id)">
+          {{ isSaved() ? 'Saved' : 'Save Trip' }}
+        </button>
+        <button mat-stroked-button type="button" (click)="shareTrip(trip)">Share Trip</button>
+      </div>
+    </section>
+
+    @if (toastMessage()) {
+      <p class="toast" aria-live="polite">{{ toastMessage() }}</p>
+    }
+
+    <section class="metric-grid" aria-label="Trip summary">
+      <mat-card appearance="outlined">
+        <span>Distance</span>
+        <strong>{{ trip.estimatedDistanceKm ?? 0 }} km</strong>
+      </mat-card>
+      <mat-card appearance="outlined">
+        <span>Duration</span>
+        <strong>{{ durationLabel() }}</strong>
+      </mat-card>
+      <mat-card appearance="outlined">
+        <span>Estimated cost</span>
+        <strong>{{ formatCurrency(trip.estimatedTotalCost) }}</strong>
+      </mat-card>
+      <mat-card appearance="outlined">
+        <span>Status</span>
+        <strong>{{ trip.status }}</strong>
+      </mat-card>
+    </section>
+
+    <mat-tab-group mat-stretch-tabs="false" animationDuration="160ms">
+      <mat-tab label="Overview">
+      <section class="overview-grid">
+        <mat-card appearance="outlined">
+          <h2>Vehicle summary</h2>
+          @if (trip.vehicle) {
+            <dl>
+              <div>
+                <dt>Vehicle</dt>
+                <dd>{{ trip.vehicle.brand }} {{ trip.vehicle.model }}</dd>
+              </div>
+              <div>
+                <dt>Estimated mileage</dt>
+                <dd>{{ trip.vehicle.averageMileage ?? 18 }} km/l</dd>
+              </div>
+              <div>
+                <dt>Trip distance</dt>
+                <dd>{{ trip.estimatedDistanceKm ?? 0 }} km</dd>
+              </div>
+              <div>
+                <dt>Estimated fuel</dt>
+                <dd>{{ trip.costBreakdown?.fuelRequiredLitres ?? 0 }} litres</dd>
+              </div>
+              <div>
+                <dt>Fuel cost</dt>
+                <dd>{{ formatCurrency(trip.estimatedFuelCost) }}</dd>
+              </div>
+            </dl>
+          } @else {
+            <p>No personal vehicle attached to this trip.</p>
+          }
+        </mat-card>
+
+        <mat-card appearance="outlined">
+          <h2>Cost snapshot</h2>
+          <div class="total-cost">{{ formatCurrency(trip.estimatedTotalCost) }}</div>
+          <p>Includes fuel, tolls, stay, food, activities, parking and buffer.</p>
+        </mat-card>
+      </section>
+      </mat-tab>
+
+      <mat-tab label="Itinerary">
+      <section class="itinerary-list">
+        @for (day of trip.days; track day.id) {
+          <mat-card class="day-card" appearance="outlined">
+            <div class="day-card__header">
+              <span>Day {{ day.dayNumber }}</span>
+              <div>
+                <h2>{{ day.title }}</h2>
+                <p>{{ day.date }} • {{ day.estimatedDistanceKm ?? 0 }} km</p>
+              </div>
+            </div>
+
+            <div class="timeline">
+              @for (activity of day.activities; track activity.id) {
+                <div class="timeline-item">
+                  <time>{{ activity.startTime ?? '--:--' }}</time>
+                  <div>
+                    <h3>{{ activity.title }}</h3>
+                    @if (activity.description) {
+                      <p>{{ activity.description }}</p>
+                    }
+                    <div class="activity-actions" aria-label="Future itinerary actions">
+                      <button mat-button type="button" disabled>Edit</button>
+                      <button mat-button type="button" disabled>Delete</button>
+                      <button mat-button type="button" disabled>Reorder</button>
+                      <button mat-button type="button" disabled>Replace</button>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          </mat-card>
+        }
+      </section>
+      </mat-tab>
+
+      <mat-tab label="Route">
+      <mat-card class="route-panel" appearance="outlined">
+        <div>
+          <h2>{{ trip.sourceName }} to {{ trip.destinationName }}</h2>
+          <p>
+            {{ trip.estimatedDistanceKm ?? 0 }} km round trip • {{ durationLabel() }}
+            estimated drive time
+          </p>
+        </div>
+        <app-route-map
+          [sourceLatitude]="trip.sourceLatitude"
+          [sourceLongitude]="trip.sourceLongitude"
+          [destinationLatitude]="trip.destinationLatitude"
+          [destinationLongitude]="trip.destinationLongitude"
+        />
+      </mat-card>
+      </mat-tab>
+
+      <mat-tab label="Budget">
+      <mat-card class="budget-panel" appearance="outlined">
+        <div class="budget-total">
+          <span>Total estimate</span>
+          <strong>{{ formatCurrency(trip.estimatedTotalCost) }}</strong>
+        </div>
+        <div class="budget-list">
+          @for (row of costRows(); track row[0]) {
+            <div>
+              <span>{{ row[0] }}</span>
+              <strong>{{ formatCurrency(row[1]) }}</strong>
+            </div>
+          }
+        </div>
+      </mat-card>
+      </mat-tab>
+
+      <mat-tab label="Weather">
+      <mat-card class="weather-panel" appearance="outlined">
+        <h2>Weather</h2>
+        @if (weatherDays().length === 0) {
+          <p>Weather is loading or temporarily unavailable.</p>
+        } @else {
+          <div class="weather-grid">
+            @for (day of weatherDays(); track day.date) {
+              <article>
+                <span>{{ day.date }}</span>
+                <strong>{{ day.minTemperatureC }}°C - {{ day.maxTemperatureC }}°C</strong>
+                <p>{{ day.precipitationProbability }}% rain chance</p>
+              </article>
+            }
+          </div>
+        }
+      </mat-card>
+      </mat-tab>
+    </mat-tab-group>
+  }
+</main>

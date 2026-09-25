@@ -1,0 +1,35 @@
+.site-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 30px 24px;
+  background: #17211b;
+  color: #ffffff;
+}
+
+div {
+  display: grid;
+  gap: 5px;
+}
+
+span,
+a {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+a {
+  text-decoration: none;
+}
+
+nav {
+  display: flex;
+  gap: 18px;
+}
+
+@media (max-width: 620px) {
+  .site-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

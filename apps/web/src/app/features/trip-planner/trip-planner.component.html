@@ -1,0 +1,215 @@
+<main class="planner-page app-page">
+  <section class="planner-hero" aria-labelledby="planner-heading">
+    <div>
+      <p class="page-kicker">Trip Planner</p>
+      <h1 class="page-title" id="planner-heading">Tell us the trip. We will shape the route.</h1>
+      <p class="page-copy">
+        Start with the essentials: destination, dates, travellers, transport,
+        budget and the kind of journey you want.
+      </p>
+    </div>
+    <mat-card appearance="outlined">
+      <span>Preview contract</span>
+      <strong>Structured trip input</strong>
+      <small>Ready for itinerary generation in Phase 4</small>
+    </mat-card>
+  </section>
+
+  <form [formGroup]="form" (ngSubmit)="generateTrip()" class="planner-form">
+    @if (isGenerating()) {
+      <mat-progress-bar mode="indeterminate" />
+    }
+
+    <mat-card appearance="outlined" aria-labelledby="where-heading">
+      <div class="section-title">
+        <span>1</span>
+        <div>
+          <h2 id="where-heading">Where are you going?</h2>
+          <p>Choose the route endpoints for the first version of your plan.</p>
+        </div>
+      </div>
+      <div class="field-grid two">
+        <mat-form-field appearance="outline">
+          <mat-label>From</mat-label>
+          <input matInput formControlName="source" type="text" />
+          @if (isInvalid('source')) {
+            <mat-error>Source is required.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Destination</mat-label>
+          <input matInput formControlName="destination" type="text" />
+          @if (isInvalid('destination')) {
+            <mat-error>Destination is required.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <mat-card appearance="outlined" aria-labelledby="when-heading">
+      <div class="section-title">
+        <span>2</span>
+        <div>
+          <h2 id="when-heading">When?</h2>
+          <p>Dates help estimate pacing, nights and daily route load.</p>
+        </div>
+      </div>
+      <div class="field-grid two">
+        <mat-form-field appearance="outline">
+          <mat-label>Start Date</mat-label>
+          <input matInput formControlName="startDate" type="date" />
+          @if (isInvalid('startDate')) {
+            <mat-error>Start date is required.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>End Date</mat-label>
+          <input matInput formControlName="endDate" type="date" />
+          @if (isInvalid('endDate')) {
+            <mat-error>End date is required.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+      @if (form.errors?.['invalidDateRange'] && submitted()) {
+        <p class="error">End date cannot be before start date.</p>
+      }
+    </mat-card>
+
+    <mat-card appearance="outlined" aria-labelledby="who-heading">
+      <div class="section-title">
+        <span>3</span>
+        <div>
+          <h2 id="who-heading">Who is travelling?</h2>
+          <p>Traveller count changes food, stay and activity estimates.</p>
+        </div>
+      </div>
+      <mat-form-field class="compact" appearance="outline">
+        <mat-label>Travellers</mat-label>
+        <input matInput formControlName="travellers" type="number" min="1" />
+        @if (isInvalid('travellers')) {
+          <mat-error>Add at least one traveller.</mat-error>
+        }
+      </mat-form-field>
+    </mat-card>
+
+    <mat-card appearance="outlined" aria-labelledby="travel-heading">
+      <div class="section-title">
+        <span>4</span>
+        <div>
+          <h2 id="travel-heading">How are you travelling?</h2>
+          <p>Pick the primary transport type for route and budget planning.</p>
+        </div>
+      </div>
+      <mat-button-toggle-group formControlName="travelMode" aria-label="Travel mode">
+        @for (mode of travelModes; track mode.value) {
+          <mat-button-toggle [value]="mode.value">{{ mode.label }}</mat-button-toggle>
+        }
+      </mat-button-toggle-group>
+    </mat-card>
+
+    <mat-card appearance="outlined" aria-labelledby="vehicle-heading">
+      <div class="section-title">
+        <span>5</span>
+        <div>
+          <h2 id="vehicle-heading">Vehicle details</h2>
+          <p>Useful for fuel requirement and estimated fuel cost.</p>
+        </div>
+      </div>
+      <div class="field-grid three">
+        <mat-form-field appearance="outline">
+          <mat-label>Brand</mat-label>
+          <input matInput formControlName="vehicleBrand" type="text" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Model</mat-label>
+          <input matInput formControlName="vehicleModel" type="text" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Mileage km/l</mat-label>
+          <input matInput formControlName="mileage" type="number" min="1" />
+          @if (isInvalid('mileage')) {
+            <mat-error>Mileage must be greater than zero.</mat-error>
+          }
+        </mat-form-field>
+      </div>
+    </mat-card>
+
+    <mat-card appearance="outlined" aria-labelledby="budget-heading">
+      <div class="section-title">
+        <span>6</span>
+        <div>
+          <h2 id="budget-heading">Budget</h2>
+          <p>Set a target budget so the plan can stay realistic.</p>
+        </div>
+      </div>
+      <mat-form-field class="compact" appearance="outline">
+        <mat-label>Budget in Rs</mat-label>
+        <input matInput formControlName="budget" type="number" min="0" />
+        @if (isInvalid('budget')) {
+          <mat-error>Budget cannot be negative.</mat-error>
+        }
+      </mat-form-field>
+    </mat-card>
+
+    <mat-card appearance="outlined" aria-labelledby="interests-heading">
+      <div class="section-title">
+        <span>7</span>
+        <div>
+          <h2 id="interests-heading">Interests</h2>
+          <p>Select what should shape the itinerary.</p>
+        </div>
+      </div>
+      <mat-chip-set class="chip-grid" aria-label="Interests">
+        @for (interest of interestOptions; track interest.value) {
+          <button
+            mat-stroked-button
+            type="button"
+            [class.selected]="hasValue('interests', interest.value)"
+            (click)="toggleMultiValue('interests', interest.value)"
+          >
+            {{ interest.label }}
+          </button>
+        }
+      </mat-chip-set>
+    </mat-card>
+
+    <mat-card appearance="outlined" aria-labelledby="preferences-heading">
+      <div class="section-title">
+        <span>8</span>
+        <div>
+          <h2 id="preferences-heading">Additional preferences</h2>
+          <p>Fine tune the route personality before generation.</p>
+        </div>
+      </div>
+      <mat-chip-set class="chip-grid" aria-label="Additional preferences">
+        @for (preference of preferenceOptions; track preference.value) {
+          <button
+            mat-stroked-button
+            type="button"
+            [class.selected]="hasValue('preferences', preference.value)"
+            (click)="toggleMultiValue('preferences', preference.value)"
+          >
+            {{ preference.label }}
+          </button>
+        }
+      </mat-chip-set>
+      <mat-form-field class="notes" appearance="outline">
+        <mat-label>Notes</mat-label>
+        <textarea matInput formControlName="notes" rows="4"></textarea>
+      </mat-form-field>
+    </mat-card>
+
+    <mat-card class="form-footer" appearance="outlined">
+      <div>
+        <strong>{{ form.controls.source.value }} -> {{ form.controls.destination.value }}</strong>
+        <span>{{ selectedTravelMode() }} • {{ form.controls.travellers.value }} travellers</span>
+      </div>
+      @if (errorMessage()) {
+        <p class="footer-error">{{ errorMessage() }}</p>
+      }
+      <button mat-flat-button color="primary" type="submit" [disabled]="isGenerating()">
+        {{ isGenerating() ? 'Generating...' : 'Generate My Trip' }}
+      </button>
+    </mat-card>
+  </form>
+</main>

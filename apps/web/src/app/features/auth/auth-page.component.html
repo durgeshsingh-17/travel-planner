@@ -1,0 +1,63 @@
+<main class="auth-page">
+  <mat-card class="auth-panel" appearance="outlined" aria-labelledby="auth-heading">
+    <a routerLink="/" class="brand">Travel Platform</a>
+    <p class="page-kicker">{{ mode() === 'signup' ? 'Sign up' : 'Sign in' }}</p>
+    <h1 id="auth-heading">{{ title() }}</h1>
+    <p class="intro">
+      Save trips, manage vehicles and keep your India road-trip plans in one place.
+    </p>
+
+    <mat-button-toggle-group
+      [value]="mode()"
+      aria-label="Authentication mode"
+      (change)="setMode($event.value)"
+    >
+      <mat-button-toggle value="signin">Sign in</mat-button-toggle>
+      <mat-button-toggle value="signup">Sign up</mat-button-toggle>
+    </mat-button-toggle-group>
+
+    <form [formGroup]="form" (ngSubmit)="submit()">
+      @if (isSubmitting()) {
+        <mat-progress-bar mode="indeterminate" />
+      }
+      @if (mode() === 'signup') {
+        <mat-form-field appearance="outline">
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" type="text" autocomplete="name" />
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline">
+        <mat-label>Email</mat-label>
+        <input matInput formControlName="email" type="email" autocomplete="email" />
+        <mat-error>Enter a valid email.</mat-error>
+      </mat-form-field>
+
+      @if (mode() === 'signup') {
+        <mat-form-field appearance="outline">
+          <mat-label>Phone</mat-label>
+          <input matInput formControlName="phone" type="tel" autocomplete="tel" />
+        </mat-form-field>
+      }
+
+      <mat-form-field appearance="outline">
+        <mat-label>Password</mat-label>
+        <input matInput formControlName="password" type="password" autocomplete="current-password" />
+        <mat-error>Password must be at least 8 characters.</mat-error>
+      </mat-form-field>
+
+      @if (errorMessage()) {
+        <p class="error">{{ errorMessage() }}</p>
+      }
+
+      <button mat-flat-button color="primary" type="submit" [disabled]="isSubmitting()">
+        {{ isSubmitting() ? 'Please wait...' : mode() === 'signup' ? 'Create account' : 'Sign in' }}
+      </button>
+    </form>
+  </mat-card>
+
+  <section class="auth-visual" aria-hidden="true">
+    <strong>Route-ready planning</strong>
+    <span>Trips • Vehicles • Saved plans • Weather • Maps</span>
+  </section>
+</main>
