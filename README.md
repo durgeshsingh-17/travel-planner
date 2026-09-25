@@ -110,7 +110,7 @@ Errors use:
 }
 ```
 
-## Phase 1 Verification
+## Verification
 
 ```bash
 npm run build:web
@@ -118,7 +118,3 @@ npm run build:api
 npm run db:up
 curl http://localhost:3000/api/v1/health
 ```
-
-## Next Phase
-
-Phase 2 adds the shared frontend design system, header/footer polish, homepage, and trip planner UI. It should not add AI, itinerary generation, or persistence beyond what is needed for the UI contract.
