@@ -26,6 +26,7 @@ type TripWithRelations = Prisma.TripGetPayload<{
         activities: true;
       };
     };
+    travellers: true;
   };
 }>;
 
@@ -47,7 +48,8 @@ export class TripsService {
       destination: dto.destination,
       startDate: dto.startDate,
       endDate: dto.endDate,
-      travellerCount: dto.travellerCount,
+      travellerCount: dto.travellers.length,
+      travellers: dto.travellers,
       travelMode: dto.travelMode,
       budget: dto.budget ?? null,
       vehicle: dto.vehicle ?? null,
@@ -60,12 +62,19 @@ export class TripsService {
 
   async create(dto: CreateTripDto) {
     this.assertValidDateRange(dto.startDate, dto.endDate);
+    this.assertTravellerCount(dto.travellerCount, dto.travellers.length);
     await this.assertVehicleExists(dto.vehicleId);
     const vehicleId = dto.vehicleId ?? (await this.createVehicleFromInput(dto));
 
     const trip = await this.prisma.trip.create({
       data: {
-        userId: dto.userId,
+        user: dto.userId
+          ? {
+              connect: {
+                id: dto.userId
+              }
+            }
+          : undefined,
         title: dto.title ?? `${dto.source.name} to ${dto.destination.name}`,
         sourceName: dto.source.name,
         sourceLatitude: dto.source.latitude,
@@ -75,14 +84,28 @@ export class TripsService {
         destinationLongitude: dto.destination.longitude,
         startDate: toDateOnly(dto.startDate),
         endDate: toDateOnly(dto.endDate),
-        travellerCount: dto.travellerCount,
+        travellerCount: dto.travellers.length,
         travelMode: dto.travelMode,
         budget: dto.budget,
         interests: dto.interests,
         preferences: dto.preferences ?? [],
         notes: dto.notes,
-        vehicleId
-      } satisfies Prisma.TripUncheckedCreateInput,
+        vehicle: vehicleId
+          ? {
+              connect: {
+                id: vehicleId
+              }
+            }
+          : undefined,
+        travellers: {
+          create: dto.travellers.map((traveller, index) => ({
+            fullName: traveller.fullName.trim(),
+            age: traveller.age,
+            gender: traveller.gender,
+            sortOrder: index + 1
+          }))
+        }
+      } satisfies Prisma.TripCreateInput,
       include: this.tripInclude()
     });
 
@@ -92,7 +115,12 @@ export class TripsService {
   async findAll() {
     const trips = await this.prisma.trip.findMany({
       include: {
-        vehicle: true
+        vehicle: true,
+        travellers: {
+          orderBy: {
+            sortOrder: 'asc'
+          }
+        }
       },
       orderBy: {
         createdAt: 'desc'
@@ -101,7 +129,8 @@ export class TripsService {
 
     return trips.map((trip) => ({
       ...this.serializeTrip(trip),
-      vehicle: trip.vehicle
+      vehicle: trip.vehicle,
+      travellers: trip.travellers
     }));
   }
 
@@ -132,8 +161,11 @@ export class TripsService {
     const nextStartDate = dto.startDate ?? toIsoDate(existing.startDate);
     const nextEndDate = dto.endDate ?? toIsoDate(existing.endDate);
     this.assertValidDateRange(nextStartDate, nextEndDate);
+    if (dto.travellerCount !== undefined && dto.travellers) {
+      this.assertTravellerCount(dto.travellerCount, dto.travellers.length);
+    }
 
-    const data: Prisma.TripUncheckedUpdateInput = {
+    const data: Prisma.TripUpdateInput = {
       title: dto.title,
       sourceName: dto.source?.name,
       sourceLatitude: dto.source?.latitude,
@@ -143,14 +175,31 @@ export class TripsService {
       destinationLongitude: dto.destination?.longitude,
       startDate: dto.startDate ? toDateOnly(dto.startDate) : undefined,
       endDate: dto.endDate ? toDateOnly(dto.endDate) : undefined,
-      travellerCount: dto.travellerCount,
+      travellerCount: dto.travellers ? dto.travellers.length : dto.travellerCount,
       travelMode: dto.travelMode,
       budget: dto.budget,
       interests: dto.interests,
       preferences: dto.preferences,
       notes: dto.notes,
-      vehicleId: dto.vehicleId,
-      status: dto.status
+      vehicle: dto.vehicleId
+        ? {
+            connect: {
+              id: dto.vehicleId
+            }
+          }
+        : undefined,
+      status: dto.status,
+      travellers: dto.travellers
+        ? {
+            deleteMany: {},
+            create: dto.travellers.map((traveller, index) => ({
+              fullName: traveller.fullName.trim(),
+              age: traveller.age,
+              gender: traveller.gender,
+              sortOrder: index + 1
+            }))
+          }
+        : undefined
     };
 
     const trip = await this.prisma.trip.update({
@@ -296,6 +345,14 @@ export class TripsService {
     }
   }
 
+  private assertTravellerCount(travellerCount: number, actualCount: number): void {
+    if (travellerCount !== actualCount) {
+      throw new BadRequestException(
+        'Traveller count must match the number of traveller details'
+      );
+    }
+  }
+
   private async assertVehicleExists(vehicleId?: string): Promise<void> {
     if (!vehicleId) {
       return;
@@ -329,6 +386,11 @@ export class TripsService {
   private tripInclude() {
     return {
       vehicle: true,
+      travellers: {
+        orderBy: {
+          sortOrder: 'asc'
+        }
+      },
       days: {
         orderBy: {
           dayNumber: 'asc'
@@ -364,6 +426,7 @@ export class TripsService {
     return {
       ...this.serializeTrip(trip),
       vehicle: trip.vehicle,
+      travellers: trip.travellers,
       costBreakdown: this.buildCostBreakdown(trip),
       days: trip.days.map((day) => ({
         ...day,

@@ -1,5 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import {
+  FormArray,
   FormBuilder,
   Validators,
   AbstractControl,
@@ -20,10 +21,7 @@ export class TripPlannerFormService {
           this.notPastDate
         ]),
         endDate: this.fb.nonNullable.control('', [Validators.required]),
-        travellers: this.fb.control<number | null>(null, [
-          Validators.required,
-          Validators.min(1)
-        ]),
+        passengers: this.fb.array([this.createPassengerFormGroup()]),
         travelMode: this.fb.nonNullable.control('', [Validators.required]),
         vehicleBrand: this.fb.nonNullable.control(''),
         vehicleModel: this.fb.nonNullable.control(''),
@@ -40,6 +38,33 @@ export class TripPlannerFormService {
         validators: [this.dateRangeValidator]
       }
     );
+  }
+
+  createPassengerFormGroup() {
+    return this.fb.nonNullable.group({
+      fullName: this.fb.nonNullable.control('', [
+        Validators.required,
+        Validators.minLength(2)
+      ]),
+      age: this.fb.control<number | null>(null, [
+        Validators.required,
+        Validators.min(0),
+        Validators.max(120)
+      ]),
+      gender: this.fb.nonNullable.control('', [Validators.required])
+    });
+  }
+
+  setPassengerCount(passengers: FormArray, count: number): void {
+    const normalizedCount = Math.max(count, 1);
+
+    while (passengers.length < normalizedCount) {
+      passengers.push(this.createPassengerFormGroup());
+    }
+
+    while (passengers.length > normalizedCount) {
+      passengers.removeAt(passengers.length - 1);
+    }
   }
 
   private dateRangeValidator(control: AbstractControl): ValidationErrors | null {

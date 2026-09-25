@@ -49,13 +49,16 @@
           }
         </mat-form-field>
         <button
-          mat-stroked-button
+          mat-icon-button
           class="swap-button"
           type="button"
           aria-label="Swap from and destination"
+          matTooltip="Switch locations"
           (click)="swapLocations()"
         >
-          Switch
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 7h11l-3-3 1.4-1.4L21.8 8l-5.4 5.4L15 12l3-3H7V7Zm10 10H6l3 3-1.4 1.4L2.2 16l5.4-5.4L9 12l-3 3h11v2Z" />
+          </svg>
         </button>
         <mat-form-field appearance="outline">
           <mat-label>Destination</mat-label>
@@ -113,16 +116,65 @@
         <span>3</span>
         <div>
           <h2 id="who-heading">Who is travelling?</h2>
-          <p>Traveller count changes food, stay and activity estimates.</p>
+          <p>Add every passenger so the trip record stores exact traveller details.</p>
         </div>
       </div>
-      <mat-form-field class="compact" appearance="outline">
-        <mat-label>Travellers</mat-label>
-        <input matInput formControlName="travellers" type="number" min="1" />
-        @if (isInvalid('travellers')) {
-          <mat-error>Add at least one traveller.</mat-error>
+      <div class="passenger-list" formArrayName="passengers">
+        @for (passenger of passengers.controls; track $index; let index = $index) {
+          <div class="passenger-row" [formGroupName]="index">
+            <mat-form-field appearance="outline">
+              <mat-label>Traveller name</mat-label>
+              <input matInput formControlName="fullName" type="text" />
+              @if (isPassengerInvalid(index, 'fullName')) {
+                <mat-error>Name is required.</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Age</mat-label>
+              <input matInput formControlName="age" type="number" min="0" max="120" />
+              @if (isPassengerInvalid(index, 'age')) {
+                <mat-error>Enter valid age.</mat-error>
+              }
+            </mat-form-field>
+            <mat-form-field appearance="outline">
+              <mat-label>Gender</mat-label>
+              <mat-select formControlName="gender">
+                @for (gender of genderOptions; track gender.value) {
+                  <mat-option [value]="gender.value">{{ gender.label }}</mat-option>
+                }
+              </mat-select>
+              @if (isPassengerInvalid(index, 'gender')) {
+                <mat-error>Select gender.</mat-error>
+              }
+            </mat-form-field>
+            <button
+              mat-icon-button
+              class="remove-passenger"
+              type="button"
+              aria-label="Remove traveller"
+              matTooltip="Remove traveller"
+              [disabled]="passengers.length === 1"
+              (click)="removePassenger(index)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm1 6h2v9h-2V9Zm4 0h2v9h-2V9ZM7 9h2v10h6v-1h2v1a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V9Z" />
+              </svg>
+            </button>
+          </div>
         }
-      </mat-form-field>
+      </div>
+      <button
+        mat-icon-button
+        type="button"
+        class="add-passenger"
+        aria-label="Add traveller"
+        matTooltip="Add traveller"
+        (click)="addPassenger()"
+      >
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6V5Z" />
+        </svg>
+      </button>
     </mat-card>
 
     <mat-card appearance="outlined" aria-labelledby="travel-heading">
@@ -245,7 +297,7 @@
         </strong>
         <span>
           {{ selectedTravelMode() || 'Travel mode' }} •
-          {{ form.controls.travellers.value || 0 }} travellers
+          {{ passengers.length }} travellers
         </span>
       </div>
       @if (errorMessage()) {

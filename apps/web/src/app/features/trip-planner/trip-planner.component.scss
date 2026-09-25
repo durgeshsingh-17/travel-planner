@@ -82,10 +82,20 @@ h2 {
 }
 
 .swap-button {
-  min-width: 86px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   margin-top: 0;
-  font-weight: 900;
+  color: var(--primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.swap-button svg,
+.remove-passenger svg,
+.add-passenger svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
 }
 
 .two {
@@ -98,6 +108,35 @@ h2 {
 
 .compact {
   max-width: 260px;
+}
+
+.passenger-list {
+  display: grid;
+  gap: 12px;
+}
+
+.passenger-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(110px, 0.5fr) minmax(180px, 0.8fr) auto;
+  gap: 12px;
+  align-items: start;
+}
+
+.remove-passenger {
+  width: 48px;
+  height: 48px;
+  color: var(--danger);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.add-passenger {
+  width: 48px;
+  height: 48px;
+  margin-top: 14px;
+  color: #08201d;
+  background: var(--primary);
+  border-radius: 8px;
 }
 
 .chip-grid {
@@ -174,13 +213,14 @@ button[disabled] {
 @media (max-width: 800px) {
   .planner-hero,
   .route-field-grid,
+  .passenger-row,
   .two,
   .three {
     grid-template-columns: 1fr;
   }
 
-  .swap-button {
-    width: fit-content;
+  .swap-button,
+  .remove-passenger {
     justify-self: center;
   }
 

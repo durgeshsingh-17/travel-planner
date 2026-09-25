@@ -14,6 +14,7 @@ import { TravelMode } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 import { TripLocationDto } from './trip-location.dto';
+import { TripTravellerInputDto } from './trip-traveller-input.dto';
 import { TripVehicleInputDto } from './trip-vehicle-input.dto';
 
 export class PreviewTripDto {
@@ -34,6 +35,12 @@ export class PreviewTripDto {
   @IsInt()
   @Min(1)
   travellerCount!: number;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => TripTravellerInputDto)
+  travellers!: TripTravellerInputDto[];
 
   @IsOptional()
   @IsNumber()

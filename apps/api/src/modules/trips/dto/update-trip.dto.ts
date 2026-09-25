@@ -14,6 +14,7 @@ import { TravelMode, TripStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 import { TripLocationDto } from './trip-location.dto';
+import { TripTravellerInputDto } from './trip-traveller-input.dto';
 
 export class UpdateTripDto {
   @IsOptional()
@@ -42,6 +43,12 @@ export class UpdateTripDto {
   @IsInt()
   @Min(1)
   travellerCount?: number;
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => TripTravellerInputDto)
+  travellers?: TripTravellerInputDto[];
 
   @IsOptional()
   @IsEnum(TravelMode)

@@ -3,6 +3,131 @@ import { PrismaClient, FuelType, PlaceCategory, VehicleType } from '@prisma/clie
 const prisma = new PrismaClient();
 
 async function main(): Promise<void> {
+  const locations = [
+    {
+      name: 'Delhi',
+      slug: 'delhi',
+      state: 'Delhi',
+      latitude: 28.6139,
+      longitude: 77.209
+    },
+    {
+      name: 'Gurgaon',
+      slug: 'gurgaon',
+      state: 'Haryana',
+      latitude: 28.4595,
+      longitude: 77.0266
+    },
+    {
+      name: 'Gurugram',
+      slug: 'gurugram',
+      state: 'Haryana',
+      latitude: 28.4595,
+      longitude: 77.0266
+    },
+    {
+      name: 'Noida',
+      slug: 'noida',
+      state: 'Uttar Pradesh',
+      latitude: 28.5355,
+      longitude: 77.391
+    },
+    {
+      name: 'Mumbai',
+      slug: 'mumbai',
+      state: 'Maharashtra',
+      latitude: 19.076,
+      longitude: 72.8777
+    },
+    {
+      name: 'Pune',
+      slug: 'pune',
+      state: 'Maharashtra',
+      latitude: 18.5204,
+      longitude: 73.8567
+    },
+    {
+      name: 'Bengaluru',
+      slug: 'bengaluru',
+      state: 'Karnataka',
+      latitude: 12.9716,
+      longitude: 77.5946
+    },
+    {
+      name: 'Jaipur',
+      slug: 'jaipur',
+      state: 'Rajasthan',
+      latitude: 26.9124,
+      longitude: 75.7873
+    },
+    {
+      name: 'Udaipur',
+      slug: 'udaipur',
+      state: 'Rajasthan',
+      latitude: 24.5854,
+      longitude: 73.7125
+    },
+    {
+      name: 'Chandigarh',
+      slug: 'chandigarh',
+      state: 'Chandigarh',
+      latitude: 30.7333,
+      longitude: 76.7794
+    },
+    {
+      name: 'Dehradun',
+      slug: 'dehradun',
+      state: 'Uttarakhand',
+      latitude: 30.3165,
+      longitude: 78.0322
+    },
+    {
+      name: 'Rishikesh',
+      slug: 'rishikesh',
+      state: 'Uttarakhand',
+      latitude: 30.0869,
+      longitude: 78.2676
+    },
+    {
+      name: 'Manali',
+      slug: 'manali',
+      state: 'Himachal Pradesh',
+      latitude: 32.2432,
+      longitude: 77.1892
+    },
+    {
+      name: 'Jibhi',
+      slug: 'jibhi',
+      state: 'Himachal Pradesh',
+      latitude: 31.5964,
+      longitude: 77.3511
+    },
+    {
+      name: 'Goa',
+      slug: 'goa',
+      state: 'Goa',
+      latitude: 15.2993,
+      longitude: 74.124
+    },
+    {
+      name: 'Chennai',
+      slug: 'chennai',
+      state: 'Tamil Nadu',
+      latitude: 13.0827,
+      longitude: 80.2707
+    }
+  ];
+
+  for (const location of locations) {
+    await prisma.location.upsert({
+      where: {
+        slug: location.slug
+      },
+      update: location,
+      create: location
+    });
+  }
+
   const vehicles = [
     {
         brand: 'Honda',
