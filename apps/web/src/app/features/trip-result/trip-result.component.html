@@ -6,12 +6,16 @@
     <a mat-flat-button color="primary" routerLink="/plan">Plan another trip</a>
   } @else if (trip(); as trip) {
     <section class="summary" aria-labelledby="trip-title">
-      <div>
+      <div class="summary-copy">
         <p class="page-kicker">Trip Result</p>
-        <h1 class="page-title" id="trip-title">{{ trip.sourceName }} -> {{ trip.destinationName }}</h1>
+        <h1 class="page-title" id="trip-title">
+          <span>{{ trip.sourceName }}</span>
+          <small>to</small>
+          <span>{{ trip.destinationName }}</span>
+        </h1>
         <p class="page-copy">
           {{ trip.startDate }} to {{ trip.endDate }} • {{ trip.travellerCount }}
-          travellers • {{ trip.travelMode }}
+          travellers • {{ labelize(trip.travelMode) }}
         </p>
       </div>
 
@@ -42,14 +46,14 @@
       </mat-card>
       <mat-card appearance="outlined">
         <span>Status</span>
-        <strong>{{ trip.status }}</strong>
+        <strong>{{ labelize(trip.status) }}</strong>
       </mat-card>
     </section>
 
     <mat-tab-group mat-stretch-tabs="false" animationDuration="160ms">
       <mat-tab label="Overview">
       <section class="overview-grid">
-        <mat-card appearance="outlined">
+        <mat-card class="overview-card vehicle-card" appearance="outlined">
           <h2>Vehicle summary</h2>
           @if (trip.vehicle) {
             <dl>
@@ -79,12 +83,27 @@
           }
         </mat-card>
 
-        <mat-card appearance="outlined">
-          <h2>Cost snapshot</h2>
-          <div class="total-cost">{{ formatCurrency(trip.estimatedTotalCost) }}</div>
-          <p>Includes fuel, tolls, stay, food, activities, parking and buffer.</p>
-        </mat-card>
-      </section>
+	        <mat-card class="overview-card cost-card" appearance="outlined">
+	          <h2>Cost snapshot</h2>
+	          <div class="total-cost">{{ formatCurrency(trip.estimatedTotalCost) }}</div>
+	          <p>Includes fuel, tolls, stay, food, activities, parking and buffer.</p>
+	        </mat-card>
+
+	        <mat-card class="overview-card travellers-card" appearance="outlined">
+	          <h2>Travellers</h2>
+	          <div class="traveller-list">
+	            @for (traveller of trip.travellers; track traveller.id) {
+	              <div class="traveller-row">
+	                <span class="traveller-avatar">{{ traveller.fullName.charAt(0) }}</span>
+	                <div>
+	                  <strong>{{ traveller.fullName }}</strong>
+	                  <span>{{ traveller.age }} yrs • {{ labelize(traveller.gender) }}</span>
+	                </div>
+	              </div>
+	            }
+	          </div>
+	        </mat-card>
+	      </section>
       </mat-tab>
 
       <mat-tab label="Itinerary">
@@ -119,12 +138,6 @@
 	                    @if (activity.description) {
 	                      <p>{{ activity.description }}</p>
 	                    }
-                    <div class="activity-actions" aria-label="Future itinerary actions">
-                      <button mat-button type="button" disabled>Edit</button>
-                      <button mat-button type="button" disabled>Delete</button>
-                      <button mat-button type="button" disabled>Reorder</button>
-                      <button mat-button type="button" disabled>Replace</button>
-                    </div>
                   </div>
                 </div>
               }

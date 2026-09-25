@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
 import { MatButtonToggleModule } from '@angular/material/button-toggle';
@@ -30,6 +30,7 @@ import { SessionService } from '../../core/auth/session.service';
 })
 export class AuthPageComponent {
   private readonly fb = inject(FormBuilder);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly session = inject(SessionService);
 
@@ -40,6 +41,11 @@ export class AuthPageComponent {
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly title = computed(() =>
     this.mode() === 'signup' ? 'Create your travel account' : 'Welcome back'
+  );
+  protected readonly authReason = computed(() =>
+    this.route.snapshot.queryParamMap.get('reason') === 'generate-trip'
+      ? 'Sign in or create an account to generate and save your trip.'
+      : null
   );
   protected readonly form = this.fb.nonNullable.group({
     name: [''],
@@ -75,7 +81,12 @@ export class AuthPageComponent {
 
     this.isSubmitting.set(true);
     request.pipe(finalize(() => this.isSubmitting.set(false))).subscribe({
-      next: () => void this.router.navigate(['/profile']),
+      next: () => {
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+        void this.router.navigateByUrl(
+          returnUrl?.startsWith('/') ? returnUrl : '/profile'
+        );
+      },
       error: (error: Error) => this.errorMessage.set(error.message)
     });
   }

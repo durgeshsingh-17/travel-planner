@@ -4,7 +4,7 @@
     <p class="page-kicker">{{ mode() === 'signup' ? 'Sign up' : 'Sign in' }}</p>
     <h1 id="auth-heading">{{ title() }}</h1>
     <p class="intro">
-      Save trips, manage vehicles and keep your India road-trip plans in one place.
+      {{ authReason() ?? 'Save trips, manage vehicles and keep your India road-trip plans in one place.' }}
     </p>
 
     <mat-button-toggle-group

@@ -1,4 +1,4 @@
-import { Injectable, inject } from '@angular/core';
+import { Injectable } from '@angular/core';
 import {
   FormArray,
   FormBuilder,
@@ -7,9 +7,11 @@ import {
   ValidationErrors
 } from '@angular/forms';
 
+import { normalizePassengerCount } from './trip-planner-form.util';
+
 @Injectable()
 export class TripPlannerFormService {
-  private readonly fb = inject(FormBuilder);
+  constructor(private readonly fb: FormBuilder) {}
 
   createForm() {
     return this.fb.nonNullable.group(
@@ -56,7 +58,7 @@ export class TripPlannerFormService {
   }
 
   setPassengerCount(passengers: FormArray, count: number): void {
-    const normalizedCount = Math.max(count, 1);
+    const normalizedCount = normalizePassengerCount(count);
 
     while (passengers.length < normalizedCount) {
       passengers.push(this.createPassengerFormGroup());

@@ -16,8 +16,6 @@ import { SavedTripsService } from '../saved-trips/saved-trips.service';
 import { Trip } from './models/trip.model';
 import { TripsApiService } from './services/trips-api.service';
 
-type ResultTab = 'overview' | 'itinerary' | 'route' | 'budget' | 'weather';
-
 @Component({
   selector: 'app-trip-result',
   standalone: true,
@@ -45,7 +43,6 @@ export class TripResultComponent {
   protected readonly trip = signal<Trip | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly activeTab = signal<ResultTab>('overview');
   protected readonly toastMessage = signal<string | null>(null);
   protected readonly weatherDays = signal<
     {
@@ -112,16 +109,24 @@ export class TripResultComponent {
       });
   }
 
-  protected setTab(tab: ResultTab): void {
-    this.activeTab.set(tab);
-  }
-
   protected formatCurrency(value?: number | null): string {
     return new Intl.NumberFormat('en-IN', {
       style: 'currency',
       currency: 'INR',
       maximumFractionDigits: 0
     }).format(value ?? 0);
+  }
+
+  protected labelize(value?: string | null): string {
+    if (!value) {
+      return '';
+    }
+
+    return value
+      .toLowerCase()
+      .split('_')
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(' ');
   }
 
   protected toggleSavedTrip(tripId: string): void {

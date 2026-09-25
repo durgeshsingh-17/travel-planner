@@ -36,8 +36,31 @@
             formControlName="source"
             type="text"
             [matAutocomplete]="sourceAuto"
+            (blur)="validateLocationSelection('source')"
           />
-          <mat-autocomplete #sourceAuto="matAutocomplete">
+          @if (form.controls.source.value) {
+            <button
+              matSuffix
+              mat-icon-button
+              type="button"
+              aria-label="Clear starting point"
+              matTooltip="Clear"
+              (click)="clearLocation('source')"
+            >
+              <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z" />
+              </svg>
+            </button>
+          }
+          <mat-autocomplete
+            #sourceAuto="matAutocomplete"
+            (optionSelected)="selectLocation('source', $event)"
+          >
+            @if (isSourceLoading()) {
+              <mat-option disabled>Loading locations...</mat-option>
+            } @else if (sourceOptions().length === 0) {
+              <mat-option disabled>No locations found</mat-option>
+            }
             @for (option of sourceOptions(); track option.id) {
               <mat-option [value]="option.name">
                 {{ option.name }}, {{ option.state }}
@@ -67,8 +90,31 @@
             formControlName="destination"
             type="text"
             [matAutocomplete]="destinationAuto"
+            (blur)="validateLocationSelection('destination')"
           />
-          <mat-autocomplete #destinationAuto="matAutocomplete">
+          @if (form.controls.destination.value) {
+            <button
+              matSuffix
+              mat-icon-button
+              type="button"
+              aria-label="Clear destination"
+              matTooltip="Clear"
+              (click)="clearLocation('destination')"
+            >
+              <svg class="field-icon" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m6.4 5 5.6 5.6L17.6 5 19 6.4 13.4 12 19 17.6 17.6 19 12 13.4 6.4 19 5 17.6 10.6 12 5 6.4 6.4 5Z" />
+              </svg>
+            </button>
+          }
+          <mat-autocomplete
+            #destinationAuto="matAutocomplete"
+            (optionSelected)="selectLocation('destination', $event)"
+          >
+            @if (isDestinationLoading()) {
+              <mat-option disabled>Loading locations...</mat-option>
+            } @else if (destinationOptions().length === 0) {
+              <mat-option disabled>No locations found</mat-option>
+            }
             @for (option of destinationOptions(); track option.id) {
               <mat-option [value]="option.name">
                 {{ option.name }}, {{ option.state }}
@@ -292,9 +338,7 @@
 
     <mat-card class="form-footer" appearance="outlined">
       <div>
-        <strong>
-          {{ form.controls.source.value || 'From' }} -> {{ form.controls.destination.value || 'Destination' }}
-        </strong>
+        <strong>{{ routeSummary() ?? 'Select a valid route' }}</strong>
         <span>
           {{ selectedTravelMode() || 'Travel mode' }} •
           {{ passengers.length }} travellers
@@ -303,9 +347,20 @@
       @if (errorMessage()) {
         <p class="footer-error">{{ errorMessage() }}</p>
       }
-      <button mat-flat-button color="primary" type="submit" [disabled]="isGenerating()">
-        {{ isGenerating() ? 'Generating...' : 'Generate My Trip' }}
-      </button>
+      <div class="footer-actions">
+        <button mat-stroked-button type="button" [disabled]="isGenerating()" (click)="resetPlanner()">
+          Reset
+        </button>
+        <button mat-flat-button color="primary" type="submit" [disabled]="isGenerating()">
+          {{
+            isGenerating()
+              ? 'Generating...'
+              : session().isAuthenticated
+                ? 'Generate My Trip'
+                : 'Sign in to Generate'
+          }}
+        </button>
+      </div>
     </mat-card>
   </form>
 </main>
