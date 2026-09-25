@@ -1,16 +1,10 @@
-.result-page {
-  min-height: 100vh;
-}
-
 .summary,
 .metric-grid,
 .overview-grid,
 .itinerary-list,
-.overview-grid mat-card,
 .route-panel,
 .budget-panel,
-.weather-panel,
-.state-panel {
+.weather-panel {
   max-width: 1120px;
   margin: 0 auto;
 }
@@ -20,7 +14,7 @@
   align-items: end;
   justify-content: space-between;
   gap: 24px;
-  padding: 36px 0 24px;
+  padding: 30px 0 22px;
 }
 
 h1,
@@ -33,6 +27,23 @@ p {
 .summary-actions {
   display: flex;
   gap: 10px;
+  flex: 0 0 auto;
+}
+
+.summary .page-title {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: baseline;
+  max-width: 860px;
+  font-size: clamp(2.4rem, 6vw, 4.25rem);
+  line-height: 0.98;
+}
+
+.summary .page-title small {
+  color: var(--muted);
+  font-size: clamp(1rem, 2vw, 1.35rem);
+  font-weight: 800;
 }
 
 .toast {
@@ -49,23 +60,14 @@ p {
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
-}
-
-.metric-grid mat-card,
-.overview-grid mat-card,
-.day-card,
-.route-panel,
-.budget-panel,
-.weather-panel,
-.state-panel {
-  box-shadow: 0 18px 48px rgba(30, 39, 34, 0.06);
+  gap: 12px;
 }
 
 .metric-grid mat-card {
   display: grid;
   gap: 8px;
-  padding: 18px;
+  min-height: 94px;
+  padding: 18px 20px;
 }
 
 .metric-grid span,
@@ -78,25 +80,57 @@ dt,
 }
 
 .metric-grid strong {
-  font-size: 1.35rem;
+  font-size: 1.3rem;
 }
 
 mat-tab-group {
   display: block;
   max-width: 1120px;
-  margin: 26px auto 0;
+  margin: 28px auto 0;
+}
+
+:host ::ng-deep .mat-mdc-tab-body-content {
+  padding-top: 18px;
 }
 
 .overview-grid {
   display: grid;
-  grid-template-columns: 1.4fr 1fr;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
   gap: 16px;
+}
+
+.overview-card {
+  padding: 22px;
+}
+
+.overview-card h2,
+.route-panel h2,
+.budget-panel h2,
+.weather-panel h2 {
+  font-size: 1.15rem;
+  line-height: 1.2;
+}
+
+.overview-card p {
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.vehicle-card {
+  grid-column: span 5;
+}
+
+.cost-card {
+  grid-column: span 4;
+}
+
+.travellers-card {
+  grid-column: span 3;
 }
 
 .route-panel,
 .budget-panel,
-.weather-panel,
-.state-panel {
+.weather-panel {
   padding: 22px;
 }
 
@@ -117,13 +151,63 @@ dl div,
 
 dd {
   margin: 0;
-  font-weight: 850;
 }
 
 .total-cost {
-  margin-top: 18px;
-  font-size: clamp(2rem, 5vw, 3.6rem);
+  margin-top: 14px;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1;
   font-weight: 950;
+}
+
+.traveller-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.traveller-row {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.traveller-row:last-child {
+  border-bottom: 0;
+}
+
+.traveller-row strong,
+.traveller-row span {
+  display: block;
+}
+
+.traveller-row strong {
+  overflow: hidden;
+  font-size: 0.94rem;
+  font-weight: 850;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.traveller-row div > span {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.traveller-avatar {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  color: #07322d;
+  background: #d9f1ea;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  font-weight: 900;
 }
 
 .itinerary-list {
@@ -186,17 +270,9 @@ time {
   padding: 4px 8px;
   color: #16433d;
   background: #e8f5f0;
-  border: 1px solid rgba(12, 94, 84, 0.18);
   border-radius: 999px;
   font-size: 0.78rem;
   font-weight: 800;
-}
-
-.activity-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
 }
 
 app-route-map {
@@ -223,12 +299,6 @@ app-route-map {
   margin-top: 18px;
 }
 
-.state-panel {
-  display: grid;
-  gap: 12px;
-  margin-top: 48px;
-}
-
 .weather-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -240,12 +310,6 @@ app-route-map {
   padding: 14px;
   background: #f7f4ef;
   border-radius: 8px;
-}
-
-.weather-grid span,
-.weather-grid strong,
-.weather-grid p {
-  display: block;
 }
 
 .weather-grid p {
@@ -263,13 +327,15 @@ app-route-map {
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .vehicle-card,
+  .cost-card,
+  .travellers-card {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 560px) {
-  .result-page {
-    padding-inline: 16px;
-  }
-
   .metric-grid,
   .timeline-item,
   .weather-grid {

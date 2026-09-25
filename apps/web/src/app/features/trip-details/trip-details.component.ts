@@ -47,11 +47,11 @@ import { TripsApiService } from '../trip-result/services/trips-api.service';
           </nav>
         </section>
 
-        <section class="metrics">
-          <mat-card appearance="outlined">
-            <span>Travellers</span>
-            <strong>{{ trip.travellerCount }}</strong>
-          </mat-card>
+	        <section class="metrics">
+	          <mat-card appearance="outlined">
+	            <span>Travellers</span>
+	            <strong>{{ trip.travellerCount }}</strong>
+	          </mat-card>
           <mat-card appearance="outlined">
             <span>Distance</span>
             <strong>{{ trip.estimatedDistanceKm ?? 0 }} km</strong>
@@ -62,11 +62,26 @@ import { TripsApiService } from '../trip-result/services/trips-api.service';
           </mat-card>
           <mat-card appearance="outlined">
             <span>Estimate</span>
-            <strong>{{ trip.estimatedTotalCost ?? trip.budget ?? 0 | currency: 'INR' : 'symbol-narrow' : '1.0-0' }}</strong>
-          </mat-card>
-        </section>
+	            <strong>{{ trip.estimatedTotalCost ?? trip.budget ?? 0 | currency: 'INR' : 'symbol-narrow' : '1.0-0' }}</strong>
+	          </mat-card>
+	        </section>
 
-        <section class="timeline">
+	        <mat-card class="travellers" appearance="outlined">
+	          <div class="section-head">
+	            <p>Travellers</p>
+	            <h2>Passenger details</h2>
+	          </div>
+	          <div class="traveller-list">
+	            @for (traveller of trip.travellers; track traveller.id) {
+	              <div class="traveller-row">
+	                <strong>{{ traveller.fullName }}</strong>
+	                <span>{{ traveller.age }} yrs • {{ traveller.gender }}</span>
+	              </div>
+	            }
+	          </div>
+	        </mat-card>
+
+	        <section class="timeline">
           <div class="section-head">
             <p>Day plan</p>
             <h2>Activities and route notes</h2>
@@ -172,10 +187,33 @@ import { TripsApiService } from '../trip-result/services/trips-api.service';
         padding: 26px 0;
       }
 
-      .metrics mat-card,
-      .day {
-        padding: 20px;
-      }
+	      .metrics mat-card,
+	      .day,
+	      .travellers {
+	        padding: 20px;
+	      }
+
+	      .traveller-list {
+	        display: grid;
+	        gap: 10px;
+	      }
+
+	      .traveller-row {
+	        display: flex;
+	        align-items: center;
+	        justify-content: space-between;
+	        gap: 12px;
+	        padding: 10px 0;
+	        border-bottom: 1px solid rgba(23, 33, 27, 0.1);
+	      }
+
+	      .traveller-row:last-child {
+	        border-bottom: 0;
+	      }
+
+	      .traveller-row span {
+	        color: #66706a;
+	      }
 
       .metrics strong {
         display: block;

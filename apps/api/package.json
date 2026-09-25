@@ -9,6 +9,7 @@
     "start": "node dist/main.js",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
+    "test": "../web/node_modules/.bin/vitest run",
     "lint": "eslint \"{src,test}/**/*.ts\" --fix",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

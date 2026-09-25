@@ -64,7 +64,7 @@ export class TripsService {
     };
   }
 
-  async create(dto: CreateTripDto) {
+  async create(dto: CreateTripDto, ownerUserId?: string) {
     this.assertValidDateRange(dto.startDate, dto.endDate);
     this.assertTravellerCount(dto.travellerCount, dto.travellers.length);
     await this.assertVehicleExists(dto.vehicleId);
@@ -72,10 +72,10 @@ export class TripsService {
 
     const trip = await this.prisma.trip.create({
       data: {
-        user: dto.userId
+        user: ownerUserId ?? dto.userId
           ? {
               connect: {
-                id: dto.userId
+                id: ownerUserId ?? dto.userId
               }
             }
           : undefined,
@@ -116,8 +116,13 @@ export class TripsService {
     return this.serializeTripWithRelations(trip);
   }
 
-  async findAll() {
+  async findAll(ownerUserId?: string) {
     const trips = await this.prisma.trip.findMany({
+      where: ownerUserId
+        ? {
+            userId: ownerUserId
+          }
+        : undefined,
       include: {
         vehicle: true,
         travellers: {
@@ -138,30 +143,32 @@ export class TripsService {
     }));
   }
 
-  async findById(id: string) {
+  async findById(id: string, ownerUserId?: string) {
     const trip = await this.prisma.trip.findUnique({
       where: { id },
       include: this.tripInclude()
     });
 
-    if (!trip) {
+    if (!trip || (ownerUserId && trip.userId !== ownerUserId)) {
       throw new NotFoundException(`Trip '${id}' was not found`);
     }
 
     return this.serializeTripWithRelations(trip);
   }
 
-  async update(id: string, dto: UpdateTripDto) {
-    await this.assertTripExists(id);
+  async update(id: string, dto: UpdateTripDto, ownerUserId?: string) {
+    await this.assertTripExists(id, ownerUserId);
     await this.assertVehicleExists(dto.vehicleId);
 
     const existing = await this.prisma.trip.findUniqueOrThrow({
       where: { id },
       select: {
+        userId: true,
         startDate: true,
         endDate: true
       }
     });
+    this.assertTripOwnership(id, existing.userId, ownerUserId);
     const nextStartDate = dto.startDate ?? toIsoDate(existing.startDate);
     const nextEndDate = dto.endDate ?? toIsoDate(existing.endDate);
     this.assertValidDateRange(nextStartDate, nextEndDate);
@@ -215,8 +222,8 @@ export class TripsService {
     return this.serializeTripWithRelations(trip);
   }
 
-  async delete(id: string) {
-    await this.assertTripExists(id);
+  async delete(id: string, ownerUserId?: string) {
+    await this.assertTripExists(id, ownerUserId);
     await this.prisma.trip.delete({
       where: { id }
     });
@@ -227,7 +234,7 @@ export class TripsService {
     };
   }
 
-  async generateItinerary(id: string) {
+  async generateItinerary(id: string, ownerUserId?: string) {
     const trip = await this.prisma.trip.findUnique({
       where: { id },
       include: {
@@ -235,7 +242,7 @@ export class TripsService {
       }
     });
 
-    if (!trip) {
+    if (!trip || (ownerUserId && trip.userId !== ownerUserId)) {
       throw new NotFoundException(`Trip '${id}' was not found`);
     }
 
@@ -380,13 +387,23 @@ export class TripsService {
     }
   }
 
-  private async assertTripExists(id: string): Promise<void> {
+  private async assertTripExists(id: string, ownerUserId?: string): Promise<void> {
     const trip = await this.prisma.trip.findUnique({
       where: { id },
-      select: { id: true }
+      select: { id: true, userId: true }
     });
 
-    if (!trip) {
+    if (!trip || (ownerUserId && trip.userId !== ownerUserId)) {
+      throw new NotFoundException(`Trip '${id}' was not found`);
+    }
+  }
+
+  private assertTripOwnership(
+    id: string,
+    tripUserId: string | null,
+    ownerUserId?: string
+  ): void {
+    if (ownerUserId && tripUserId !== ownerUserId) {
       throw new NotFoundException(`Trip '${id}' was not found`);
     }
   }
