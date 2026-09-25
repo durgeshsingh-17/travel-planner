@@ -43,8 +43,22 @@ import { LocationsApiService } from '../locations/locations-api.service';
 import { TripsApiService } from '../trip-result/services/trips-api.service';
 import { TripPlannerFormService } from './services/trip-planner-form.service';
 import { SessionService } from '../../core/auth/session.service';
+import { ApiService } from '../../core/services/api.service';
 
 const PENDING_TRIP_DRAFT_KEY = 'travel-platform.pending-trip-draft';
+
+interface UserVehicleOption {
+  id: string;
+  nickname?: string | null;
+  customMileage?: number | null;
+  registrationNumber?: string | null;
+  vehicle: {
+    id: string;
+    brand: string;
+    model: string;
+    averageMileage?: number | null;
+  };
+}
 
 @Component({
   selector: 'app-trip-planner',
@@ -69,6 +83,7 @@ const PENDING_TRIP_DRAFT_KEY = 'travel-platform.pending-trip-draft';
 })
 export class TripPlannerComponent {
   private readonly destroyRef = inject(DestroyRef);
+  private readonly api = inject(ApiService);
   private readonly formService = inject(TripPlannerFormService);
   private readonly locationsApi = inject(LocationsApiService);
   private readonly route = inject(ActivatedRoute);
@@ -93,6 +108,7 @@ export class TripPlannerComponent {
   protected readonly isSourceLoading = signal(false);
   protected readonly isDestinationLoading = signal(false);
   protected readonly knownLocations = signal<Location[]>([]);
+  protected readonly userVehicles = signal<UserVehicleOption[]>([]);
   protected readonly form = this.formService.createForm();
   protected readonly today = new Date().toISOString().slice(0, 10);
   protected readonly selectedTravelMode = computed(
@@ -173,6 +189,7 @@ export class TripPlannerComponent {
 
     this.bindDestinationSearch('source', this.sourceOptions);
     this.bindDestinationSearch('destination', this.destinationOptions);
+    this.loadUserVehicles();
   }
 
   protected toggleMultiValue(controlName: 'interests' | 'preferences', value: string): void {
@@ -249,9 +266,7 @@ export class TripPlannerComponent {
       endDate: '',
       passengers: [],
       travelMode: '',
-      vehicleBrand: '',
-      vehicleModel: '',
-      mileage: null,
+      vehicleId: '',
       budget: null,
       interests: [],
       preferences: [],
@@ -294,7 +309,7 @@ export class TripPlannerComponent {
       | 'startDate'
       | 'endDate'
       | 'travelMode'
-      | 'mileage'
+      | 'vehicleId'
       | 'budget'
   ): boolean {
     const control = this.form.controls[controlName];
@@ -417,14 +432,7 @@ export class TripPlannerComponent {
       })),
       budget: value.budget === null ? undefined : Number(value.budget),
       travelMode: value.travelMode,
-      vehicle:
-        value.vehicleBrand || value.vehicleModel || value.mileage
-          ? {
-              brand: value.vehicleBrand || undefined,
-              model: value.vehicleModel || undefined,
-              mileage: value.mileage === null ? undefined : Number(value.mileage)
-            }
-          : undefined,
+      vehicleId: value.vehicleId || undefined,
       interests: value.interests,
       preferences: value.preferences,
       notes: value.notes || undefined
@@ -489,6 +497,20 @@ export class TripPlannerComponent {
           this.mergeLocations(current, locations)
         );
         target.set(locations);
+      });
+  }
+
+  private loadUserVehicles(): void {
+    if (!this.session().isAuthenticated) {
+      return;
+    }
+
+    this.api
+      .get<UserVehicleOption[]>('/vehicles/my')
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (vehicles) => this.userVehicles.set(vehicles),
+        error: () => this.userVehicles.set([])
       });
   }
 

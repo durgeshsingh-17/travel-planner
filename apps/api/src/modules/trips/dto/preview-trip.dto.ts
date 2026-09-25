@@ -15,7 +15,6 @@ import { Type } from 'class-transformer';
 
 import { TripLocationDto } from './trip-location.dto';
 import { TripTravellerInputDto } from './trip-traveller-input.dto';
-import { TripVehicleInputDto } from './trip-vehicle-input.dto';
 
 export class PreviewTripDto {
   @ValidateNested()
@@ -49,11 +48,6 @@ export class PreviewTripDto {
 
   @IsEnum(TravelMode)
   travelMode!: TravelMode;
-
-  @IsOptional()
-  @ValidateNested()
-  @Type(() => TripVehicleInputDto)
-  vehicle?: TripVehicleInputDto;
 
   @IsArray()
   @ArrayNotEmpty()

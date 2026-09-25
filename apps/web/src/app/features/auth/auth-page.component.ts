@@ -10,6 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 
 import { SessionService } from '../../core/auth/session.service';
+import {
+  INDIA_PHONE_PATTERN,
+  PERSON_NAME_PATTERN
+} from '../../shared/utils/identity-validation.util';
 
 @Component({
   selector: 'app-auth-page',
@@ -48,9 +52,9 @@ export class AuthPageComponent {
       : null
   );
   protected readonly form = this.fb.nonNullable.group({
-    name: [''],
+    name: ['', [Validators.pattern(PERSON_NAME_PATTERN)]],
     email: ['', [Validators.required, Validators.email]],
-    phone: [''],
+    phone: ['', [Validators.pattern(INDIA_PHONE_PATTERN)]],
     password: ['', [Validators.required, Validators.minLength(8)]]
   });
 

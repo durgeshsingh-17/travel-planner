@@ -118,7 +118,7 @@ h2 {
 
 .passenger-row {
   display: grid;
-  grid-template-columns: minmax(220px, 1.4fr) minmax(110px, 0.5fr) minmax(180px, 0.8fr) auto;
+  grid-template-columns: minmax(220px, 1.4fr) minmax(110px, 0.5fr) minmax(180px, 0.8fr) 48px 48px;
   gap: 12px;
   align-items: start;
 }
@@ -134,7 +134,6 @@ h2 {
 .add-passenger {
   width: 48px;
   height: 48px;
-  margin-top: 14px;
   color: #08201d;
   background: var(--primary);
   border-radius: 8px;
@@ -144,6 +143,7 @@ h2 {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
+  align-items: center;
 }
 
 .chip-grid button.selected {
@@ -154,6 +154,20 @@ h2 {
 
 .notes {
   margin-top: 18px;
+}
+
+.muted-note {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.vehicle-select {
+  max-width: 520px;
+}
+
+mat-button-toggle-group {
+  width: fit-content;
+  max-width: 100%;
 }
 
 .error {

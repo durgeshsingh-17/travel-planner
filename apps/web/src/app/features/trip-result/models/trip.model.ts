@@ -119,11 +119,7 @@ export interface CreateTripRequest {
   }>;
   budget?: number;
   travelMode: string;
-  vehicle?: {
-    brand?: string;
-    model?: string;
-    mileage?: number;
-  };
+  vehicleId?: string;
   interests: string[];
   preferences?: string[];
   notes?: string;

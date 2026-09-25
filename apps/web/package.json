@@ -7,7 +7,7 @@
     "preview": "node local-spa-server.mjs",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "vitest run src/app/features/trip-planner/services/trip-planner-form.util.spec.ts"
+    "test": "vitest run src/app/features/trip-planner/services/trip-planner-form.util.spec.ts src/app/shared/utils/india-registration.util.spec.ts"
   },
   "private": true,
   "packageManager": "npm@11.17.0",

@@ -5,7 +5,9 @@ import {
   Get,
   Headers,
   Param,
+  Patch,
   Post,
+  Put,
   Query
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
@@ -13,6 +15,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { AuthService } from '../auth/auth.service';
 import { CreateUserVehicleDto } from './dto/create-user-vehicle.dto';
 import { ListVehiclesQueryDto } from './dto/list-vehicles-query.dto';
+import { UpdateUserVehicleDto } from './dto/update-user-vehicle.dto';
 import { VehiclesService } from './vehicles.service';
 
 @ApiTags('vehicles')
@@ -45,6 +48,32 @@ export class VehiclesController {
   ) {
     return this.vehiclesService.createUserVehicle(
       this.authService.resolveUserIdFromAuthorization(authorization),
+      dto
+    );
+  }
+
+  @Patch('my/:id')
+  updateMine(
+    @Headers('authorization') authorization: string | undefined,
+    @Param('id') id: string,
+    @Body() dto: UpdateUserVehicleDto
+  ) {
+    return this.vehiclesService.updateUserVehicle(
+      this.authService.resolveUserIdFromAuthorization(authorization),
+      id,
+      dto
+    );
+  }
+
+  @Put('my/:id')
+  replaceMine(
+    @Headers('authorization') authorization: string | undefined,
+    @Param('id') id: string,
+    @Body() dto: UpdateUserVehicleDto
+  ) {
+    return this.vehiclesService.updateUserVehicle(
+      this.authService.resolveUserIdFromAuthorization(authorization),
+      id,
       dto
     );
   }

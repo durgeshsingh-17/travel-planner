@@ -1,6 +1,12 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators
+} from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { finalize, forkJoin, of } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -15,6 +21,10 @@ import { ApiService } from '../../core/services/api.service';
 import { SessionService } from '../../core/auth/session.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
+import {
+  formatIndianRegistration,
+  isValidIndianRegistration
+} from '../../shared/utils/india-registration.util';
 
 interface Vehicle {
   id: string;
@@ -35,9 +45,9 @@ interface UserVehicle {
 
 interface CreateUserVehicleInput {
   vehicleId: string;
-  nickname: string;
-  customMileage: number;
-  registrationNumber: string;
+  nickname?: string;
+  customMileage?: number;
+  registrationNumber?: string;
 }
 
 @Component({
@@ -73,7 +83,7 @@ interface CreateUserVehicleInput {
         <section class="garage-layout">
           <mat-card appearance="outlined">
             <mat-card-header>
-              <mat-card-title>Add my vehicle</mat-card-title>
+              <mat-card-title>{{ editingVehicleId() ? 'Edit vehicle' : 'Add my vehicle' }}</mat-card-title>
               <mat-card-subtitle>
                 Choose a catalog vehicle and add your nickname, mileage and registration.
               </mat-card-subtitle>
@@ -101,18 +111,33 @@ interface CreateUserVehicleInput {
                   <mat-form-field appearance="outline">
                     <mat-label>Nickname</mat-label>
                     <input matInput formControlName="nickname" placeholder="Weekend bike" />
+                    <mat-error>Nickname must be at least 2 characters.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
                     <mat-label>Custom mileage</mat-label>
                     <input matInput formControlName="customMileage" type="number" min="1" />
+                    <mat-error>Enter mileage between 1 and 200 km/l.</mat-error>
                   </mat-form-field>
                   <mat-form-field appearance="outline">
                     <mat-label>Registration number</mat-label>
-                    <input matInput formControlName="registrationNumber" placeholder="DL 01 AB 1234" />
+                    <input
+                      matInput
+                      formControlName="registrationNumber"
+                      placeholder="DL 01 AB 1234"
+                      (blur)="formatRegistrationNumber()"
+                    />
+                    <mat-error>Use Indian RTO format, for example DL 01 AB 1234.</mat-error>
                   </mat-form-field>
-                  <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
-                    {{ isSaving() ? 'Saving...' : 'Save Vehicle' }}
-                  </button>
+                  <div class="form-actions">
+                    <button mat-flat-button color="primary" type="submit" [disabled]="isSaving()">
+                      {{ isSaving() ? 'Saving...' : editingVehicleId() ? 'Update Vehicle' : 'Save Vehicle' }}
+                    </button>
+                    @if (editingVehicleId()) {
+                      <button mat-stroked-button type="button" (click)="cancelEdit()" [disabled]="isSaving()">
+                        Cancel
+                      </button>
+                    }
+                  </div>
                 </form>
               }
             </mat-card-content>
@@ -149,9 +174,14 @@ interface CreateUserVehicleInput {
                           <small>{{ entry.registrationNumber }}</small>
                         }
                       </div>
-                      <button mat-button color="warn" type="button" (click)="removeUserVehicle(entry.id)">
-                        Remove
-                      </button>
+                      <div class="vehicle-actions">
+                        <button mat-button type="button" (click)="startEdit(entry)">
+                          Edit
+                        </button>
+                        <button mat-button color="warn" type="button" (click)="removeUserVehicle(entry.id)">
+                          Remove
+                        </button>
+                      </div>
                     </article>
                   }
                 </div>
@@ -205,6 +235,13 @@ interface CreateUserVehicleInput {
       .my-list {
         display: grid;
         gap: 12px;
+      }
+
+      .form-actions,
+      .vehicle-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
       }
 
       mat-card-content {
@@ -280,12 +317,13 @@ export class VehiclesComponent {
   protected readonly userVehicles = signal<UserVehicle[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly isSaving = signal(false);
+  protected readonly editingVehicleId = signal<string | null>(null);
   protected readonly session = this.sessionService.session;
   protected readonly vehicleForm = this.formBuilder.nonNullable.group({
     vehicleId: ['', Validators.required],
-    nickname: [''],
+    nickname: ['', [Validators.minLength(2)]],
     customMileage: [18, [Validators.min(1), Validators.max(200)]],
-    registrationNumber: ['']
+    registrationNumber: ['', [this.indianRegistrationValidator]]
   });
 
   constructor() {
@@ -298,19 +336,60 @@ export class VehiclesComponent {
       return;
     }
 
+    const editingId = this.editingVehicleId();
+    const payload = this.buildVehiclePayload();
+    const request$ = editingId
+      ? this.api.patch<UserVehicle, CreateUserVehicleInput>(`/vehicles/my/${editingId}`, payload)
+      : this.api.post<UserVehicle, CreateUserVehicleInput>('/vehicles/my', payload);
+
     this.isSaving.set(true);
-    this.api
-      .post<UserVehicle, CreateUserVehicleInput>('/vehicles/my', this.vehicleForm.getRawValue())
+    request$
       .pipe(finalize(() => this.isSaving.set(false)), takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: (vehicle) => {
-          this.userVehicles.update((vehicles) => [vehicle, ...vehicles]);
-          this.snackBar.open('Vehicle saved', 'Close', { duration: 2200 });
+          this.userVehicles.update((vehicles) =>
+            editingId
+              ? vehicles.map((entry) => (entry.id === vehicle.id ? vehicle : entry))
+              : [vehicle, ...vehicles]
+          );
+          this.cancelEdit();
+          this.snackBar.open(editingId ? 'Vehicle updated' : 'Vehicle saved', 'Close', { duration: 2200 });
         },
         error: (error: Error) => {
           this.snackBar.open(error.message, 'Close', { duration: 3200 });
         }
       });
+  }
+
+  protected startEdit(entry: UserVehicle): void {
+    this.editingVehicleId.set(entry.id);
+    this.vehicleForm.patchValue({
+      vehicleId: entry.vehicle.id,
+      nickname: entry.nickname ?? '',
+      customMileage: entry.customMileage ?? entry.vehicle.averageMileage ?? 18,
+      registrationNumber: entry.registrationNumber
+        ? formatIndianRegistration(entry.registrationNumber)
+        : ''
+    });
+  }
+
+  protected cancelEdit(): void {
+    this.editingVehicleId.set(null);
+    this.vehicleForm.reset({
+      vehicleId: this.vehicles()[0]?.id ?? '',
+      nickname: '',
+      customMileage: 18,
+      registrationNumber: ''
+    });
+  }
+
+  protected formatRegistrationNumber(): void {
+    const control = this.vehicleForm.controls.registrationNumber;
+    const value = control.value.trim();
+
+    if (value) {
+      control.setValue(formatIndianRegistration(value));
+    }
   }
 
   protected removeUserVehicle(id: string): void {
@@ -352,5 +431,28 @@ export class VehiclesComponent {
           vehicleId: vehicles[0]?.id ?? ''
         });
       });
+  }
+
+  private buildVehiclePayload(): CreateUserVehicleInput {
+    const value = this.vehicleForm.getRawValue();
+
+    return {
+      vehicleId: value.vehicleId,
+      nickname: value.nickname.trim() || undefined,
+      customMileage: value.customMileage || undefined,
+      registrationNumber: value.registrationNumber.trim()
+        ? formatIndianRegistration(value.registrationNumber)
+        : undefined
+    };
+  }
+
+  private indianRegistrationValidator(control: AbstractControl): ValidationErrors | null {
+    const value = String(control.value ?? '').trim();
+
+    if (!value) {
+      return null;
+    }
+
+    return isValidIndianRegistration(value) ? null : { indianRegistration: true };
   }
 }
