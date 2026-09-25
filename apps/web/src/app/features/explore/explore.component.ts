@@ -1,15 +1,15 @@
-import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 
-import {
-  budgetTrips,
-  moodCards,
-  popularDestinations,
-  trendingRoadTrips
-} from '../home/data/home-travel.data';
+import { Destination } from '../destinations/destination.model';
+import { DestinationsApiService } from '../destinations/destinations-api.service';
 import { SectionCarouselComponent } from '../../shared/ui/section-carousel/section-carousel.component';
+import { TravelCard } from '../home/models/travel-card.model';
+
+const fallbackImageUrl =
+  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80';
 
 @Component({
   selector: 'app-explore',
@@ -27,13 +27,13 @@ import { SectionCarouselComponent } from '../../shared/ui/section-carousel/secti
         eyebrow="Trending"
         title="Road trips worth saving"
         description="High-confidence road-trip ideas for the current MVP catalog."
-        [cards]="trendingRoadTrips"
+        [cards]="trendingRoadTrips()"
       />
       <app-section-carousel
         eyebrow="Destinations"
         title="Popular destination ideas"
         description="Browse places that work well for road-first trip planning."
-        [cards]="popularDestinations"
+        [cards]="popularDestinations()"
       />
 
       <section class="catalog">
@@ -42,16 +42,16 @@ import { SectionCarouselComponent } from '../../shared/ui/section-carousel/secti
           <h2>Open seeded destinations</h2>
         </div>
         <div class="catalog-grid">
-          <a routerLink="/destinations/jibhi">
-            <span>Himachal Pradesh</span>
-            <strong>Jibhi</strong>
-            <small>Forest stays, cafe hopping and gentle hikes.</small>
+          @for (destination of destinations(); track destination.id) {
+          <a
+            [routerLink]="['/destinations', destination.slug]"
+            [style.background-image]="catalogBackground(destination)"
+          >
+            <span>{{ destination.state }}</span>
+            <strong>{{ destination.name }}</strong>
+            <small>{{ destination.shortDescription }}</small>
           </a>
-          <a routerLink="/destinations/rishikesh">
-            <span>Uttarakhand</span>
-            <strong>Rishikesh</strong>
-            <small>Rafting, ghats, yoga and quick mountain routes.</small>
-          </a>
+          }
         </div>
       </section>
 
@@ -59,15 +59,17 @@ import { SectionCarouselComponent } from '../../shared/ui/section-carousel/secti
         eyebrow="Budget"
         title="Trips under Rs 10,000"
         description="Shorter breaks with realistic travel costs."
-        [cards]="budgetTrips"
+        [cards]="budgetTrips()"
       />
 
       <section class="moods">
-        @for (mood of moodCards; track mood.label) {
-          <mat-card appearance="outlined">
-            <h2>{{ mood.label }}</h2>
-            <p>{{ mood.description }}</p>
-          </mat-card>
+        @for (mood of moodCards(); track mood.label) {
+          <a [routerLink]="mood.link" class="mood-card">
+            <mat-card appearance="outlined">
+              <h2>{{ mood.label }}</h2>
+              <p>{{ mood.description }}</p>
+            </mat-card>
+          </a>
         }
       </section>
     </main>
@@ -93,7 +95,7 @@ import { SectionCarouselComponent } from '../../shared/ui/section-carousel/secti
 
       .catalog > div:first-child p {
         margin: 0;
-        color: #0b7a75;
+        color: var(--primary);
         font-weight: 900;
         text-transform: uppercase;
       }
@@ -118,17 +120,8 @@ import { SectionCarouselComponent } from '../../shared/ui/section-carousel/secti
         gap: 8px;
         padding: 20px;
         color: #ffffff;
-        background:
-          linear-gradient(180deg, rgba(8, 18, 14, 0.08), rgba(8, 18, 14, 0.74)),
-          url('https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=900&q=80')
-            center / cover;
-      }
-
-      .catalog-grid a:nth-child(2) {
-        background:
-          linear-gradient(180deg, rgba(8, 18, 14, 0.08), rgba(8, 18, 14, 0.74)),
-          url('https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=900&q=80')
-            center / cover;
+        background-position: center;
+        background-size: cover;
       }
 
       .catalog-grid span,
@@ -151,6 +144,11 @@ import { SectionCarouselComponent } from '../../shared/ui/section-carousel/secti
         padding: 18px;
       }
 
+      .mood-card {
+        color: inherit;
+        text-decoration: none;
+      }
+
       h2,
       .moods p {
         margin: 0;
@@ -158,7 +156,7 @@ import { SectionCarouselComponent } from '../../shared/ui/section-carousel/secti
 
       .moods p {
         margin-top: 8px;
-        color: #66706a;
+        color: var(--muted);
       }
 
       @media (max-width: 760px) {
@@ -179,8 +177,48 @@ import { SectionCarouselComponent } from '../../shared/ui/section-carousel/secti
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class ExploreComponent {
-  protected readonly trendingRoadTrips = trendingRoadTrips;
-  protected readonly popularDestinations = popularDestinations;
-  protected readonly budgetTrips = budgetTrips;
-  protected readonly moodCards = moodCards;
+  private readonly destinationsApi = inject(DestinationsApiService);
+
+  protected readonly destinations = signal<Destination[]>([]);
+  protected readonly trendingRoadTrips = computed(() => this.toCards(this.destinations()));
+  protected readonly popularDestinations = computed(() => this.toCards(this.destinations()));
+  protected readonly budgetTrips = computed(() =>
+    this.toCards(
+      this.destinations().filter((destination) =>
+        /uttarakhand|himachal|rajasthan|kerala|goa/i.test(
+          `${destination.state} ${destination.name}`
+        )
+      )
+    )
+  );
+  protected readonly moodCards = computed(() =>
+    this.destinations()
+      .slice(0, 8)
+      .map((destination) => ({
+        label: destination.state,
+        description: destination.shortDescription,
+        link: ['/destinations', destination.slug]
+      }))
+  );
+
+  constructor() {
+    this.destinationsApi
+      .list()
+      .subscribe((destinations) => this.destinations.set(destinations));
+  }
+
+  protected catalogBackground(destination: Destination): string {
+    return `linear-gradient(180deg, rgba(8, 18, 14, 0.08), rgba(8, 18, 14, 0.74)), url('${destination.heroImageUrl ?? fallbackImageUrl}')`;
+  }
+
+  private toCards(destinations: Destination[]): TravelCard[] {
+    return destinations.map((destination) => ({
+      title: destination.name,
+      subtitle: destination.shortDescription,
+      imageUrl: destination.heroImageUrl ?? fallbackImageUrl,
+      meta: `${destination.state} • ${destination.bestTimeToVisit ?? destination.country}`,
+      tag: destination.country,
+      link: ['/destinations', destination.slug]
+    }));
+  }
 }

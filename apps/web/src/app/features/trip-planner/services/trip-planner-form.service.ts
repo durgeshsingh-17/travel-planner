@@ -13,28 +13,27 @@ export class TripPlannerFormService {
   createForm() {
     return this.fb.nonNullable.group(
       {
-        source: this.fb.nonNullable.control('Gurgaon', [Validators.required]),
-        destination: this.fb.nonNullable.control('Jibhi', [Validators.required]),
-        startDate: this.fb.nonNullable.control('', [Validators.required]),
+        source: this.fb.nonNullable.control('', [Validators.required]),
+        destination: this.fb.nonNullable.control('', [Validators.required]),
+        startDate: this.fb.nonNullable.control('', [
+          Validators.required,
+          this.notPastDate
+        ]),
         endDate: this.fb.nonNullable.control('', [Validators.required]),
-        travellers: this.fb.nonNullable.control(2, [
+        travellers: this.fb.control<number | null>(null, [
           Validators.required,
           Validators.min(1)
         ]),
-        travelMode: this.fb.nonNullable.control('BIKE', [Validators.required]),
-        vehicleBrand: this.fb.nonNullable.control('Honda'),
-        vehicleModel: this.fb.nonNullable.control('CB350'),
-        mileage: this.fb.nonNullable.control(32, [Validators.min(1)]),
-        budget: this.fb.nonNullable.control(15000, [Validators.min(0)]),
-        interests: this.fb.nonNullable.control<string[]>([
-          'mountains',
-          'photography',
-          'food'
+        travelMode: this.fb.nonNullable.control('', [Validators.required]),
+        vehicleBrand: this.fb.nonNullable.control(''),
+        vehicleModel: this.fb.nonNullable.control(''),
+        mileage: this.fb.control<number | null>(null, [Validators.min(1)]),
+        budget: this.fb.control<number | null>(null, [
+          Validators.required,
+          Validators.min(0)
         ]),
-        preferences: this.fb.nonNullable.control<string[]>([
-          'scenic-route',
-          'avoid-night-driving'
-        ]),
+        interests: this.fb.nonNullable.control<string[]>([], [this.arrayRequired]),
+        preferences: this.fb.nonNullable.control<string[]>([]),
         notes: this.fb.nonNullable.control('')
       },
       {
@@ -54,5 +53,24 @@ export class TripPlannerFormService {
     return new Date(endDate) >= new Date(startDate)
       ? null
       : { invalidDateRange: true };
+  }
+
+  private notPastDate(control: AbstractControl): ValidationErrors | null {
+    if (!control.value) {
+      return null;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDate = new Date(control.value);
+    selectedDate.setHours(0, 0, 0, 0);
+
+    return selectedDate >= today ? null : { pastDate: true };
+  }
+
+  private arrayRequired(control: AbstractControl): ValidationErrors | null {
+    return Array.isArray(control.value) && control.value.length > 0
+      ? null
+      : { required: true };
   }
 }

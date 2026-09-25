@@ -32,12 +32,13 @@ p {
 .planner-form {
   display: grid;
   gap: 18px;
+  padding-bottom: 24px;
 }
 
 mat-card.form-footer,
 .planner-form > mat-card {
   padding: 22px;
-  box-shadow: 0 18px 48px rgba(30, 39, 34, 0.06);
+  box-shadow: 0 18px 48px var(--shadow);
 }
 
 .section-title {
@@ -64,13 +65,27 @@ h2 {
 
 .section-title p {
   margin-top: 5px;
-  color: #66706a;
+  color: var(--muted);
   line-height: 1.5;
 }
 
 .field-grid {
   display: grid;
   gap: 14px;
+}
+
+.route-field-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.swap-button {
+  min-width: 86px;
+  height: 56px;
+  margin-top: 0;
+  font-weight: 900;
 }
 
 .two {
@@ -92,9 +107,9 @@ h2 {
 }
 
 .chip-grid button.selected {
-  color: #ffffff;
-  background: #0b625d;
-  border-color: #0b625d;
+  color: #08201d !important;
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .notes {
@@ -103,17 +118,33 @@ h2 {
 
 .error {
   margin-top: 10px;
-  color: #b42318;
+  color: var(--danger);
   font-weight: 700;
 }
 
 .form-footer {
   position: sticky;
   bottom: 16px;
+  z-index: 30;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 18px;
+  overflow: hidden;
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  opacity: 1;
+  pointer-events: auto;
+  isolation: isolate;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
+}
+
+.form-footer::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--surface);
+  content: '';
 }
 
 .form-footer div {
@@ -122,7 +153,7 @@ h2 {
 }
 
 .form-footer span {
-  color: #66706a;
+  color: var(--muted);
 }
 
 button[type='submit'] {
@@ -136,15 +167,21 @@ button[disabled] {
 }
 
 .footer-error {
-  color: #b42318;
+  color: var(--danger);
   font-weight: 800;
 }
 
 @media (max-width: 800px) {
   .planner-hero,
+  .route-field-grid,
   .two,
   .three {
     grid-template-columns: 1fr;
+  }
+
+  .swap-button {
+    width: fit-content;
+    justify-self: center;
   }
 
   .form-footer {

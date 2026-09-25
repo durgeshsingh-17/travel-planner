@@ -11,6 +11,13 @@
     <a mat-button routerLink="/vehicles">Vehicles</a>
   </nav>
   <div class="header-actions">
+    <mat-slide-toggle
+      [checked]="isDarkMode()"
+      aria-label="Toggle dark mode"
+      (change)="toggleTheme($event.checked)"
+    >
+      Dark
+    </mat-slide-toggle>
     <a mat-button routerLink="/sign-in">Sign in</a>
     <a mat-flat-button color="primary" routerLink="/plan">Plan Trip</a>
   </div>

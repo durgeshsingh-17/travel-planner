@@ -16,49 +16,110 @@
     <mat-card class="quick-planner" appearance="outlined" aria-label="Quick trip planner">
       <mat-card-header>
         <mat-card-title>Quick start</mat-card-title>
-        <mat-card-subtitle>Jump into the full planner with sensible defaults.</mat-card-subtitle>
+        <mat-card-subtitle>Start with live locations from the platform.</mat-card-subtitle>
       </mat-card-header>
-      <mat-card-content>
-        <mat-form-field appearance="outline">
-          <mat-label>From</mat-label>
-          <input matInput type="text" value="Gurgaon" />
-        </mat-form-field>
-        <mat-form-field appearance="outline">
-          <mat-label>Destination</mat-label>
-          <input matInput type="text" value="Jibhi" />
-        </mat-form-field>
+      <mat-card-content [formGroup]="quickForm">
+        <div class="quick-route-grid wide">
+          <mat-form-field appearance="outline">
+            <mat-label>From</mat-label>
+            <input
+              matInput
+              formControlName="source"
+              type="text"
+              [matAutocomplete]="sourceAuto"
+            />
+            <mat-autocomplete #sourceAuto="matAutocomplete">
+              @for (option of sourceOptions(); track option.id) {
+                <mat-option [value]="option.name">
+                  {{ option.name }}, {{ option.state }}
+                </mat-option>
+              }
+            </mat-autocomplete>
+            @if (isInvalid('source')) {
+              <mat-error>Choose a starting point.</mat-error>
+            }
+          </mat-form-field>
+          <button
+            mat-stroked-button
+            class="switch-button"
+            type="button"
+            aria-label="Switch from and destination"
+            (click)="switchLocations()"
+          >
+            Switch
+          </button>
+          <mat-form-field appearance="outline">
+            <mat-label>Destination</mat-label>
+            <input
+              matInput
+              formControlName="destination"
+              type="text"
+              [matAutocomplete]="destinationAuto"
+            />
+            <mat-autocomplete #destinationAuto="matAutocomplete">
+              @for (option of destinationOptions(); track option.id) {
+                <mat-option [value]="option.name">
+                  {{ option.name }}, {{ option.state }}
+                </mat-option>
+              }
+            </mat-autocomplete>
+            @if (isInvalid('destination')) {
+              <mat-error>Choose a destination.</mat-error>
+            }
+          </mat-form-field>
+        </div>
         <mat-form-field appearance="outline">
           <mat-label>Start Date</mat-label>
-          <input matInput type="date" />
+          <input matInput formControlName="startDate" type="date" [min]="today" />
+          @if (isInvalid('startDate')) {
+            <mat-error>{{ dateError('startDate') }}</mat-error>
+          }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>End Date</mat-label>
-          <input matInput type="date" />
+          <input matInput formControlName="endDate" type="date" [min]="quickForm.controls.startDate.value || today" />
+          @if (isInvalid('endDate')) {
+            <mat-error>{{ dateError('endDate') }}</mat-error>
+          }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Travellers</mat-label>
-          <input matInput type="number" min="1" value="2" />
+          <input matInput formControlName="travellers" type="number" min="1" />
+          @if (isInvalid('travellers')) {
+            <mat-error>Add at least one traveller.</mat-error>
+          }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Mode</mat-label>
-          <mat-select value="Car">
-            <mat-option value="Car">Car</mat-option>
-            <mat-option value="Bike">Bike</mat-option>
-            <mat-option value="Bus">Bus</mat-option>
-            <mat-option value="Flight">Flight</mat-option>
+          <mat-select formControlName="travelMode">
+            <mat-option value="CAR">Car</mat-option>
+            <mat-option value="BIKE">Bike</mat-option>
+            <mat-option value="BUS">Bus</mat-option>
+            <mat-option value="FLIGHT">Flight</mat-option>
           </mat-select>
+          @if (isInvalid('travelMode')) {
+            <mat-error>Select travel mode.</mat-error>
+          }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>Budget</mat-label>
-          <input matInput type="number" value="15000" />
+          <input matInput formControlName="budget" type="number" min="0" />
+          @if (isInvalid('budget')) {
+            <mat-error>Budget cannot be negative.</mat-error>
+          }
         </mat-form-field>
         <mat-form-field class="wide" appearance="outline">
           <mat-label>Interests</mat-label>
-          <input matInput type="text" value="mountains, food, peaceful" />
+          <input matInput formControlName="interests" type="text" />
         </mat-form-field>
+        @if (quickForm.errors?.['invalidDateRange'] && submitted()) {
+          <p class="quick-error wide">End date cannot be before start date.</p>
+        }
       </mat-card-content>
       <mat-card-actions>
-        <a mat-flat-button color="primary" routerLink="/plan">Open Full Planner</a>
+        <button mat-flat-button color="primary" type="button" (click)="openFullPlanner()">
+          Open Full Planner
+        </button>
       </mat-card-actions>
     </mat-card>
   </section>
@@ -68,21 +129,21 @@
       eyebrow="Trending Road Trips"
       title="Road trips people are planning this season"
       description="Curated India-first routes with realistic distances, stops and trip rhythm."
-      [cards]="trendingRoadTrips"
+      [cards]="trendingRoadTrips()"
     />
 
     <app-section-carousel
       eyebrow="Popular Destinations"
       title="Places that work beautifully for road travel"
       description="Destination ideas selected for route quality, weather windows and traveller fit."
-      [cards]="popularDestinations"
+      [cards]="popularDestinations()"
     />
 
     <app-section-carousel
       eyebrow="Trips Under Rs 10,000"
       title="Smart breaks without stretching the budget"
       description="Shorter routes and realistic plans for travellers who want control over cost."
-      [cards]="budgetTrips"
+      [cards]="budgetTrips()"
     />
 
     <section class="mood-section" aria-labelledby="mood-heading">
@@ -91,11 +152,13 @@
         <h2 id="mood-heading">Pick the trip that matches your pace</h2>
       </div>
       <div class="mood-grid">
-        @for (mood of moodCards; track mood.label) {
-          <mat-card appearance="outlined">
-            <h3>{{ mood.label }}</h3>
-            <p>{{ mood.description }}</p>
-          </mat-card>
+        @for (mood of moodCards(); track mood.label) {
+          <a [routerLink]="mood.link" class="mood-card">
+            <mat-card appearance="outlined">
+              <h3>{{ mood.label }}</h3>
+              <p>{{ mood.description }}</p>
+            </mat-card>
+          </a>
         }
       </div>
     </section>

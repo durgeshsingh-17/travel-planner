@@ -28,19 +28,52 @@
           <p>Choose the route endpoints for the first version of your plan.</p>
         </div>
       </div>
-      <div class="field-grid two">
+      <div class="route-field-grid">
         <mat-form-field appearance="outline">
           <mat-label>From</mat-label>
-          <input matInput formControlName="source" type="text" />
+          <input
+            matInput
+            formControlName="source"
+            type="text"
+            [matAutocomplete]="sourceAuto"
+          />
+          <mat-autocomplete #sourceAuto="matAutocomplete">
+            @for (option of sourceOptions(); track option.id) {
+              <mat-option [value]="option.name">
+                {{ option.name }}, {{ option.state }}
+              </mat-option>
+            }
+          </mat-autocomplete>
           @if (isInvalid('source')) {
-            <mat-error>Source is required.</mat-error>
+            <mat-error>Select a valid starting point.</mat-error>
           }
         </mat-form-field>
+        <button
+          mat-stroked-button
+          class="swap-button"
+          type="button"
+          aria-label="Swap from and destination"
+          (click)="swapLocations()"
+        >
+          Switch
+        </button>
         <mat-form-field appearance="outline">
           <mat-label>Destination</mat-label>
-          <input matInput formControlName="destination" type="text" />
+          <input
+            matInput
+            formControlName="destination"
+            type="text"
+            [matAutocomplete]="destinationAuto"
+          />
+          <mat-autocomplete #destinationAuto="matAutocomplete">
+            @for (option of destinationOptions(); track option.id) {
+              <mat-option [value]="option.name">
+                {{ option.name }}, {{ option.state }}
+              </mat-option>
+            }
+          </mat-autocomplete>
           @if (isInvalid('destination')) {
-            <mat-error>Destination is required.</mat-error>
+            <mat-error>Select a valid destination.</mat-error>
           }
         </mat-form-field>
       </div>
@@ -57,16 +90,16 @@
       <div class="field-grid two">
         <mat-form-field appearance="outline">
           <mat-label>Start Date</mat-label>
-          <input matInput formControlName="startDate" type="date" />
+          <input matInput formControlName="startDate" type="date" [min]="today" />
           @if (isInvalid('startDate')) {
-            <mat-error>Start date is required.</mat-error>
+            <mat-error>{{ dateError('startDate') }}</mat-error>
           }
         </mat-form-field>
         <mat-form-field appearance="outline">
           <mat-label>End Date</mat-label>
-          <input matInput formControlName="endDate" type="date" />
+          <input matInput formControlName="endDate" type="date" [min]="form.controls.startDate.value || today" />
           @if (isInvalid('endDate')) {
-            <mat-error>End date is required.</mat-error>
+            <mat-error>{{ dateError('endDate') }}</mat-error>
           }
         </mat-form-field>
       </div>
@@ -105,6 +138,9 @@
           <mat-button-toggle [value]="mode.value">{{ mode.label }}</mat-button-toggle>
         }
       </mat-button-toggle-group>
+      @if (isInvalid('travelMode')) {
+        <p class="error">Select a travel mode.</p>
+      }
     </mat-card>
 
     <mat-card appearance="outlined" aria-labelledby="vehicle-heading">
@@ -171,6 +207,9 @@
           </button>
         }
       </mat-chip-set>
+      @if (form.controls.interests.invalid && submitted()) {
+        <p class="error">Select at least one interest.</p>
+      }
     </mat-card>
 
     <mat-card appearance="outlined" aria-labelledby="preferences-heading">
@@ -201,8 +240,13 @@
 
     <mat-card class="form-footer" appearance="outlined">
       <div>
-        <strong>{{ form.controls.source.value }} -> {{ form.controls.destination.value }}</strong>
-        <span>{{ selectedTravelMode() }} • {{ form.controls.travellers.value }} travellers</span>
+        <strong>
+          {{ form.controls.source.value || 'From' }} -> {{ form.controls.destination.value || 'Destination' }}
+        </strong>
+        <span>
+          {{ selectedTravelMode() || 'Travel mode' }} •
+          {{ form.controls.travellers.value || 0 }} travellers
+        </span>
       </div>
       @if (errorMessage()) {
         <p class="footer-error">{{ errorMessage() }}</p>

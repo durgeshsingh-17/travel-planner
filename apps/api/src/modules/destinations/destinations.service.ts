@@ -2,18 +2,48 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Destination } from '@prisma/client';
 
 import { decimalToNumber } from '../../common/utils/number.util';
-import { ListDestinationsQueryDto } from './dto/list-destinations-query.dto';
 import { PrismaService } from '../../database/prisma.service';
+
+interface ListDestinationsQuery {
+  state?: string;
+  q?: string;
+  limit?: number;
+}
 
 @Injectable()
 export class DestinationsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: ListDestinationsQueryDto) {
+  async findAll(query: ListDestinationsQuery) {
+    const limit = query.limit ? Math.min(Math.max(query.limit, 1), 100) : 50;
+
     const destinations = await this.prisma.destination.findMany({
       where: {
-        state: query.state
+        state: query.state,
+        OR: query.q
+          ? [
+              {
+                name: {
+                  contains: query.q,
+                  mode: 'insensitive'
+                }
+              },
+              {
+                state: {
+                  contains: query.q,
+                  mode: 'insensitive'
+                }
+              },
+              {
+                country: {
+                  contains: query.q,
+                  mode: 'insensitive'
+                }
+              }
+            ]
+          : undefined
       },
+      take: limit,
       orderBy: [{ state: 'asc' }, { name: 'asc' }]
     });
 

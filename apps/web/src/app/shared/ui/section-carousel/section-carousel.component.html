@@ -5,14 +5,15 @@
     <p>{{ description() }}</p>
   </div>
 
-  <div class="rail" tabindex="0" aria-label="Scrollable trip cards">
-    @for (card of cards(); track card.title) {
+  <div class="card-grid" aria-label="Trip cards">
+    @for (card of cards(); track card.link.join('/')) {
       <app-trip-card
         [title]="card.title"
         [subtitle]="card.subtitle"
         [imageUrl]="card.imageUrl"
         [meta]="card.meta"
         [tag]="card.tag"
+        [link]="card.link"
       />
     }
   </div>

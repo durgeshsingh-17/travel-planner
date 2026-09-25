@@ -52,6 +52,8 @@ export class TripsService {
       budget: dto.budget ?? null,
       vehicle: dto.vehicle ?? null,
       interests: dto.interests,
+      preferences: dto.preferences ?? [],
+      notes: dto.notes ?? null,
       status: 'READY_FOR_GENERATION'
     };
   }
@@ -76,6 +78,9 @@ export class TripsService {
         travellerCount: dto.travellerCount,
         travelMode: dto.travelMode,
         budget: dto.budget,
+        interests: dto.interests,
+        preferences: dto.preferences ?? [],
+        notes: dto.notes,
         vehicleId
       } satisfies Prisma.TripUncheckedCreateInput,
       include: this.tripInclude()
@@ -141,6 +146,9 @@ export class TripsService {
       travellerCount: dto.travellerCount,
       travelMode: dto.travelMode,
       budget: dto.budget,
+      interests: dto.interests,
+      preferences: dto.preferences,
+      notes: dto.notes,
       vehicleId: dto.vehicleId,
       status: dto.status
     };

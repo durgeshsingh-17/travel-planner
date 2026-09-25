@@ -52,4 +52,13 @@ export class PreviewTripDto {
   @ArrayNotEmpty()
   @IsString({ each: true })
   interests!: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  preferences?: string[];
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 }

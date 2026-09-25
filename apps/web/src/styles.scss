@@ -1,5 +1,56 @@
 @import '@angular/material/prebuilt-themes/azure-blue.css';
 
+:root {
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --surface-soft: #f7f4ef;
+  --text: #17211b;
+  --muted: #59645f;
+  --border: rgba(23, 33, 27, 0.1);
+  --primary: #0b625d;
+  --primary-strong: #084a46;
+  --accent: #d9902f;
+  --danger: #b42318;
+  --shadow: rgba(30, 39, 34, 0.08);
+}
+
+body.dark-theme {
+  --background: #0f1513;
+  --surface: #17201c;
+  --surface-soft: #111916;
+  --text: #f2f7f4;
+  --muted: #c6d1cc;
+  --border: rgba(242, 247, 244, 0.24);
+  --primary: #7ed8cb;
+  --primary-strong: #b5eee6;
+  --accent: #f0bd68;
+  --danger: #ffb4ab;
+  --shadow: rgba(0, 0, 0, 0.28);
+  --mdc-theme-primary: var(--primary);
+  --mdc-theme-on-primary: #08201d;
+  --mdc-theme-surface: var(--surface);
+  --mdc-theme-on-surface: var(--text);
+  --mdc-theme-on-surface-variant: var(--muted);
+  --mdc-outlined-text-field-input-text-color: var(--text);
+  --mdc-outlined-text-field-label-text-color: var(--muted);
+  --mdc-outlined-text-field-hover-label-text-color: var(--text);
+  --mdc-outlined-text-field-focus-label-text-color: var(--primary);
+  --mdc-outlined-text-field-outline-color: var(--border);
+  --mdc-outlined-text-field-hover-outline-color: rgba(242, 247, 244, 0.48);
+  --mdc-outlined-text-field-focus-outline-color: var(--primary);
+  --mdc-outlined-text-field-caret-color: var(--primary);
+  --mdc-text-button-label-text-color: var(--text);
+  --mdc-outlined-button-label-text-color: var(--text);
+  --mdc-outlined-button-outline-color: rgba(242, 247, 244, 0.44);
+  --mdc-filled-button-container-color: #1173d4;
+  --mdc-filled-button-label-text-color: #ffffff;
+  --mat-select-enabled-trigger-text-color: var(--text);
+  --mat-select-enabled-arrow-color: var(--muted);
+  --mat-autocomplete-background-color: var(--surface);
+  --mat-option-label-text-color: var(--text);
+  color-scheme: dark;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -19,8 +70,8 @@ html {
 body {
   min-width: 320px;
   margin: 0;
-  background: #f6f7f9;
-  color: #17211b;
+  background: var(--background);
+  color: var(--text);
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
 }
@@ -49,7 +100,7 @@ a {
 
 .page-kicker {
   margin: 0 0 8px;
-  color: #00695c;
+  color: var(--primary);
   font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0;
@@ -65,17 +116,75 @@ a {
 .page-copy {
   max-width: 680px;
   margin: 12px 0 0;
-  color: #59645f;
+  color: var(--muted);
   font-size: 1.02rem;
   line-height: 1.65;
 }
 
 .mat-mdc-card {
   border-radius: 8px !important;
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border-color: var(--border) !important;
 }
 
 .mat-mdc-form-field {
   width: 100%;
+}
+
+body.dark-theme {
+  .mat-mdc-button,
+  .mat-mdc-outlined-button,
+  .mat-mdc-unelevated-button,
+  .mat-mdc-raised-button {
+    color: var(--text) !important;
+  }
+
+  .mat-mdc-unelevated-button.mat-primary,
+  .mat-mdc-raised-button.mat-primary,
+  .mat-mdc-fab.mat-primary,
+  .mat-mdc-mini-fab.mat-primary {
+    color: #ffffff !important;
+  }
+
+  .mat-mdc-outlined-button {
+    border-color: rgba(242, 247, 244, 0.44) !important;
+  }
+
+  .mat-button-toggle {
+    color: var(--text);
+    background: transparent;
+  }
+
+  .mat-button-toggle-checked {
+    color: #08201d;
+    background: var(--primary);
+  }
+
+  .mat-mdc-chip,
+  .mat-mdc-standard-chip {
+    --mdc-chip-label-text-color: var(--text);
+    --mdc-chip-outline-color: rgba(242, 247, 244, 0.42);
+  }
+
+  .mat-mdc-form-field,
+  .mat-mdc-input-element,
+  textarea,
+  input {
+    color: var(--text) !important;
+  }
+
+  .mat-mdc-input-element::placeholder,
+  textarea::placeholder,
+  input::placeholder {
+    color: rgba(242, 247, 244, 0.62) !important;
+  }
+
+  .mat-mdc-form-field-hint,
+  .mat-mdc-form-field-subscript-wrapper,
+  .mat-mdc-select-placeholder {
+    color: var(--muted) !important;
+  }
 }
 
 @media (max-width: 640px) {

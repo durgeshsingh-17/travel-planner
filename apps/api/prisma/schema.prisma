@@ -156,6 +156,9 @@ model Trip {
   travellerCount           Int
   travelMode               TravelMode
   budget                   Decimal?   @db.Decimal(10, 2)
+  interests                String[]   @default([])
+  preferences              String[]   @default([])
+  notes                    String?
   vehicleId                String?    @db.Uuid
   status                   TripStatus @default(DRAFT)
   estimatedDistanceKm      Decimal?   @db.Decimal(10, 2)

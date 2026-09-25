@@ -58,6 +58,9 @@ export interface Trip {
   travellerCount: number;
   travelMode: string;
   budget?: number | null;
+  interests: string[];
+  preferences: string[];
+  notes?: string | null;
   status: string;
   estimatedDistanceKm?: number | null;
   estimatedDurationMinutes?: number | null;
@@ -90,4 +93,6 @@ export interface CreateTripRequest {
     mileage?: number;
   };
   interests: string[];
+  preferences?: string[];
+  notes?: string;
 }

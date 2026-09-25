@@ -4,6 +4,7 @@ export interface TravelCard {
   imageUrl: string;
   meta: string;
   tag: string;
+  link: string[];
 }
 
 export interface MoodCard {

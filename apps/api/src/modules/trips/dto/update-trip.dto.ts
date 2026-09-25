@@ -4,6 +4,7 @@ import {
   IsInt,
   IsNumber,
   IsOptional,
+  IsArray,
   IsString,
   IsUUID,
   Min,
@@ -50,6 +51,20 @@ export class UpdateTripDto {
   @IsNumber()
   @Min(0)
   budget?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  interests?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  preferences?: string[];
+
+  @IsOptional()
+  @IsString()
+  notes?: string;
 
   @IsOptional()
   @IsUUID()
