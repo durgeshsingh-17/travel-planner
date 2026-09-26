@@ -8,6 +8,12 @@ export const configuration = () => ({
     accessTokenTtlSeconds: parseInt(process.env.AUTH_ACCESS_TOKEN_TTL_SECONDS ?? '900', 10),
     refreshTokenTtlDays: parseInt(process.env.AUTH_REFRESH_TOKEN_TTL_DAYS ?? '30', 10)
   },
+  media: {
+    storageDir: process.env.MEDIA_STORAGE_DIR ?? 'uploads',
+    publicBaseUrl:
+      process.env.MEDIA_PUBLIC_BASE_URL ??
+      `http://localhost:${process.env.API_PORT ?? '3000'}/uploads`
+  },
   database: {
     url: process.env.DATABASE_URL
   },

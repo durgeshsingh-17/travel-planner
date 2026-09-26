@@ -58,6 +58,32 @@ enum TripActivityType {
   ACTIVITY
 }
 
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum TagKind {
+  THEME
+  ACTIVITY
+  AUDIENCE
+  SEASON
+}
+
+enum MonthRating {
+  GOOD
+  OK
+  AVOID
+}
+
+enum ReachMode {
+  ROAD
+  TRAIN
+  AIR
+  BUS
+}
+
 enum UserRole {
   TRAVELLER
   EDITOR
@@ -172,19 +198,47 @@ model UserVehicle {
 }
 
 model Destination {
-  id               String   @id @default(uuid()) @db.Uuid
+  id               String                 @id @default(uuid()) @db.Uuid
   name             String
-  slug             String   @unique
+  slug             String                 @unique
   state            String
-  country          String   @default("India")
-  latitude         Decimal  @db.Decimal(9, 6)
-  longitude        Decimal  @db.Decimal(9, 6)
+  country          String                 @default("India")
+  latitude         Decimal                @db.Decimal(9, 6)
+  longitude        Decimal                @db.Decimal(9, 6)
   shortDescription String
   heroImageUrl     String?
   bestTimeToVisit  String?
   places           Place[]
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  tagline          String?
+  overview         String?
+  rating           Decimal?               @db.Decimal(2, 1)
+  idealDaysMin     Int?
+  idealDaysMax     Int?
+  budgetPerDayMin  Int?
+  budgetPerDayMax  Int?
+  altitudeM        Int?
+  nearestAirport   String?
+  nearestAirportKm Int?
+  nearestRailway   String?
+  nearestRailwayKm Int?
+  popularityScore  Int                    @default(0)
+  isFeatured       Boolean                @default(false)
+  status           ContentStatus          @default(DRAFT)
+  publishedAt      DateTime?
+  seoTitle         String?                @db.VarChar(70)
+  seoDescription   String?                @db.VarChar(170)
+  tags             DestinationTag[]
+  months           DestinationMonthInfo[]
+  howToReach       HowToReach[]
+  faqs             Faq[]
+  media            MediaAttachment[]
+  collectionItems  CollectionItem[]
+  createdAt        DateTime               @default(now())
+  updatedAt        DateTime               @updatedAt
+
+  @@index([status, state])
+  @@index([status, popularityScore])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Destination_name_trgm_idx")
 }
 
 model Location {
@@ -197,34 +251,60 @@ model Location {
   longitude      Decimal       @db.Decimal(9, 6)
   isActive       Boolean       @default(true)
   homeOfProfiles UserProfile[]
+  aliases        String[]      @default([])
+  popularity     Int           @default(0)
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   @@index([state])
   @@index([name])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Location_name_trgm_idx")
 }
 
 model Place {
-  id                  String         @id @default(uuid()) @db.Uuid
-  destinationId       String         @db.Uuid
-  name                String
-  slug                String
-  category            PlaceCategory
-  description         String
-  latitude            Decimal        @db.Decimal(9, 6)
-  longitude           Decimal        @db.Decimal(9, 6)
-  averageVisitMinutes Int?
-  estimatedCost       Decimal?       @db.Decimal(10, 2)
-  openingTime         String?
-  closingTime         String?
-  rating              Decimal?       @db.Decimal(2, 1)
-  destination         Destination    @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-  tripActivities      TripActivity[]
-  createdAt           DateTime       @default(now())
-  updatedAt           DateTime       @updatedAt
+  id                     String            @id @default(uuid()) @db.Uuid
+  destinationId          String            @db.Uuid
+  name                   String
+  slug                   String
+  category               PlaceCategory
+  description            String
+  latitude               Decimal           @db.Decimal(9, 6)
+  longitude              Decimal           @db.Decimal(9, 6)
+  averageVisitMinutes    Int?
+  estimatedCost          Decimal?          @db.Decimal(10, 2)
+  openingTime            String?
+  closingTime            String?
+  rating                 Decimal?          @db.Decimal(2, 1)
+  destination            Destination       @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  tripActivities         TripActivity[]
+  overview               String?
+  rankInDestination      Int?
+  timeRequiredMinMinutes Int?
+  timeRequiredMaxMinutes Int?
+  entryFeeIndian         Decimal?          @db.Decimal(10, 2)
+  entryFeeChild          Decimal?          @db.Decimal(10, 2)
+  entryFeeForeigner      Decimal?          @db.Decimal(10, 2)
+  feeNotes               String?
+  isFree                 Boolean           @default(false)
+  bestTimeOfDay          String?
+  tips                   String[]          @default([])
+  address                String?
+  status                 ContentStatus     @default(DRAFT)
+  publishedAt            DateTime?
+  seoTitle               String?           @db.VarChar(70)
+  seoDescription         String?           @db.VarChar(170)
+  timings                PlaceTiming[]
+  tags                   PlaceTag[]
+  faqs                   Faq[]
+  media                  MediaAttachment[]
+  collectionItems        CollectionItem[]
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
   @@unique([destinationId, slug])
   @@index([destinationId])
+  @@index([destinationId, status, rankInDestination])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin, map: "Place_name_trgm_idx")
 }
 
 model Trip {
@@ -335,4 +415,198 @@ model TripActivity {
 
   @@index([tripDayId])
   @@index([placeId])
+}
+
+model PlaceTiming {
+  id        String  @id @default(uuid()) @db.Uuid
+  placeId   String  @db.Uuid
+  /// 0 = Sunday … 6 = Saturday
+  dayOfWeek Int
+  /// "HH:mm", 24-hour, India time. Null when closed.
+  opensAt   String?
+  closesAt  String?
+  isClosed  Boolean @default(false)
+  place     Place   @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@unique([placeId, dayOfWeek])
+}
+
+model Tag {
+  id           String           @id @default(uuid()) @db.Uuid
+  slug         String           @unique
+  name         String
+  kind         TagKind          @default(THEME)
+  description  String?
+  destinations DestinationTag[]
+  places       PlaceTag[]
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+}
+
+model DestinationTag {
+  destinationId String      @db.Uuid
+  tagId         String      @db.Uuid
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  tag           Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([destinationId, tagId])
+  @@index([tagId])
+}
+
+model PlaceTag {
+  placeId String @db.Uuid
+  tagId   String @db.Uuid
+  place   Place  @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([placeId, tagId])
+  @@index([tagId])
+}
+
+model DestinationMonthInfo {
+  id            String      @id @default(uuid()) @db.Uuid
+  destinationId String      @db.Uuid
+  /// 1 = January … 12 = December
+  month         Int
+  rating        MonthRating
+  avgMinC       Int?
+  avgMaxC       Int?
+  rainfallMm    Int?
+  notes         String?
+  events        String[]    @default([])
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@unique([destinationId, month])
+  @@index([month, rating])
+}
+
+model HowToReach {
+  id              String      @id @default(uuid()) @db.Uuid
+  destinationId   String      @db.Uuid
+  mode            ReachMode
+  hubName         String
+  distanceKm      Int?
+  durationMinutes Int?
+  costMin         Int?
+  costMax         Int?
+  summary         String
+  sortOrder       Int         @default(0)
+  destination     Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  @@index([destinationId, sortOrder])
+}
+
+model Faq {
+  id            String       @id @default(uuid()) @db.Uuid
+  destinationId String?      @db.Uuid
+  placeId       String?      @db.Uuid
+  question      String
+  answer        String
+  sortOrder     Int          @default(0)
+  destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  place         Place?       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([destinationId, sortOrder])
+  @@index([placeId, sortOrder])
+}
+
+model Collection {
+  id             String            @id @default(uuid()) @db.Uuid
+  slug           String            @unique
+  title          String
+  intro          String
+  body           String?
+  isFeatured     Boolean           @default(false)
+  status         ContentStatus     @default(DRAFT)
+  publishedAt    DateTime?
+  seoTitle       String?           @db.VarChar(70)
+  seoDescription String?           @db.VarChar(170)
+  items          CollectionItem[]
+  media          MediaAttachment[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@index([status, isFeatured])
+}
+
+model CollectionItem {
+  id            String       @id @default(uuid()) @db.Uuid
+  collectionId  String       @db.Uuid
+  destinationId String?      @db.Uuid
+  placeId       String?      @db.Uuid
+  blurb         String?
+  sortOrder     Int          @default(0)
+  collection    Collection   @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  place         Place?       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@index([collectionId, sortOrder])
+}
+
+model Media {
+  id           String            @id @default(uuid()) @db.Uuid
+  /// Set for files stored by this API; null for registered external URLs.
+  storageKey   String?           @unique
+  url          String
+  mimeType     String?
+  width        Int?
+  height       Int?
+  bytes        Int?
+  altText      String
+  credit       String?
+  /// OWNED | CC-BY | CC-BY-SA | CC0 | LICENSED
+  license      String
+  sourceUrl    String?
+  uploadedById String?           @db.Uuid
+  attachments  MediaAttachment[]
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  @@index([createdAt])
+}
+
+model MediaAttachment {
+  id            String       @id @default(uuid()) @db.Uuid
+  mediaId       String       @db.Uuid
+  destinationId String?      @db.Uuid
+  placeId       String?      @db.Uuid
+  collectionId  String?      @db.Uuid
+  isCover       Boolean      @default(false)
+  sortOrder     Int          @default(0)
+  media         Media        @relation(fields: [mediaId], references: [id], onDelete: Restrict)
+  destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  place         Place?       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  collection    Collection?  @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@index([mediaId])
+  @@index([destinationId, sortOrder])
+  @@index([placeId, sortOrder])
+  @@index([collectionId, sortOrder])
+}
+
+model SlugRedirect {
+  id         String   @id @default(uuid()) @db.Uuid
+  /// DESTINATION | PLACE | COLLECTION
+  entityType String
+  /// Parent slug for places (their URL includes the destination); empty otherwise.
+  scope      String   @default("")
+  fromSlug   String
+  toSlug     String
+  createdAt  DateTime @default(now())
+
+  @@unique([entityType, scope, fromSlug])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String
+  entityType String
+  entityId   String
+  summary    String?
+  changes    Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }

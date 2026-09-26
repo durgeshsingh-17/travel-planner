@@ -12,18 +12,12 @@ async function main(): Promise<void> {
       longitude: 77.209
     },
     {
-      name: 'Gurgaon',
-      slug: 'gurgaon',
-      state: 'Haryana',
-      latitude: 28.4595,
-      longitude: 77.0266
-    },
-    {
       name: 'Gurugram',
       slug: 'gurugram',
       state: 'Haryana',
       latitude: 28.4595,
-      longitude: 77.0266
+      longitude: 77.0266,
+      aliases: ['Gurgaon']
     },
     {
       name: 'Noida',
@@ -128,6 +122,9 @@ async function main(): Promise<void> {
     });
   }
 
+  // Older databases have a separate "Gurgaon" row; it is now an alias of Gurugram.
+  await prisma.location.updateMany({ where: { slug: 'gurgaon' }, data: { isActive: false } });
+
   const vehicles = [
     {
         brand: 'Honda',
@@ -184,7 +181,9 @@ async function main(): Promise<void> {
         'A quiet Himachal valley base for Jalori Pass, Serolsar Lake, forest walks and slow cafe evenings.',
       heroImageUrl:
         'https://images.unsplash.com/photo-1626621341517-bbf3d9990a23?auto=format&fit=crop&w=1600&q=85',
-      bestTimeToVisit: 'March to June, October to November'
+      bestTimeToVisit: 'March to June, October to November',
+      status: 'PUBLISHED',
+      publishedAt: new Date()
     }
   });
 
@@ -202,12 +201,13 @@ async function main(): Promise<void> {
         'River views, rafting, yoga, forest roads and weekend-friendly drives from Delhi NCR.',
       heroImageUrl:
         'https://images.unsplash.com/photo-1588084603723-41322210d3f6?auto=format&fit=crop&w=1600&q=85',
-      bestTimeToVisit: 'October to April'
+      bestTimeToVisit: 'October to April',
+      status: 'PUBLISHED',
+      publishedAt: new Date()
     }
   });
 
-  await prisma.place.createMany({
-    data: [
+  const seededPlaces = [
       {
         destinationId: jibhi.id,
         name: 'Jalori Pass',
@@ -340,7 +340,10 @@ async function main(): Promise<void> {
         estimatedCost: 800,
         rating: 4.2
       }
-    ],
+  ];
+
+  await prisma.place.createMany({
+    data: seededPlaces.map((place) => ({ ...place, status: 'PUBLISHED' as const, publishedAt: new Date() })),
     skipDuplicates: true
   });
 }

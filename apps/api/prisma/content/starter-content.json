@@ -1,0 +1,1199 @@
+{
+  "tags": [
+    {
+      "slug": "hill-station",
+      "name": "Hill stations",
+      "kind": "THEME"
+    },
+    {
+      "slug": "heritage",
+      "name": "Heritage",
+      "kind": "THEME"
+    },
+    {
+      "slug": "spiritual",
+      "name": "Spiritual",
+      "kind": "THEME"
+    },
+    {
+      "slug": "adventure",
+      "name": "Adventure",
+      "kind": "THEME"
+    },
+    {
+      "slug": "lakes",
+      "name": "Lakes",
+      "kind": "THEME"
+    },
+    {
+      "slug": "river",
+      "name": "Riverside",
+      "kind": "THEME"
+    },
+    {
+      "slug": "offbeat",
+      "name": "Offbeat",
+      "kind": "THEME"
+    },
+    {
+      "slug": "weekend-getaway",
+      "name": "Weekend getaways",
+      "kind": "THEME"
+    },
+    {
+      "slug": "road-trip",
+      "name": "Road trips",
+      "kind": "THEME"
+    },
+    {
+      "slug": "trekking",
+      "name": "Trekking",
+      "kind": "ACTIVITY"
+    },
+    {
+      "slug": "rafting",
+      "name": "River rafting",
+      "kind": "ACTIVITY"
+    },
+    {
+      "slug": "cafes",
+      "name": "Cafes",
+      "kind": "ACTIVITY"
+    },
+    {
+      "slug": "viewpoint",
+      "name": "Viewpoints",
+      "kind": "ACTIVITY"
+    },
+    {
+      "slug": "family",
+      "name": "Family friendly",
+      "kind": "AUDIENCE"
+    },
+    {
+      "slug": "couples",
+      "name": "Couples",
+      "kind": "AUDIENCE"
+    },
+    {
+      "slug": "snow",
+      "name": "Snow",
+      "kind": "SEASON"
+    },
+    {
+      "slug": "monsoon",
+      "name": "Monsoon friendly",
+      "kind": "SEASON"
+    }
+  ],
+  "destinations": [
+    {
+      "slug": "rishikesh",
+      "name": "Rishikesh",
+      "state": "Uttarakhand",
+      "latitude": 30.0869,
+      "longitude": 78.2676,
+      "shortDescription": "River views, rafting, yoga, forest roads and weekend-friendly drives from Delhi NCR.",
+      "tagline": "Where the Ganga leaves the mountains",
+      "overview": "Rishikesh sits where the Ganga runs out of the Himalayan foothills and onto the plains, and the town grew up along both banks around that meeting point. Most visitors split their time between the older ashram quarter near Ram Jhula and Laxman Jhula and the quieter stretches upstream, where the river is lined with rafting camps and white-sand beaches.\n\nMornings are the best time to walk the ghats: the light is soft, the crowds are thin and you can watch the evening aarti preparations begin at Parmarth Niketan and Triveni Ghat later in the day. Cafes along the Tapovan side cater to long stays, and many travellers come for a week of yoga classes rather than a sightseeing checklist.\n\nFor a road trip, Rishikesh works well as a first night out of Delhi or as a base for day drives to Kunjapuri, Neer Garh waterfall and the forest road towards Neelkanth. Rafting runs from the stretches above Shivpuri when the river is calm enough; operators close during the peak monsoon for safety.\n\nThe town is largely vegetarian and alcohol is not sold in the main area, which gives it a calmer pace than most weekend destinations. Plan for traffic on Friday evenings and Sunday afternoons on the Haridwar road.",
+      "idealDaysMin": 2,
+      "idealDaysMax": 4,
+      "budgetPerDayMin": 1500,
+      "budgetPerDayMax": 4500,
+      "nearestAirport": "Jolly Grant Airport, Dehradun",
+      "nearestAirportKm": 21,
+      "nearestRailway": "Haridwar Junction",
+      "nearestRailwayKm": 25,
+      "bestTimeToVisit": "October to April",
+      "popularityScore": 90,
+      "isFeatured": true,
+      "seoTitle": "Rishikesh Travel Guide: Places, Best Time, How to Reach",
+      "seoDescription": "Plan a Rishikesh trip: riverside places to visit, the best months for rafting and yoga, how to reach from Delhi, and a day-wise road trip plan.",
+      "tags": [
+        "spiritual",
+        "river",
+        "adventure",
+        "rafting",
+        "weekend-getaway",
+        "road-trip",
+        "cafes"
+      ],
+      "months": [
+        {
+          "month": 1,
+          "rating": "GOOD"
+        },
+        {
+          "month": 2,
+          "rating": "GOOD"
+        },
+        {
+          "month": 3,
+          "rating": "GOOD",
+          "events": [
+            "International Yoga Festival"
+          ]
+        },
+        {
+          "month": 4,
+          "rating": "GOOD"
+        },
+        {
+          "month": 5,
+          "rating": "OK",
+          "notes": "Hot afternoons; rafting still open."
+        },
+        {
+          "month": 6,
+          "rating": "OK"
+        },
+        {
+          "month": 7,
+          "rating": "AVOID",
+          "notes": "Peak monsoon: rafting closed, landslides possible on hill roads."
+        },
+        {
+          "month": 8,
+          "rating": "AVOID",
+          "notes": "Peak monsoon: rafting closed, landslides possible on hill roads."
+        },
+        {
+          "month": 9,
+          "rating": "OK",
+          "notes": "Monsoon tailing off; check rafting reopening dates."
+        },
+        {
+          "month": 10,
+          "rating": "GOOD"
+        },
+        {
+          "month": 11,
+          "rating": "GOOD"
+        },
+        {
+          "month": 12,
+          "rating": "GOOD"
+        }
+      ],
+      "howToReach": [
+        {
+          "mode": "ROAD",
+          "hubName": "From Delhi",
+          "distanceKm": 240,
+          "durationMinutes": 390,
+          "summary": "About 240 km via Meerut and Haridwar. Leave early to avoid weekend traffic around Haridwar."
+        },
+        {
+          "mode": "AIR",
+          "hubName": "Jolly Grant Airport, Dehradun",
+          "distanceKm": 21,
+          "durationMinutes": 40,
+          "summary": "The nearest airport, roughly 20 km from town. Taxis and app cabs are available at arrivals."
+        },
+        {
+          "mode": "TRAIN",
+          "hubName": "Haridwar Junction",
+          "distanceKm": 25,
+          "durationMinutes": 45,
+          "summary": "Haridwar has the widest choice of trains; Yog Nagari Rishikesh station has fewer services."
+        },
+        {
+          "mode": "BUS",
+          "hubName": "ISBT Kashmere Gate, Delhi",
+          "summary": "State and private buses run to Rishikesh through the day and overnight."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Is Rishikesh good for a weekend trip from Delhi?",
+          "answer": "Yes. It is about 240 km by road, so a Friday-night or early Saturday start gives you two relaxed days by the river."
+        },
+        {
+          "question": "When is river rafting open?",
+          "answer": "Rafting generally runs from around September or October until June and pauses during the peak monsoon. Operators confirm dates each season."
+        },
+        {
+          "question": "Can I get non-vegetarian food or alcohol?",
+          "answer": "The main town is largely vegetarian and alcohol is not sold there. Some stays outside the central area have their own policies."
+        },
+        {
+          "question": "Which side of the river should I stay on?",
+          "answer": "Tapovan and Laxman Jhula suit cafe-hoppers and long stays; the Ram Jhula side is closer to the ashrams and evening aarti; upstream camps suit rafting trips."
+        }
+      ]
+    },
+    {
+      "slug": "jibhi",
+      "name": "Jibhi",
+      "state": "Himachal Pradesh",
+      "latitude": 31.5964,
+      "longitude": 77.3511,
+      "shortDescription": "A quiet Himachal valley base for Jalori Pass, Serolsar Lake, forest walks and slow cafe evenings.",
+      "tagline": "Wooden homestays in the Tirthan side valleys",
+      "overview": "Jibhi is a small village in the Banjar valley of Kullu district, strung along a stream under pine and deodar forest. Traditional wood-and-stone houses have been turned into homestays, and the pace is slow: most days are a walk to a waterfall, a drive up to Jalori Pass, and a long evening on a balcony.\n\nIt makes a calmer alternative to Manali for travellers who want the Himalaya without the crowds. The road up from the Aut tunnel is narrow and winding, so plan to arrive in daylight, and expect patchy mobile signal in the higher hamlets.\n\nJalori Pass is the main day trip, with an easy forest trail to Serolsar Lake on one side and a steeper path to the ruins of Raghupur Fort on the other. Chehni Kothi, an old tower temple a short hike from Shringa Rishi, is another half-day outing.\n\nWinter brings snow to the pass and sometimes closes it; the monsoon brings landslides to the approach road. Spring and autumn are the easiest times to visit.",
+      "idealDaysMin": 3,
+      "idealDaysMax": 5,
+      "budgetPerDayMin": 1800,
+      "budgetPerDayMax": 4000,
+      "nearestAirport": "Bhuntar (Kullu–Manali) Airport",
+      "bestTimeToVisit": "March to June, October to November",
+      "popularityScore": 60,
+      "seoTitle": "Jibhi Travel Guide: Jalori Pass, Serolsar Lake, Best Time",
+      "seoDescription": "Plan a slow Himachal break in Jibhi: homestays, the Jalori Pass and Serolsar Lake walk, when to go, and how to reach by road from Delhi or Chandigarh.",
+      "tags": [
+        "hill-station",
+        "offbeat",
+        "trekking",
+        "cafes",
+        "couples",
+        "road-trip"
+      ],
+      "months": [
+        {
+          "month": 1,
+          "rating": "OK",
+          "notes": "Snow at Jalori Pass; the road over the pass can close."
+        },
+        {
+          "month": 2,
+          "rating": "OK",
+          "notes": "Snow at Jalori Pass; the road over the pass can close."
+        },
+        {
+          "month": 3,
+          "rating": "GOOD"
+        },
+        {
+          "month": 4,
+          "rating": "GOOD"
+        },
+        {
+          "month": 5,
+          "rating": "GOOD"
+        },
+        {
+          "month": 6,
+          "rating": "GOOD"
+        },
+        {
+          "month": 7,
+          "rating": "AVOID",
+          "notes": "Monsoon landslides on the approach roads."
+        },
+        {
+          "month": 8,
+          "rating": "AVOID",
+          "notes": "Monsoon landslides on the approach roads."
+        },
+        {
+          "month": 9,
+          "rating": "OK"
+        },
+        {
+          "month": 10,
+          "rating": "GOOD"
+        },
+        {
+          "month": 11,
+          "rating": "GOOD"
+        },
+        {
+          "month": 12,
+          "rating": "OK",
+          "notes": "Snow at Jalori Pass; the road over the pass can close."
+        }
+      ],
+      "howToReach": [
+        {
+          "mode": "ROAD",
+          "hubName": "From Delhi",
+          "summary": "A long drive via Chandigarh, Mandi and the Aut tunnel; most travellers split it or leave before dawn. The last stretch from Banjar is narrow."
+        },
+        {
+          "mode": "BUS",
+          "hubName": "Delhi or Chandigarh",
+          "summary": "Overnight Volvo buses towards Manali stop at Aut; take a taxi or local bus to Jibhi from there."
+        },
+        {
+          "mode": "AIR",
+          "hubName": "Bhuntar (Kullu–Manali) Airport",
+          "summary": "The nearest airport, with limited flights; continue by taxi via the Aut tunnel."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Is the road to Jibhi safe for self-drive?",
+          "answer": "Yes for confident hill drivers in daylight. The road after Banjar is narrow with blind bends, so drive slowly and avoid arriving after dark."
+        },
+        {
+          "question": "Can I visit Jalori Pass in winter?",
+          "answer": "Often, but snow can close the pass for days at a time. Check locally before setting out."
+        },
+        {
+          "question": "Is there mobile network and internet?",
+          "answer": "Major networks work in Jibhi itself, but coverage is weak in higher hamlets and on the pass. Many homestays offer Wi-Fi."
+        },
+        {
+          "question": "How many days do I need?",
+          "answer": "Three days lets you do Jalori Pass and Serolsar Lake, a waterfall walk and a slow day at the homestay."
+        }
+      ]
+    },
+    {
+      "slug": "manali",
+      "name": "Manali",
+      "state": "Himachal Pradesh",
+      "latitude": 32.2432,
+      "longitude": 77.1892,
+      "shortDescription": "Classic Himalayan hill town for snow, cafes in Old Manali, temple walks and drives towards Solang Valley.",
+      "tagline": "The Beas valley’s busiest mountain town",
+      "overview": "Manali sits at the head of the Kullu valley on the Beas river, and has been a mountain holiday staple for decades. The town has two personalities: the busy Mall Road area with its hotels and markets, and Old Manali across the Manalsu stream, where guesthouses and cafes spill down a hillside of apple orchards.\n\nThe Hadimba Devi temple, in a cedar grove above town, is the classic first stop. From there most itineraries head north to Solang Valley for paragliding in summer and snow play in winter, and, road and permits allowing, on through the Atal Tunnel towards Sissu and Lahaul.\n\nManali is also a gateway rather than an end point: it is where the road to Leh begins, and a common base for treks in the Pir Panjal range. Traffic and parking are the main frustrations in peak season, so plan short drives early in the day.",
+      "idealDaysMin": 3,
+      "idealDaysMax": 6,
+      "budgetPerDayMin": 2000,
+      "budgetPerDayMax": 6000,
+      "altitudeM": 2050,
+      "nearestAirport": "Bhuntar (Kullu–Manali) Airport",
+      "bestTimeToVisit": "March to June, September to November",
+      "popularityScore": 85,
+      "seoTitle": "Manali Travel Guide: Places to Visit, Best Time, How to Reach",
+      "seoDescription": "Plan a Manali trip: Old Manali cafes, Hadimba temple, Solang Valley, when to see snow, and how to reach by road or air.",
+      "tags": [
+        "hill-station",
+        "adventure",
+        "snow",
+        "cafes",
+        "family",
+        "road-trip"
+      ],
+      "months": [
+        {
+          "month": 1,
+          "rating": "OK",
+          "notes": "Snowfall likely; roads beyond Solang may close."
+        },
+        {
+          "month": 2,
+          "rating": "OK",
+          "notes": "Snowfall likely; roads beyond Solang may close."
+        },
+        {
+          "month": 3,
+          "rating": "GOOD"
+        },
+        {
+          "month": 4,
+          "rating": "GOOD"
+        },
+        {
+          "month": 5,
+          "rating": "GOOD"
+        },
+        {
+          "month": 6,
+          "rating": "GOOD"
+        },
+        {
+          "month": 7,
+          "rating": "AVOID",
+          "notes": "Monsoon landslides on the Kullu–Manali highway."
+        },
+        {
+          "month": 8,
+          "rating": "AVOID",
+          "notes": "Monsoon landslides on the Kullu–Manali highway."
+        },
+        {
+          "month": 9,
+          "rating": "GOOD"
+        },
+        {
+          "month": 10,
+          "rating": "GOOD"
+        },
+        {
+          "month": 11,
+          "rating": "OK"
+        },
+        {
+          "month": 12,
+          "rating": "OK",
+          "notes": "Snowfall likely; roads beyond Solang may close."
+        }
+      ],
+      "howToReach": [
+        {
+          "mode": "ROAD",
+          "hubName": "From Delhi",
+          "summary": "A long drive via Chandigarh and Mandi on the Kiratpur–Manali highway. Most people split it or drive overnight."
+        },
+        {
+          "mode": "BUS",
+          "hubName": "Delhi (overnight Volvo)",
+          "summary": "Overnight Volvo buses from Delhi reach Manali the next morning."
+        },
+        {
+          "mode": "AIR",
+          "hubName": "Bhuntar (Kullu–Manali) Airport",
+          "summary": "The nearest airport, with limited and weather-dependent flights; continue by taxi up the valley."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "When can I see snow in Manali?",
+          "answer": "Snow is most likely from December to February in town, and higher up around Solang Valley from late autumn to spring."
+        },
+        {
+          "question": "Do I need a permit for the Atal Tunnel and Lahaul?",
+          "answer": "Rules change by season and destination. Check the Himachal Pradesh government portal before travelling beyond Solang."
+        },
+        {
+          "question": "Old Manali or Mall Road?",
+          "answer": "Old Manali suits cafe-hopping and quieter stays; Mall Road is convenient for families, shopping and transport."
+        },
+        {
+          "question": "How many days do I need?",
+          "answer": "Three days covers the town and Solang Valley; add days for Sissu, a trek or a slower pace."
+        }
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "slug": "mussoorie",
+      "name": "Mussoorie",
+      "state": "Uttarakhand",
+      "latitude": 30.4598,
+      "longitude": 78.0644,
+      "shortDescription": "Colonial-era hill station above Dehradun with ridge walks, Himalayan viewpoints and an easy drive from Delhi.",
+      "tagline": "Ridge walks above the Doon valley",
+      "overview": "Mussoorie spreads along a ridge above Dehradun, with the Doon valley on one side and, on clear days, a line of snow peaks on the other. It became a hill retreat in the 19th century and still has the feel of one: long promenades, old churches, schools and bakeries, and cottages tucked into the oak forest.\n\nThe Mall Road links Library Chowk and Picture Palace and is the centre of town life in the evenings. Landour, a short uphill walk away, is quieter, with forest lanes, a clock tower and some of the best Himalayan views from Lal Tibba.\n\nMussoorie is one of the easiest hill stations to reach from Delhi by road, which also makes it busy on long weekends. Visit midweek if you can, and use Kempty Falls and George Everest's House as short excursions rather than full days.",
+      "idealDaysMin": 2,
+      "idealDaysMax": 3,
+      "budgetPerDayMin": 2000,
+      "budgetPerDayMax": 5000,
+      "nearestAirport": "Jolly Grant Airport, Dehradun",
+      "nearestRailway": "Dehradun",
+      "bestTimeToVisit": "March to June, September to November",
+      "popularityScore": 70,
+      "seoTitle": "Mussoorie Travel Guide: Places, Best Time, Weekend from Delhi",
+      "seoDescription": "Plan a Mussoorie weekend: Mall Road and Landour walks, Lal Tibba viewpoint, Kempty Falls, the best months to go and how to drive up from Delhi.",
+      "tags": [
+        "hill-station",
+        "weekend-getaway",
+        "family",
+        "couples",
+        "viewpoint",
+        "road-trip"
+      ],
+      "months": [
+        {
+          "month": 1,
+          "rating": "OK"
+        },
+        {
+          "month": 2,
+          "rating": "OK"
+        },
+        {
+          "month": 3,
+          "rating": "GOOD"
+        },
+        {
+          "month": 4,
+          "rating": "GOOD"
+        },
+        {
+          "month": 5,
+          "rating": "GOOD"
+        },
+        {
+          "month": 6,
+          "rating": "GOOD"
+        },
+        {
+          "month": 7,
+          "rating": "AVOID"
+        },
+        {
+          "month": 8,
+          "rating": "AVOID"
+        },
+        {
+          "month": 9,
+          "rating": "GOOD"
+        },
+        {
+          "month": 10,
+          "rating": "GOOD"
+        },
+        {
+          "month": 11,
+          "rating": "GOOD"
+        },
+        {
+          "month": 12,
+          "rating": "OK"
+        }
+      ],
+      "howToReach": [
+        {
+          "mode": "ROAD",
+          "hubName": "From Delhi",
+          "summary": "Drive to Dehradun on the Delhi–Dehradun route, then climb the hill road to Mussoorie."
+        },
+        {
+          "mode": "TRAIN",
+          "hubName": "Dehradun",
+          "summary": "Dehradun is the nearest railhead with direct trains from Delhi; taxis and buses cover the climb."
+        },
+        {
+          "mode": "AIR",
+          "hubName": "Jolly Grant Airport, Dehradun",
+          "summary": "The nearest airport, on the far side of Dehradun from the Mussoorie road."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "Is Mussoorie good for a weekend from Delhi?",
+          "answer": "Yes, it is one of the most practical hill-station weekends from Delhi by road. Avoid long weekends if you dislike crowds."
+        },
+        {
+          "question": "Mussoorie or Landour: where should I stay?",
+          "answer": "Stay near the Mall for convenience and restaurants; stay in Landour for quiet forest walks and views."
+        },
+        {
+          "question": "Does it snow in Mussoorie?",
+          "answer": "Light snowfall happens some winters, usually in January or February, but it is not guaranteed."
+        },
+        {
+          "question": "Is parking difficult?",
+          "answer": "Yes, in peak season. Park once and walk: the Mall and Landour are best explored on foot."
+        }
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "slug": "jaipur",
+      "name": "Jaipur",
+      "state": "Rajasthan",
+      "latitude": 26.9124,
+      "longitude": 75.7873,
+      "shortDescription": "The Pink City: hilltop forts, palace museums, bazaars and a winter-friendly drive from Delhi.",
+      "tagline": "Forts, palaces and bazaars of the Pink City",
+      "overview": "Jaipur was laid out in the 18th century as a planned city, and its old walled centre, painted a terracotta pink, still follows that grid of wide market streets. The Hawa Mahal, City Palace and Jantar Mantar observatory sit within a short walk of each other, which makes the old city an easy first day on foot.\n\nThe great forts ring the hills to the north and east. Amber Fort is the most visited and is best seen early, before the day's heat and crowds; Nahargarh, on the ridge above the city, is the classic spot for sunset views over Jaipur.\n\nJaipur is also a shopping city, known for block-printed textiles, blue pottery and gemstones in the bazaars around Johari and Bapu. The winter months are pleasant; summer afternoons are very hot, so plan indoor museums for the middle of the day.",
+      "idealDaysMin": 2,
+      "idealDaysMax": 3,
+      "budgetPerDayMin": 1800,
+      "budgetPerDayMax": 6000,
+      "nearestAirport": "Jaipur International Airport",
+      "nearestRailway": "Jaipur Junction",
+      "bestTimeToVisit": "October to March",
+      "popularityScore": 88,
+      "isFeatured": true,
+      "seoTitle": "Jaipur Travel Guide: Forts, Palaces, Best Time to Visit",
+      "seoDescription": "Plan a Jaipur trip: Amber Fort, City Palace, Hawa Mahal, Nahargarh sunsets, bazaars, the best months to go and how to reach from Delhi.",
+      "tags": [
+        "heritage",
+        "weekend-getaway",
+        "family",
+        "road-trip"
+      ],
+      "months": [
+        {
+          "month": 1,
+          "rating": "GOOD",
+          "events": [
+            "Jaipur Literature Festival"
+          ]
+        },
+        {
+          "month": 2,
+          "rating": "GOOD"
+        },
+        {
+          "month": 3,
+          "rating": "GOOD"
+        },
+        {
+          "month": 4,
+          "rating": "AVOID",
+          "notes": "Very hot afternoons; plan early starts."
+        },
+        {
+          "month": 5,
+          "rating": "AVOID",
+          "notes": "Very hot afternoons; plan early starts."
+        },
+        {
+          "month": 6,
+          "rating": "AVOID",
+          "notes": "Very hot afternoons; plan early starts."
+        },
+        {
+          "month": 7,
+          "rating": "OK"
+        },
+        {
+          "month": 8,
+          "rating": "OK"
+        },
+        {
+          "month": 9,
+          "rating": "OK"
+        },
+        {
+          "month": 10,
+          "rating": "GOOD"
+        },
+        {
+          "month": 11,
+          "rating": "GOOD"
+        },
+        {
+          "month": 12,
+          "rating": "GOOD"
+        }
+      ],
+      "howToReach": [
+        {
+          "mode": "ROAD",
+          "hubName": "From Delhi",
+          "summary": "A straightforward highway drive from Delhi on NH48, well suited to a long weekend."
+        },
+        {
+          "mode": "TRAIN",
+          "hubName": "Jaipur Junction",
+          "summary": "Frequent fast trains connect Jaipur with Delhi and other major cities."
+        },
+        {
+          "mode": "AIR",
+          "hubName": "Jaipur International Airport",
+          "summary": "Domestic and some international flights; the airport is on the southern edge of the city."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How many days do I need in Jaipur?",
+          "answer": "Two full days cover the old city and Amber Fort; a third day allows Nahargarh, museums and shopping without rushing."
+        },
+        {
+          "question": "What is the best time to visit Amber Fort?",
+          "answer": "Go early in the morning, soon after opening, to avoid heat and the largest crowds."
+        },
+        {
+          "question": "Is Jaipur good to visit in summer?",
+          "answer": "It is possible but very hot. Plan sightseeing for early morning and evening and stay indoors at midday."
+        },
+        {
+          "question": "Is there a composite ticket for monuments?",
+          "answer": "Rajasthan tourism has offered composite tickets covering several monuments; check current options at the first site you visit."
+        }
+      ],
+      "status": "DRAFT"
+    },
+    {
+      "slug": "udaipur",
+      "name": "Udaipur",
+      "state": "Rajasthan",
+      "latitude": 24.5854,
+      "longitude": 73.7125,
+      "shortDescription": "Lake city of palaces, ghats and rooftop sunsets, with day trips into the Aravalli hills.",
+      "tagline": "Palaces on the water in Mewar",
+      "overview": "Udaipur grew up around a chain of artificial lakes, and the water still defines the city: the City Palace rises straight from the shore of Lake Pichola, island palaces float in the middle, and the old town's lanes tumble down to bathing ghats.\n\nA boat ride on Pichola at sunset and an evening on a rooftop overlooking the lake are the city's signature experiences. The City Palace museum rewards a slow morning, while Saheliyon-ki-Bari and Fateh Sagar Lake make an easy afternoon loop to the north.\n\nThe surrounding Aravalli hills are full of day trips, from the Monsoon Palace on its hilltop to Kumbhalgarh and Ranakpur further out. Udaipur is lovely in winter, and the monsoon, when the lakes fill, has its own appeal.",
+      "idealDaysMin": 2,
+      "idealDaysMax": 4,
+      "budgetPerDayMin": 2000,
+      "budgetPerDayMax": 7000,
+      "nearestAirport": "Maharana Pratap Airport",
+      "nearestRailway": "Udaipur City",
+      "bestTimeToVisit": "September to March",
+      "popularityScore": 80,
+      "seoTitle": "Udaipur Travel Guide: Lakes, Palaces, Best Time to Visit",
+      "seoDescription": "Plan an Udaipur trip: City Palace, Lake Pichola boat rides, Fateh Sagar, the Monsoon Palace, when to go and how to reach.",
+      "tags": [
+        "heritage",
+        "lakes",
+        "couples",
+        "family",
+        "monsoon"
+      ],
+      "months": [
+        {
+          "month": 1,
+          "rating": "GOOD"
+        },
+        {
+          "month": 2,
+          "rating": "GOOD"
+        },
+        {
+          "month": 3,
+          "rating": "GOOD"
+        },
+        {
+          "month": 4,
+          "rating": "AVOID"
+        },
+        {
+          "month": 5,
+          "rating": "AVOID"
+        },
+        {
+          "month": 6,
+          "rating": "AVOID"
+        },
+        {
+          "month": 7,
+          "rating": "OK"
+        },
+        {
+          "month": 8,
+          "rating": "OK"
+        },
+        {
+          "month": 9,
+          "rating": "OK"
+        },
+        {
+          "month": 10,
+          "rating": "GOOD"
+        },
+        {
+          "month": 11,
+          "rating": "GOOD"
+        },
+        {
+          "month": 12,
+          "rating": "GOOD"
+        }
+      ],
+      "howToReach": [
+        {
+          "mode": "AIR",
+          "hubName": "Maharana Pratap Airport",
+          "summary": "Flights from major Indian cities; the airport is east of the city."
+        },
+        {
+          "mode": "TRAIN",
+          "hubName": "Udaipur City",
+          "summary": "Direct trains from Delhi, Jaipur and other cities arrive at Udaipur City station."
+        },
+        {
+          "mode": "ROAD",
+          "hubName": "From Jaipur or Ahmedabad",
+          "summary": "Good highways connect Udaipur with Jaipur and Ahmedabad, making it a natural stop on a Rajasthan road trip."
+        }
+      ],
+      "faqs": [
+        {
+          "question": "How many days are enough for Udaipur?",
+          "answer": "Two days cover the lakes and palaces; add a day for Kumbhalgarh or Ranakpur."
+        },
+        {
+          "question": "Is Udaipur worth visiting in the monsoon?",
+          "answer": "Yes, if you enjoy green hills and full lakes. Expect some rain showers and humidity."
+        },
+        {
+          "question": "Where is the best sunset view?",
+          "answer": "A boat on Lake Pichola, a lakeside rooftop, or the Monsoon Palace on its hilltop."
+        },
+        {
+          "question": "Is Udaipur good for couples?",
+          "answer": "Very. Lakeside stays, boat rides and rooftop dinners make it one of India’s favourite couples’ destinations."
+        }
+      ],
+      "status": "DRAFT"
+    }
+  ],
+  "places": [
+    {
+      "destinationSlug": "manali",
+      "slug": "hadimba-devi-temple",
+      "name": "Hadimba Devi Temple",
+      "category": "ATTRACTION",
+      "latitude": 32.2489,
+      "longitude": 77.1806,
+      "description": "A 16th-century wooden temple with a pagoda roof, set in a grove of tall cedars above town.",
+      "rankInDestination": 1,
+      "tags": [
+        "heritage",
+        "family"
+      ],
+      "timeRequiredMinMinutes": 45,
+      "timeRequiredMaxMinutes": 90,
+      "bestTimeOfDay": "Early morning, before the queues"
+    },
+    {
+      "destinationSlug": "manali",
+      "slug": "solang-valley",
+      "name": "Solang Valley",
+      "category": "ACTIVITY",
+      "latitude": 32.3166,
+      "longitude": 77.157,
+      "description": "Wide meadow valley north of Manali for paragliding and ropeway rides in summer and snow play in winter.",
+      "rankInDestination": 2,
+      "tags": [
+        "adventure",
+        "snow",
+        "family"
+      ],
+      "timeRequiredMinMinutes": 180,
+      "timeRequiredMaxMinutes": 360
+    },
+    {
+      "destinationSlug": "manali",
+      "slug": "old-manali",
+      "name": "Old Manali",
+      "category": "ATTRACTION",
+      "latitude": 32.256,
+      "longitude": 77.174,
+      "description": "The original village across the Manalsu stream, with orchards, guesthouses and a lively cafe scene.",
+      "rankInDestination": 3,
+      "tags": [
+        "cafes",
+        "couples"
+      ],
+      "timeRequiredMinMinutes": 120,
+      "timeRequiredMaxMinutes": 240,
+      "isFree": true
+    },
+    {
+      "destinationSlug": "manali",
+      "slug": "vashisht",
+      "name": "Vashisht Village and Hot Springs",
+      "category": "ATTRACTION",
+      "latitude": 32.2663,
+      "longitude": 77.1878,
+      "description": "Hillside village known for its temple complex and natural hot-spring baths.",
+      "rankInDestination": 4,
+      "tags": [
+        "heritage",
+        "spiritual"
+      ],
+      "timeRequiredMinMinutes": 60,
+      "timeRequiredMaxMinutes": 120
+    },
+    {
+      "destinationSlug": "manali",
+      "slug": "jogini-falls",
+      "name": "Jogini Falls",
+      "category": "VIEWPOINT",
+      "latitude": 32.28,
+      "longitude": 77.193,
+      "description": "A waterfall reached by a short trek from Vashisht through orchards and forest.",
+      "rankInDestination": 5,
+      "tags": [
+        "trekking",
+        "viewpoint"
+      ],
+      "timeRequiredMinMinutes": 120,
+      "timeRequiredMaxMinutes": 180,
+      "isFree": true
+    },
+    {
+      "destinationSlug": "mussoorie",
+      "slug": "mall-road-mussoorie",
+      "name": "Mall Road",
+      "category": "ATTRACTION",
+      "latitude": 30.4557,
+      "longitude": 78.078,
+      "description": "The town’s main promenade, lined with shops, cafes and viewpoints over the Doon valley.",
+      "rankInDestination": 1,
+      "tags": [
+        "family",
+        "cafes"
+      ],
+      "timeRequiredMinMinutes": 90,
+      "timeRequiredMaxMinutes": 180,
+      "isFree": true,
+      "bestTimeOfDay": "Evening"
+    },
+    {
+      "destinationSlug": "mussoorie",
+      "slug": "lal-tibba",
+      "name": "Lal Tibba",
+      "category": "VIEWPOINT",
+      "latitude": 30.4596,
+      "longitude": 78.098,
+      "description": "Landour’s highest point, with views of the Garhwal Himalaya on clear days.",
+      "rankInDestination": 2,
+      "tags": [
+        "viewpoint",
+        "couples"
+      ],
+      "timeRequiredMinMinutes": 45,
+      "timeRequiredMaxMinutes": 90,
+      "bestTimeOfDay": "Morning, when the peaks are clearest"
+    },
+    {
+      "destinationSlug": "mussoorie",
+      "slug": "landour",
+      "name": "Landour",
+      "category": "ATTRACTION",
+      "latitude": 30.457,
+      "longitude": 78.093,
+      "description": "Quiet cantonment area above Mussoorie with forest lanes, old churches and bakeries.",
+      "rankInDestination": 3,
+      "tags": [
+        "heritage",
+        "couples"
+      ],
+      "timeRequiredMinMinutes": 120,
+      "timeRequiredMaxMinutes": 240,
+      "isFree": true
+    },
+    {
+      "destinationSlug": "mussoorie",
+      "slug": "kempty-falls",
+      "name": "Kempty Falls",
+      "category": "VIEWPOINT",
+      "latitude": 30.4867,
+      "longitude": 78.0364,
+      "description": "A popular waterfall on the road towards Yamuna bridge, busy on weekends.",
+      "rankInDestination": 4,
+      "tags": [
+        "family"
+      ],
+      "timeRequiredMinMinutes": 60,
+      "timeRequiredMaxMinutes": 120
+    },
+    {
+      "destinationSlug": "mussoorie",
+      "slug": "george-everest-house",
+      "name": "George Everest’s House",
+      "category": "ATTRACTION",
+      "latitude": 30.463,
+      "longitude": 78.028,
+      "description": "The restored home and laboratory of Sir George Everest on a ridge west of town.",
+      "rankInDestination": 5,
+      "tags": [
+        "heritage",
+        "viewpoint"
+      ],
+      "timeRequiredMinMinutes": 60,
+      "timeRequiredMaxMinutes": 90
+    },
+    {
+      "destinationSlug": "jaipur",
+      "slug": "amber-fort",
+      "name": "Amber Fort",
+      "category": "ATTRACTION",
+      "latitude": 26.9855,
+      "longitude": 75.8513,
+      "description": "Hilltop fort-palace of red sandstone and marble overlooking Maota Lake, north of the city.",
+      "rankInDestination": 1,
+      "tags": [
+        "heritage",
+        "family"
+      ],
+      "timeRequiredMinMinutes": 150,
+      "timeRequiredMaxMinutes": 240,
+      "bestTimeOfDay": "Soon after opening"
+    },
+    {
+      "destinationSlug": "jaipur",
+      "slug": "city-palace-jaipur",
+      "name": "City Palace",
+      "category": "ATTRACTION",
+      "latitude": 26.9258,
+      "longitude": 75.8237,
+      "description": "The royal palace complex in the heart of the old city, now partly a museum.",
+      "rankInDestination": 2,
+      "tags": [
+        "heritage"
+      ],
+      "timeRequiredMinMinutes": 90,
+      "timeRequiredMaxMinutes": 150
+    },
+    {
+      "destinationSlug": "jaipur",
+      "slug": "hawa-mahal",
+      "name": "Hawa Mahal",
+      "category": "ATTRACTION",
+      "latitude": 26.9239,
+      "longitude": 75.8267,
+      "description": "The honeycombed pink facade built so royal women could watch street life unseen.",
+      "rankInDestination": 3,
+      "tags": [
+        "heritage",
+        "family"
+      ],
+      "timeRequiredMinMinutes": 45,
+      "timeRequiredMaxMinutes": 90,
+      "bestTimeOfDay": "Morning light on the facade"
+    },
+    {
+      "destinationSlug": "jaipur",
+      "slug": "jantar-mantar-jaipur",
+      "name": "Jantar Mantar",
+      "category": "ATTRACTION",
+      "latitude": 26.9248,
+      "longitude": 75.8246,
+      "description": "An 18th-century astronomical observatory of giant masonry instruments.",
+      "rankInDestination": 4,
+      "tags": [
+        "heritage"
+      ],
+      "timeRequiredMinMinutes": 60,
+      "timeRequiredMaxMinutes": 90
+    },
+    {
+      "destinationSlug": "jaipur",
+      "slug": "nahargarh-fort",
+      "name": "Nahargarh Fort",
+      "category": "VIEWPOINT",
+      "latitude": 26.9373,
+      "longitude": 75.8155,
+      "description": "Ridge-top fort above the city, the classic place to watch sunset over Jaipur.",
+      "rankInDestination": 5,
+      "tags": [
+        "heritage",
+        "viewpoint"
+      ],
+      "timeRequiredMinMinutes": 90,
+      "timeRequiredMaxMinutes": 150,
+      "bestTimeOfDay": "Late afternoon to sunset"
+    },
+    {
+      "destinationSlug": "udaipur",
+      "slug": "city-palace-udaipur",
+      "name": "City Palace",
+      "category": "ATTRACTION",
+      "latitude": 24.5764,
+      "longitude": 73.6835,
+      "description": "A sprawling palace complex on the shore of Lake Pichola, with a museum and courtyards.",
+      "rankInDestination": 1,
+      "tags": [
+        "heritage",
+        "family"
+      ],
+      "timeRequiredMinMinutes": 120,
+      "timeRequiredMaxMinutes": 180
+    },
+    {
+      "destinationSlug": "udaipur",
+      "slug": "lake-pichola",
+      "name": "Lake Pichola",
+      "category": "VIEWPOINT",
+      "latitude": 24.572,
+      "longitude": 73.679,
+      "description": "The city’s central lake, best seen on a boat ride towards the island palaces at sunset.",
+      "rankInDestination": 2,
+      "tags": [
+        "lakes",
+        "couples"
+      ],
+      "timeRequiredMinMinutes": 60,
+      "timeRequiredMaxMinutes": 120,
+      "bestTimeOfDay": "Sunset"
+    },
+    {
+      "destinationSlug": "udaipur",
+      "slug": "fateh-sagar-lake",
+      "name": "Fateh Sagar Lake",
+      "category": "VIEWPOINT",
+      "latitude": 24.6,
+      "longitude": 73.675,
+      "description": "A larger, breezier lake north of the old city with a lakeside promenade.",
+      "rankInDestination": 3,
+      "tags": [
+        "lakes",
+        "family"
+      ],
+      "timeRequiredMinMinutes": 60,
+      "timeRequiredMaxMinutes": 120,
+      "isFree": true
+    },
+    {
+      "destinationSlug": "udaipur",
+      "slug": "saheliyon-ki-bari",
+      "name": "Saheliyon-ki-Bari",
+      "category": "ATTRACTION",
+      "latitude": 24.6015,
+      "longitude": 73.689,
+      "description": "An 18th-century garden of fountains, lotus pools and marble pavilions.",
+      "rankInDestination": 4,
+      "tags": [
+        "heritage",
+        "family"
+      ],
+      "timeRequiredMinMinutes": 45,
+      "timeRequiredMaxMinutes": 90
+    },
+    {
+      "destinationSlug": "udaipur",
+      "slug": "sajjangarh-monsoon-palace",
+      "name": "Sajjangarh (Monsoon Palace)",
+      "category": "VIEWPOINT",
+      "latitude": 24.592,
+      "longitude": 73.632,
+      "description": "Hilltop palace west of the city with sweeping views over the lakes and hills.",
+      "rankInDestination": 5,
+      "tags": [
+        "heritage",
+        "viewpoint"
+      ],
+      "timeRequiredMinMinutes": 60,
+      "timeRequiredMaxMinutes": 120,
+      "bestTimeOfDay": "Sunset"
+    }
+  ],
+  "collections": [
+    {
+      "slug": "weekend-getaways-from-delhi",
+      "title": "Weekend getaways from Delhi",
+      "intro": "Easy road trips from Delhi NCR that fit into a Friday night and a weekend, from riverside ashrams to hill-station ridges and desert forts.",
+      "items": [
+        {
+          "destinationSlug": "rishikesh",
+          "blurb": "Riverside yoga town, about six hours by road."
+        },
+        {
+          "destinationSlug": "mussoorie",
+          "blurb": "Ridge walks and Himalayan views above Dehradun."
+        },
+        {
+          "destinationSlug": "jaipur",
+          "blurb": "Forts and bazaars on a smooth highway drive."
+        }
+      ],
+      "seoTitle": "Weekend Getaways from Delhi by Road",
+      "seoDescription": "Road-trip ideas from Delhi NCR that fit a weekend: Rishikesh, Mussoorie, Jaipur and more, with drive times and trip plans.",
+      "status": "PUBLISHED",
+      "isFeatured": true
+    },
+    {
+      "slug": "himalayan-hill-towns",
+      "title": "Himalayan hill towns",
+      "intro": "Mountain bases in Himachal and Uttarakhand for slow days, forest walks and snow views, from busy classics to quiet valleys.",
+      "items": [
+        {
+          "destinationSlug": "jibhi"
+        },
+        {
+          "destinationSlug": "manali"
+        },
+        {
+          "destinationSlug": "mussoorie"
+        }
+      ],
+      "seoTitle": "Himalayan Hill Towns to Visit",
+      "seoDescription": "Hill stations in Himachal Pradesh and Uttarakhand for every pace: Jibhi, Manali, Mussoorie and more."
+    },
+    {
+      "slug": "rajasthan-heritage-cities",
+      "title": "Heritage cities of Rajasthan",
+      "intro": "Palace cities and hill forts for a winter road trip through Rajasthan, with the best months to go and how many days to plan.",
+      "items": [
+        {
+          "destinationSlug": "jaipur"
+        },
+        {
+          "destinationSlug": "udaipur"
+        }
+      ],
+      "seoTitle": "Rajasthan Heritage Cities Road Trip",
+      "seoDescription": "Plan a Rajasthan heritage trip: Jaipur and Udaipur, forts and palaces, and the best winter months to travel."
+    }
+  ]
+}
