@@ -13,6 +13,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state.compone
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
 import { RouteMapComponent } from '../../shared/ui/route-map/route-map.component';
 import { SavedTripsService } from '../saved-trips/saved-trips.service';
+import { ToastService } from '../../shared/services/toast.service';
 import { Trip } from './models/trip.model';
 import { TripsApiService } from './services/trips-api.service';
 
@@ -38,12 +39,12 @@ export class TripResultComponent {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
   private readonly savedTrips = inject(SavedTripsService);
+  private readonly toast = inject(ToastService);
   private readonly tripsApi = inject(TripsApiService);
 
   protected readonly trip = signal<Trip | null>(null);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
-  protected readonly toastMessage = signal<string | null>(null);
   protected readonly weatherDays = signal<
     {
       date: string;
@@ -131,7 +132,7 @@ export class TripResultComponent {
 
   protected toggleSavedTrip(tripId: string): void {
     const saved = this.savedTrips.toggle(tripId);
-    this.showToast(saved ? 'Trip saved' : 'Trip removed from saved');
+    this.toast.success(saved ? 'Trip saved' : 'Trip removed from saved');
   }
 
   protected async shareTrip(trip: Trip): Promise<void> {
@@ -148,12 +149,7 @@ export class TripResultComponent {
     }
 
     await navigator.clipboard.writeText(shareUrl);
-    this.showToast('Trip link copied');
-  }
-
-  private showToast(message: string): void {
-    this.toastMessage.set(message);
-    window.setTimeout(() => this.toastMessage.set(null), 2200);
+    this.toast.success('Trip link copied');
   }
 
   private loadWeather(trip: Trip): void {

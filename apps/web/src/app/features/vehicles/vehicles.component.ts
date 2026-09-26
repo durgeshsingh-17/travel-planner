@@ -15,12 +15,12 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 
 import { ApiService } from '../../core/services/api.service';
 import { SessionService } from '../../core/auth/session.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
+import { ToastService } from '../../shared/services/toast.service';
 import {
   formatIndianRegistration,
   isValidIndianRegistration
@@ -62,7 +62,6 @@ interface CreateUserVehicleInput {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    MatSnackBarModule,
     ReactiveFormsModule,
     RouterLink
   ],
@@ -311,7 +310,7 @@ export class VehiclesComponent {
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
   private readonly sessionService = inject(SessionService);
-  private readonly snackBar = inject(MatSnackBar);
+  private readonly toast = inject(ToastService);
 
   protected readonly vehicles = signal<Vehicle[]>([]);
   protected readonly userVehicles = signal<UserVehicle[]>([]);
@@ -353,10 +352,10 @@ export class VehiclesComponent {
               : [vehicle, ...vehicles]
           );
           this.cancelEdit();
-          this.snackBar.open(editingId ? 'Vehicle updated' : 'Vehicle saved', 'Close', { duration: 2200 });
+          this.toast.success(editingId ? 'Vehicle updated' : 'Vehicle saved');
         },
         error: (error: Error) => {
-          this.snackBar.open(error.message, 'Close', { duration: 3200 });
+          this.toast.error(error.message);
         }
       });
   }
@@ -401,10 +400,10 @@ export class VehiclesComponent {
           this.userVehicles.update((vehicles) =>
             vehicles.filter((vehicle) => vehicle.id !== id)
           );
-          this.snackBar.open('Vehicle removed', 'Close', { duration: 2200 });
+          this.toast.success('Vehicle removed');
         },
         error: (error: Error) => {
-          this.snackBar.open(error.message, 'Close', { duration: 3200 });
+          this.toast.error(error.message);
         }
       });
   }

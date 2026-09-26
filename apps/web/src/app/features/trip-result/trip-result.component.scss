@@ -46,17 +46,6 @@ p {
   font-weight: 800;
 }
 
-.toast {
-  max-width: 1120px;
-  margin: 0 auto 16px;
-  padding: 12px 14px;
-  color: #09231f;
-  background: #e2f4ef;
-  border: 1px solid rgba(11, 98, 93, 0.18);
-  border-radius: 8px;
-  font-weight: 850;
-}
-
 .metric-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
