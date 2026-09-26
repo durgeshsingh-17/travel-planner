@@ -52,8 +52,9 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class RouteMapComponent {
-  readonly sourceLatitude = input.required<number>();
-  readonly sourceLongitude = input.required<number>();
+  /** Optional trip start. Without it the map centres on the destination only. */
+  readonly sourceLatitude = input<number | null>(null);
+  readonly sourceLongitude = input<number | null>(null);
   readonly destinationLatitude = input.required<number>();
   readonly destinationLongitude = input.required<number>();
 
@@ -68,14 +69,20 @@ export class RouteMapComponent {
   }
 
   private get embedUrl(): string {
-    const minLatitude =
-      Math.min(this.sourceLatitude(), this.destinationLatitude()) - 0.6;
-    const maxLatitude =
-      Math.max(this.sourceLatitude(), this.destinationLatitude()) + 0.6;
-    const minLongitude =
-      Math.min(this.sourceLongitude(), this.destinationLongitude()) - 0.6;
-    const maxLongitude =
-      Math.max(this.sourceLongitude(), this.destinationLongitude()) + 0.6;
+    const sourceLatitude = this.sourceLatitude();
+    const sourceLongitude = this.sourceLongitude();
+    const hasSource = sourceLatitude !== null && sourceLongitude !== null;
+    const latitudes = hasSource
+      ? [sourceLatitude, this.destinationLatitude()]
+      : [this.destinationLatitude()];
+    const longitudes = hasSource
+      ? [sourceLongitude, this.destinationLongitude()]
+      : [this.destinationLongitude()];
+    const padding = hasSource ? 0.6 : 0.25;
+    const minLatitude = Math.min(...latitudes) - padding;
+    const maxLatitude = Math.max(...latitudes) + padding;
+    const minLongitude = Math.min(...longitudes) - padding;
+    const maxLongitude = Math.max(...longitudes) + padding;
     return `https://www.openstreetmap.org/export/embed.html?bbox=${minLongitude},${minLatitude},${maxLongitude},${maxLatitude}&layer=mapnik&marker=${this.destinationLatitude()},${this.destinationLongitude()}`;
   }
 }

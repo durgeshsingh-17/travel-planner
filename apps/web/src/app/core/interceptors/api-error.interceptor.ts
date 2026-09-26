@@ -29,8 +29,9 @@ function toError(error: HttpErrorResponse): Error {
 export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
+  const apiBaseUrl = inject(API_BASE_URL);
 
-  if (!request.url.startsWith(API_BASE_URL)) {
+  if (!request.url.startsWith(apiBaseUrl)) {
     // Never send credentials to third-party hosts.
     return next(request).pipe(catchError((error: HttpErrorResponse) => throwError(() => toError(error))));
   }

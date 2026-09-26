@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { ShellComponent } from './layout/shell/shell.component';
 import { authGuard } from './core/guards/auth.guard';
+import { editorGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -39,6 +40,10 @@ export const routes: Routes = [
       },
       {
         path: 'explore',
+        redirectTo: 'destinations'
+      },
+      {
+        path: 'destinations',
         loadComponent: () =>
           import('./features/explore/explore.component').then(
             (component) => component.ExploreComponent
@@ -49,6 +54,27 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/destinations/destination-detail.component').then(
             (component) => component.DestinationDetailComponent
+          )
+      },
+      {
+        path: 'destinations/:slug/places',
+        loadComponent: () =>
+          import('./features/destinations/destination-places.component').then(
+            (component) => component.DestinationPlacesComponent
+          )
+      },
+      {
+        path: 'destinations/:slug/places/:placeSlug',
+        loadComponent: () =>
+          import('./features/places/place-detail.component').then(
+            (component) => component.PlaceDetailComponent
+          )
+      },
+      {
+        path: 'collections/:slug',
+        loadComponent: () =>
+          import('./features/collections/collection-page.component').then(
+            (component) => component.CollectionPageComponent
           )
       },
       {
@@ -98,6 +124,11 @@ export const routes: Routes = [
           import('./features/vehicles/vehicles.component').then(
             (component) => component.VehiclesComponent
           )
+      },
+      {
+        path: 'admin',
+        canActivate: [editorGuard],
+        loadChildren: () => import('./features/admin/admin.routes').then((m) => m.adminRoutes)
       },
       {
         path: 'sign-in',

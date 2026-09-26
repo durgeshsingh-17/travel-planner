@@ -1,0 +1,142 @@
+.tagline {
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.credit {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.overview {
+  grid-template-columns: minmax(0, 1fr) 320px;
+  align-items: start;
+  gap: 28px;
+}
+
+.lead {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.plan-card {
+  position: sticky;
+  top: 84px;
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.month-strip {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.month {
+  display: grid;
+  gap: 2px;
+  padding: 10px 6px;
+  border-radius: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.78rem;
+
+  &.good {
+    background: rgba(11, 98, 93, 0.16);
+    border-color: rgba(11, 98, 93, 0.4);
+  }
+
+  &.ok {
+    background: rgba(217, 144, 47, 0.14);
+  }
+
+  &.avoid {
+    background: rgba(180, 35, 24, 0.1);
+    color: var(--muted);
+  }
+}
+
+.month-notes {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+}
+
+.reach-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 14px;
+
+  article {
+    display: grid;
+    gap: 6px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+  }
+
+  h3,
+  p {
+    margin: 0;
+  }
+}
+
+.gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+
+  figure {
+    position: relative;
+    margin: 0;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  img {
+    object-fit: cover;
+  }
+
+  figcaption {
+    position: absolute;
+    right: 6px;
+    bottom: 6px;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 900px) {
+  .overview {
+    grid-template-columns: 1fr;
+  }
+
+  .plan-card {
+    position: static;
+  }
+
+  .month-strip {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

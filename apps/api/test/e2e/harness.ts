@@ -133,11 +133,40 @@ export class ApiClient {
     };
   }
 
+  async upload(path: string, file: Blob, filename: string, fields: Record<string, string>) {
+    const form = new FormData();
+    Object.entries(fields).forEach(([key, value]) => form.append(key, value));
+    form.append('file', file, filename);
+    const response = await fetch(`${this.baseUrl}${path}`, {
+      method: 'POST',
+      headers: this.token ? { Authorization: `Bearer ${this.token}` } : {},
+      body: form
+    });
+    return { status: response.status, body: await response.json() };
+  }
+
   async register(name: string, email: string, password = 'password-123') {
     const result = await this.call('POST', '/auth/register', { name, email, password });
     this.token = result.body.data?.token;
     return result;
   }
+}
+
+/** Runs a compiled CLI (e.g. promote-user) against the e2e database. */
+export function runCli(script: string, args: string[]): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(process.execPath, [join(__dirname, `../../dist/cli/${script}.js`), ...args], {
+      env: {
+        ...process.env,
+        DATABASE_URL: process.env.E2E_DATABASE_URL,
+        AUTH_TOKEN_SECRET: 'e2e-secret-that-is-comfortably-longer-than-32-chars'
+      }
+    });
+    let output = '';
+    child.stdout.on('data', (chunk) => (output += chunk));
+    child.stderr.on('data', (chunk) => (output += chunk));
+    child.on('exit', (code) => (code === 0 ? resolve(output) : reject(new Error(output))));
+  });
 }
 
 export function uniqueEmail(label: string): string {

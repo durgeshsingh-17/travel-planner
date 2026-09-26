@@ -5,7 +5,9 @@ import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { configuration } from './config/configuration';
 import { DatabaseModule } from './database/database.module';
+import { AdminModule } from './modules/admin/admin.module';
 import { AuthGuard } from './modules/auth/auth.guard';
+import { ContentModule } from './modules/content/content.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
 import { RolesGuard } from './modules/auth/roles.guard';
@@ -42,6 +44,8 @@ import { WeatherModule } from './modules/weather/weather.module';
     SavedTripsModule,
     LocationsModule,
     DestinationsModule,
+    ContentModule,
+    AdminModule,
     PlacesModule,
     VehiclesModule,
     MapsModule,

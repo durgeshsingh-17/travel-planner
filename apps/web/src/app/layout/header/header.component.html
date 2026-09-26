@@ -1,11 +1,11 @@
 <mat-toolbar class="site-header">
   <a class="brand" routerLink="/" aria-label="Travel Platform home">
-    <span aria-hidden="true">TP</span>
-    Travel Platform
+    <span class="brand-mark" aria-hidden="true">TP</span>
+    <span class="brand-name">Travel Platform</span>
   </a>
   <nav aria-label="Primary navigation">
     <a mat-button routerLink="/plan">Plan</a>
-    <a mat-button routerLink="/explore">Explore</a>
+    <a mat-button routerLink="/destinations">Explore</a>
     <a mat-button routerLink="/itinerary">Itinerary</a>
     <a mat-button routerLink="/saved-trips">Saved</a>
     <a mat-button routerLink="/vehicles">Vehicles</a>
@@ -16,11 +16,11 @@
       aria-label="Toggle dark mode"
       (change)="toggleTheme($event.checked)"
     >
-      Dark
+      <span class="theme-label">Dark</span>
     </mat-slide-toggle>
     @if (session.session().user; as user) {
       @if (session.isEditor()) {
-        <a mat-button routerLink="/admin">Admin</a>
+        <a mat-button class="secondary" routerLink="/admin">Admin</a>
       }
       <a mat-button routerLink="/profile" [attr.aria-label]="'Profile for ' + user.name">
         {{ user.name.split(' ')[0] }}

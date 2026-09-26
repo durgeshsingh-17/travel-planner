@@ -1,0 +1,171 @@
+<main class="admin-page">
+  <div class="admin-toolbar">
+    <h1>{{ id() ? form.controls.basics.controls.name.value || 'Destination' : 'New destination' }}</h1>
+  </div>
+
+  @if (isLoading()) {
+    <app-loading-state label="Loading destination" />
+  } @else {
+    <div class="editor-layout">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms">
+          <mat-tab label="Basics">
+            <div class="form-grid tab" formGroupName="basics">
+              <mat-form-field appearance="outline"><mat-label>Name</mat-label><input matInput formControlName="name" /></mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Slug</mat-label>
+                <input matInput formControlName="slug" />
+                <mat-hint>URL: /destinations/{{ form.controls.basics.controls.slug.value || '…' }}</mat-hint>
+                <mat-error>Lowercase letters, numbers and single hyphens</mat-error>
+              </mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>State</mat-label><input matInput formControlName="state" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Country</mat-label><input matInput formControlName="country" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Latitude</mat-label><input matInput type="number" step="0.0001" formControlName="latitude" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Longitude</mat-label><input matInput type="number" step="0.0001" formControlName="longitude" /></mat-form-field>
+              <mat-form-field appearance="outline" class="wide">
+                <mat-label>Tagline</mat-label><input matInput formControlName="tagline" />
+                <mat-hint>Short line under the name on the page</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="wide">
+                <mat-label>Short description</mat-label>
+                <textarea matInput formControlName="shortDescription" rows="2"></textarea>
+                <mat-hint align="end">{{ form.controls.basics.controls.shortDescription.value.length }}/300 · shown on cards</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="wide">
+                <mat-label>Overview</mat-label>
+                <textarea matInput formControlName="overview" rows="10"></textarea>
+                <mat-hint>Plain text. Leave a blank line between paragraphs. Aim for 150+ words.</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Best time (summary)</mat-label><input matInput formControlName="bestTimeToVisit" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Popularity score</mat-label><input matInput type="number" formControlName="popularityScore" /></mat-form-field>
+              <mat-form-field appearance="outline" class="wide">
+                <mat-label>Legacy hero image URL</mat-label><input matInput formControlName="heroImageUrl" />
+                <mat-hint>Only used when no image is attached below</mat-hint>
+              </mat-form-field>
+              <mat-checkbox formControlName="isFeatured">Feature on the home page</mat-checkbox>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Facts">
+            <div class="form-grid tab" formGroupName="facts">
+              <mat-form-field appearance="outline"><mat-label>Rating (0–5)</mat-label><input matInput type="number" step="0.1" formControlName="rating" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Ideal days (min)</mat-label><input matInput type="number" formControlName="idealDaysMin" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Ideal days (max)</mat-label><input matInput type="number" formControlName="idealDaysMax" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Budget/day min (₹)</mat-label><input matInput type="number" formControlName="budgetPerDayMin" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Budget/day max (₹)</mat-label><input matInput type="number" formControlName="budgetPerDayMax" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Altitude (m)</mat-label><input matInput type="number" formControlName="altitudeM" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Nearest airport</mat-label><input matInput formControlName="nearestAirport" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Airport distance (km)</mat-label><input matInput type="number" formControlName="nearestAirportKm" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Nearest railway station</mat-label><input matInput formControlName="nearestRailway" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Station distance (km)</mat-label><input matInput type="number" formControlName="nearestRailwayKm" /></mat-form-field>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Best time">
+            <div class="tab">
+              <p class="muted">Leave the rating empty for months you have no information on.</p>
+              <table class="admin-table months">
+                <tr><th>Month</th><th>Rating</th><th>Min °C</th><th>Max °C</th><th>Rain mm</th><th>Notes</th><th>Events (comma separated)</th></tr>
+                @for (group of monthsArray.controls; track $index; let index = $index) {
+                  <tr [formGroup]="group">
+                    <td>{{ monthNames[index].slice(0, 3) }}</td>
+                    <td>
+                      <select formControlName="rating" [attr.aria-label]="monthNames[index] + ' rating'">
+                        <option value="">—</option>
+                        <option value="GOOD">Great</option>
+                        <option value="OK">Okay</option>
+                        <option value="AVOID">Avoid</option>
+                      </select>
+                    </td>
+                    <td><input type="number" formControlName="avgMinC" [attr.aria-label]="monthNames[index] + ' minimum temperature'" /></td>
+                    <td><input type="number" formControlName="avgMaxC" [attr.aria-label]="monthNames[index] + ' maximum temperature'" /></td>
+                    <td><input type="number" formControlName="rainfallMm" [attr.aria-label]="monthNames[index] + ' rainfall'" /></td>
+                    <td><input formControlName="notes" [attr.aria-label]="monthNames[index] + ' notes'" /></td>
+                    <td><input formControlName="events" [attr.aria-label]="monthNames[index] + ' events'" /></td>
+                  </tr>
+                }
+              </table>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="How to reach">
+            <div class="row-list tab">
+              @for (group of reachArray.controls; track group; let index = $index) {
+                <div class="row" [formGroup]="group">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Mode</mat-label>
+                    <mat-select formControlName="mode">
+                      <mat-option value="ROAD">Road</mat-option>
+                      <mat-option value="TRAIN">Train</mat-option>
+                      <mat-option value="AIR">Air</mat-option>
+                      <mat-option value="BUS">Bus</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>From / hub</mat-label><input matInput formControlName="hubName" /></mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>Distance (km)</mat-label><input matInput type="number" formControlName="distanceKm" /></mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>Duration (min)</mat-label><input matInput type="number" formControlName="durationMinutes" /></mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>Cost from (₹)</mat-label><input matInput type="number" formControlName="costMin" /></mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>Cost to (₹)</mat-label><input matInput type="number" formControlName="costMax" /></mat-form-field>
+                  <mat-form-field appearance="outline" class="summary"><mat-label>Summary</mat-label><textarea matInput formControlName="summary" rows="2"></textarea></mat-form-field>
+                  <button mat-button type="button" (click)="removeReach(index)">Remove</button>
+                </div>
+              }
+              <button mat-stroked-button type="button" (click)="addReach()">Add a way to reach</button>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="FAQs">
+            <div class="tab"><app-faq-fields [faqs]="form.controls.faqs" /></div>
+          </mat-tab>
+
+          <mat-tab label="Tags">
+            <div class="tab">
+              <mat-chip-listbox multiple formControlName="tags" aria-label="Tags">
+                @for (tag of tagOptions(); track tag.id) {
+                  <mat-chip-option [value]="tag.slug">{{ tag.name }}</mat-chip-option>
+                }
+              </mat-chip-listbox>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Images">
+            <div class="tab"><app-media-fields [media]="form.controls.media" /></div>
+          </mat-tab>
+
+          <mat-tab label="SEO">
+            <div class="form-grid tab" formGroupName="seo">
+              <mat-form-field appearance="outline" class="wide">
+                <mat-label>SEO title</mat-label><input matInput formControlName="seoTitle" />
+                <mat-hint align="end">{{ form.controls.seo.controls.seoTitle.value.length }}/70</mat-hint>
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="wide">
+                <mat-label>SEO description</mat-label><textarea matInput formControlName="seoDescription" rows="3"></textarea>
+                <mat-hint align="end">{{ form.controls.seo.controls.seoDescription.value.length }}/170</mat-hint>
+              </mat-form-field>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+
+        <app-editor-actions
+          [status]="status()"
+          [isNew]="!id()"
+          [busy]="busy()"
+          [dirty]="form.dirty"
+          [canPublish]="health()?.canPublish ?? false"
+          [canDelete]="isAdmin"
+          [publicPath]="publicPath()"
+          [problems]="problems()"
+          [conflict]="conflict()"
+          (save)="save()"
+          (statusChange)="setStatus($event)"
+          (remove)="remove()"
+          (reload)="reload()"
+        />
+      </form>
+
+      @if (health(); as value) {
+        <app-health-panel [health]="value" />
+      }
+    </div>
+  }
+</main>

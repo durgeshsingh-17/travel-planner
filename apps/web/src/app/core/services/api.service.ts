@@ -10,6 +10,7 @@ import { ApiSuccessResponse } from '../models/api-response.model';
 })
 export class ApiService {
   private readonly http = inject(HttpClient);
+  private readonly baseUrl = inject(API_BASE_URL);
 
   get<T>(path: string): Observable<T> {
     return this.http
@@ -49,6 +50,6 @@ export class ApiService {
 
   private buildUrl(path: string): string {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-    return `${API_BASE_URL}${normalizedPath}`;
+    return `${this.baseUrl}${normalizedPath}`;
   }
 }

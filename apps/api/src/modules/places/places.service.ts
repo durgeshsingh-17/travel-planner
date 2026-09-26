@@ -11,12 +11,12 @@ export class PlacesService {
 
   async findAll(query: ListPlacesQueryDto) {
     const where: Prisma.PlaceWhereInput = {
+      status: 'PUBLISHED',
       category: query.category,
-      destination: query.destinationSlug
-        ? {
-            slug: query.destinationSlug
-          }
-        : undefined
+      destination: {
+        status: 'PUBLISHED',
+        ...(query.destinationSlug ? { slug: query.destinationSlug } : {})
+      }
     };
 
     const places = await this.prisma.place.findMany({

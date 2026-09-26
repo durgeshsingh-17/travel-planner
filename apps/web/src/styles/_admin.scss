@@ -1,0 +1,192 @@
+// Admin area: dense, form-heavy layouts shared by every admin screen.
+.admin-page {
+  display: grid;
+  gap: 18px;
+  color: var(--text);
+
+  h1,
+  h2,
+  h3,
+  p {
+    margin: 0;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+}
+
+.admin-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  .filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+
+  th,
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  th {
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  tr:last-child td {
+    border-bottom: 0;
+  }
+
+  a {
+    color: var(--text);
+    font-weight: 700;
+  }
+}
+
+.admin-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 4px 14px;
+
+  .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.row-list {
+  display: grid;
+  gap: 10px;
+
+  > .row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)) auto;
+    gap: 4px 10px;
+    align-items: start;
+    padding: 10px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+
+  &.published {
+    background: rgba(11, 98, 93, 0.16);
+    color: var(--primary);
+  }
+
+  &.draft {
+    background: rgba(217, 144, 47, 0.18);
+    color: var(--text);
+  }
+
+  &.archived {
+    background: var(--surface-soft);
+    color: var(--muted);
+  }
+}
+
+.score {
+  font-weight: 800;
+
+  &.low {
+    color: var(--danger);
+  }
+
+  &.mid {
+    color: var(--accent);
+  }
+
+  &.high {
+    color: var(--primary);
+  }
+}
+
+.sticky-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 0;
+  background: var(--background);
+  border-top: 1px solid var(--border);
+}
+
+.editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 20px;
+  align-items: start;
+
+  > app-health-panel {
+    position: sticky;
+    top: 84px;
+  }
+
+  .tab {
+    padding: 16px 2px;
+  }
+
+  .summary {
+    grid-column: 1 / -2;
+  }
+
+  table.months select {
+    min-width: 96px;
+  }
+
+  table.months input,
+  table.months select {
+    width: 100%;
+    min-width: 64px;
+    padding: 6px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  @media (max-width: 1000px) {
+    grid-template-columns: 1fr;
+
+    > app-health-panel {
+      position: static;
+    }
+  }
+}

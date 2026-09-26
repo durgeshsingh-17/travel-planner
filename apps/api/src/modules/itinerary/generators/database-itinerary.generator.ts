@@ -53,6 +53,7 @@ export class DatabaseItineraryGenerator implements ItineraryGenerator {
   private async findDestinationPlaces(input: ItineraryGeneratorInput): Promise<PlaceForPlan[]> {
     const destination = await this.prisma.destination.findFirst({
       where: {
+        status: 'PUBLISHED',
         OR: [
           {
             name: {
@@ -73,7 +74,7 @@ export class DatabaseItineraryGenerator implements ItineraryGenerator {
         ]
       },
       include: {
-        places: true
+        places: { where: { status: 'PUBLISHED' } }
       }
     });
 
