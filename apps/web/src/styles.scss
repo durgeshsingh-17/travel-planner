@@ -51,6 +51,50 @@ body.dark-theme {
   color-scheme: dark;
 }
 
+.app-toast {
+  --mdc-snackbar-container-shape: 8px;
+  --mdc-snackbar-supporting-text-font: inherit;
+  --mat-snack-bar-button-color: #ffffff;
+  --mdc-snackbar-supporting-text-color: #ffffff;
+  color: #ffffff;
+  font-weight: 800;
+
+  .mdc-snackbar__surface {
+    color: #ffffff !important;
+    box-shadow: 0 16px 40px rgba(23, 33, 27, 0.18) !important;
+  }
+
+  .mat-mdc-snack-bar-label,
+  .mat-mdc-button,
+  .mat-mdc-snack-bar-action {
+    color: #ffffff !important;
+  }
+}
+
+.app-toast--success {
+  --mdc-snackbar-container-color: #0b625d;
+
+  .mdc-snackbar__surface {
+    background-color: #0b625d !important;
+  }
+}
+
+.app-toast--error {
+  --mdc-snackbar-container-color: #b42318;
+
+  .mdc-snackbar__surface {
+    background-color: #b42318 !important;
+  }
+}
+
+.app-toast--info {
+  --mdc-snackbar-container-color: #255a8f;
+
+  .mdc-snackbar__surface {
+    background-color: #255a8f !important;
+  }
+}
+
 * {
   box-sizing: border-box;
 }

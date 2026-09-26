@@ -27,6 +27,7 @@ import { Destination } from '../destinations/destination.model';
 import { DestinationsApiService } from '../destinations/destinations-api.service';
 import { Location } from '../locations/location.model';
 import { LocationsApiService } from '../locations/locations-api.service';
+import { LoadingStateComponent } from '../../shared/components/loading-state.component';
 import { SectionCarouselComponent } from '../../shared/ui/section-carousel/section-carousel.component';
 import { TravelCard } from './models/travel-card.model';
 
@@ -44,6 +45,7 @@ const fallbackImageUrl =
     MatInputModule,
     MatSelectModule,
     MatTooltipModule,
+    LoadingStateComponent,
     ReactiveFormsModule,
     RouterLink,
     SectionCarouselComponent
