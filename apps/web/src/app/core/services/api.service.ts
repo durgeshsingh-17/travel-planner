@@ -41,6 +41,12 @@ export class ApiService {
       .pipe(map((response) => response.data));
   }
 
+  deleteWithBody<T, B = unknown>(path: string, body: B): Observable<T> {
+    return this.http
+      .delete<ApiSuccessResponse<T>>(this.buildUrl(path), { body })
+      .pipe(map((response) => response.data));
+  }
+
   private buildUrl(path: string): string {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`;
     return `${API_BASE_URL}${normalizedPath}`;

@@ -4,9 +4,12 @@ import {
   UnauthorizedException
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { User } from '@prisma/client';
 import {
+  createHash,
   createHmac,
   randomBytes,
+  randomUUID,
   scrypt as scryptCallback,
   timingSafeEqual
 } from 'crypto';
@@ -19,7 +22,13 @@ import { RegisterDto } from './dto/register.dto';
 const scrypt = promisify(scryptCallback);
 
 const MIN_SECRET_LENGTH = 32;
-const DEFAULT_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+const DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+const DEFAULT_REFRESH_TOKEN_TTL_DAYS = 30;
+/**
+ * Two tabs can refresh with the same token at nearly the same moment. Within
+ * this window a just-rotated token is treated as a race, not as theft.
+ */
+const REFRESH_REUSE_GRACE_MS = 20_000;
 const TOKEN_HEADER = Buffer.from(
   JSON.stringify({ alg: 'HS256', typ: 'JWT' })
 ).toString('base64url');
@@ -30,10 +39,28 @@ export interface AuthTokenPayload {
   exp: number;
 }
 
+export interface ClientContext {
+  userAgent?: string;
+  ip?: string;
+}
+
+export interface IssuedSession {
+  token: string;
+  expiresAt: string;
+  refreshToken: string;
+  refreshTokenId: string;
+  refreshTokenExpiresAt: Date;
+  user: SerializedUser;
+}
+
+type SerializableUser = Pick<User, 'id' | 'name' | 'email' | 'phone' | 'avatarUrl' | 'role'>;
+export type SerializedUser = SerializableUser;
+
 @Injectable()
 export class AuthService {
   private readonly tokenSecret: string;
-  private readonly tokenTtlSeconds: number;
+  private readonly accessTokenTtlSeconds: number;
+  private readonly refreshTokenTtlMs: number;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -49,8 +76,14 @@ export class AuthService {
     }
 
     this.tokenSecret = secret;
-    this.tokenTtlSeconds =
-      config.get<number>('auth.tokenTtlSeconds') || DEFAULT_TOKEN_TTL_SECONDS;
+    this.accessTokenTtlSeconds =
+      config.get<number>('auth.accessTokenTtlSeconds') || DEFAULT_ACCESS_TOKEN_TTL_SECONDS;
+    this.refreshTokenTtlMs =
+      (config.get<number>('auth.refreshTokenTtlDays') || DEFAULT_REFRESH_TOKEN_TTL_DAYS) *
+      24 *
+      60 *
+      60 *
+      1000;
   }
 
   status() {
@@ -61,8 +94,8 @@ export class AuthService {
     };
   }
 
-  async register(dto: RegisterDto) {
-    const email = dto.email.toLowerCase();
+  async register(dto: RegisterDto, client: ClientContext = {}): Promise<IssuedSession> {
+    const email = dto.email.trim().toLowerCase();
     const existingUser = await this.prisma.user.findUnique({
       where: { email },
       select: { id: true }
@@ -74,26 +107,26 @@ export class AuthService {
 
     const user = await this.prisma.user.create({
       data: {
-        name: dto.name,
+        name: dto.name.trim(),
         email,
         phone: dto.phone,
         passwordHash: await this.hashPassword(dto.password)
       }
     });
 
-    return this.authResponse(user);
+    return this.issueSession(user, client);
   }
 
-  async login(dto: LoginDto) {
+  async login(dto: LoginDto, client: ClientContext = {}): Promise<IssuedSession> {
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase() }
+      where: { email: dto.email.trim().toLowerCase() }
     });
 
     if (!user?.passwordHash || !(await this.verifyPassword(dto.password, user.passwordHash))) {
       throw new UnauthorizedException('Invalid email or password');
     }
 
-    return this.authResponse(user);
+    return this.issueSession(user, client);
   }
 
   async me(userId: string) {
@@ -106,6 +139,103 @@ export class AuthService {
     }
 
     return this.serializeUser(user);
+  }
+
+  /** Rotates a refresh token: the presented token is retired and a new one issued. */
+  async refresh(rawToken: string | undefined, client: ClientContext = {}): Promise<IssuedSession> {
+    if (!rawToken) {
+      throw new UnauthorizedException('Session has expired. Please sign in again.');
+    }
+
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash: this.hashRefreshToken(rawToken) },
+      include: { user: true }
+    });
+
+    if (!stored) {
+      throw new UnauthorizedException('Session has expired. Please sign in again.');
+    }
+
+    if (stored.revokedAt) {
+      const isRecentRotation =
+        stored.replacedById !== null &&
+        Date.now() - stored.revokedAt.getTime() < REFRESH_REUSE_GRACE_MS;
+
+      if (!isRecentRotation) {
+        // A retired token came back: assume it was stolen and end every session in its family.
+        await this.revokeFamily(stored.familyId);
+        throw new UnauthorizedException('Session has expired. Please sign in again.');
+      }
+
+      return this.issueSession(stored.user, client, stored.familyId);
+    }
+
+    if (stored.expiresAt.getTime() <= Date.now()) {
+      throw new UnauthorizedException('Session has expired. Please sign in again.');
+    }
+
+    const session = await this.issueSession(stored.user, client, stored.familyId);
+    await this.prisma.refreshToken.update({
+      where: { id: stored.id },
+      data: { revokedAt: new Date(), replacedById: session.refreshTokenId }
+    });
+
+    return session;
+  }
+
+  async logout(rawToken: string | undefined): Promise<void> {
+    if (!rawToken) {
+      return;
+    }
+
+    const stored = await this.prisma.refreshToken.findUnique({
+      where: { tokenHash: this.hashRefreshToken(rawToken) },
+      select: { familyId: true }
+    });
+
+    if (stored) {
+      await this.revokeFamily(stored.familyId);
+    }
+  }
+
+  async logoutAll(userId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+  }
+
+  async changePassword(
+    userId: string,
+    currentPassword: string,
+    newPassword: string,
+    client: ClientContext = {}
+  ): Promise<IssuedSession> {
+    const user = await this.assertPassword(userId, currentPassword);
+
+    if (currentPassword === newPassword) {
+      throw new BadRequestException('New password must be different from the current one');
+    }
+
+    const updated = await this.prisma.user.update({
+      where: { id: user.id },
+      data: { passwordHash: await this.hashPassword(newPassword) }
+    });
+    // Sign out every other device; the caller gets a fresh session.
+    await this.logoutAll(user.id);
+
+    return this.issueSession(updated, client);
+  }
+
+  /** Throws unless `password` matches the user's current password. */
+  async assertPassword(userId: string, password: string): Promise<User> {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user?.passwordHash || !(await this.verifyPassword(password, user.passwordHash))) {
+      throw new BadRequestException('Current password is incorrect');
+    }
+
+    return user;
   }
 
   verifyToken(authorization?: string): AuthTokenPayload {
@@ -134,6 +264,60 @@ export class AuthService {
     return claims;
   }
 
+  serializeUser(user: SerializableUser): SerializedUser {
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      avatarUrl: user.avatarUrl,
+      role: user.role
+    };
+  }
+
+  private async issueSession(
+    user: SerializableUser,
+    client: ClientContext,
+    familyId: string = randomUUID()
+  ): Promise<IssuedSession> {
+    const refreshToken = randomBytes(32).toString('base64url');
+    const refreshTokenExpiresAt = new Date(Date.now() + this.refreshTokenTtlMs);
+
+    const stored = await this.prisma.refreshToken.create({
+      data: {
+        userId: user.id,
+        tokenHash: this.hashRefreshToken(refreshToken),
+        familyId,
+        expiresAt: refreshTokenExpiresAt,
+        userAgent: client.userAgent?.slice(0, 300),
+        ip: client.ip?.slice(0, 64)
+      },
+      select: { id: true }
+    });
+
+    const { token, exp } = this.signToken(user.id);
+
+    return {
+      token,
+      expiresAt: new Date(exp * 1000).toISOString(),
+      refreshToken,
+      refreshTokenId: stored.id,
+      refreshTokenExpiresAt,
+      user: this.serializeUser(user)
+    };
+  }
+
+  private async revokeFamily(familyId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: { familyId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    });
+  }
+
+  private hashRefreshToken(rawToken: string): string {
+    return createHash('sha256').update(rawToken).digest('hex');
+  }
+
   private async hashPassword(password: string): Promise<string> {
     const salt = randomBytes(16).toString('hex');
     const derivedKey = (await scrypt(password, salt, 64)) as Buffer;
@@ -151,47 +335,15 @@ export class AuthService {
     );
   }
 
-  private authResponse(user: {
-    id: string;
-    name: string;
-    email: string;
-    phone: string | null;
-    avatarUrl: string | null;
-  }) {
-    return {
-      token: this.signToken(user.id),
-      user: this.serializeUser(user)
-    };
-  }
-
-  private serializeUser(user: {
-    id: string;
-    name: string;
-    email: string;
-    phone: string | null;
-    avatarUrl: string | null;
-  }) {
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      avatarUrl: user.avatarUrl
-    };
-  }
-
-  private signToken(userId: string): string {
+  private signToken(userId: string): { token: string; exp: number } {
     const issuedAt = Math.floor(Date.now() / 1000);
+    const exp = issuedAt + this.accessTokenTtlSeconds;
     const payload = Buffer.from(
-      JSON.stringify({
-        sub: userId,
-        iat: issuedAt,
-        exp: issuedAt + this.tokenTtlSeconds
-      } satisfies AuthTokenPayload)
+      JSON.stringify({ sub: userId, iat: issuedAt, exp } satisfies AuthTokenPayload)
     ).toString('base64url');
     const signingInput = `${TOKEN_HEADER}.${payload}`;
 
-    return `${signingInput}.${this.sign(signingInput)}`;
+    return { token: `${signingInput}.${this.sign(signingInput)}`, exp };
   }
 
   private parseClaims(payload: string): AuthTokenPayload {

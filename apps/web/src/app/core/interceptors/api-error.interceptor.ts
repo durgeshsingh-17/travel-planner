@@ -1,45 +1,72 @@
-import { HttpErrorResponse, HttpInterceptorFn, HttpStatusCode } from '@angular/common/http';
+import {
+  HttpErrorResponse,
+  HttpInterceptorFn,
+  HttpRequest,
+  HttpStatusCode
+} from '@angular/common/http';
 import { inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { throwError } from 'rxjs';
-import { catchError } from 'rxjs/operators';
+import { Observable, catchError, switchMap, throwError } from 'rxjs';
 
 import { API_BASE_URL } from '../config/api.config';
 import { SessionService } from '../auth/session.service';
 
-/** Endpoints where a 401 means "wrong credentials", not "session expired". */
-const CREDENTIAL_ENDPOINTS = ['/auth/login', '/auth/register'];
+/** Endpoints where a 401 is an answer, not an expired access token. */
+const NO_REFRESH_ENDPOINTS = ['/auth/login', '/auth/register', '/auth/refresh', '/auth/logout'];
+
+function withToken(request: HttpRequest<unknown>, token: string | null): HttpRequest<unknown> {
+  return token ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : request;
+}
+
+function toError(error: HttpErrorResponse): Error {
+  const message = error.error?.error?.message ?? 'We could not complete that request.';
+  return Object.assign(new Error(message), {
+    status: error.status,
+    code: error.error?.error?.code as string | undefined
+  });
+}
 
 export const apiErrorInterceptor: HttpInterceptorFn = (request, next) => {
   const sessionService = inject(SessionService);
   const router = inject(Router);
+
+  if (!request.url.startsWith(API_BASE_URL)) {
+    // Never send credentials to third-party hosts.
+    return next(request).pipe(catchError((error: HttpErrorResponse) => throwError(() => toError(error))));
+  }
+
+  // Credentials let the browser send and store the refresh cookie (path-scoped to /auth).
+  const apiRequest = request.clone({ withCredentials: true });
   const token = sessionService.session().token;
-  const isApiRequest = request.url.startsWith(API_BASE_URL);
-  // Never send the auth token to third-party hosts.
-  const authorizedRequest =
-    token && isApiRequest
-      ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } })
-      : request;
+  const canRefresh =
+    Boolean(token) && !NO_REFRESH_ENDPOINTS.some((path) => request.url.endsWith(path));
 
-  return next(authorizedRequest).pipe(
+  const expireSession = (): Observable<never> => {
+    sessionService.clear();
+    void router.navigate(['/sign-in'], {
+      queryParams: { returnUrl: router.url, reason: 'session-expired' }
+    });
+    return throwError(() => new Error('Your session has expired. Please sign in again.'));
+  };
+
+  return next(withToken(apiRequest, token)).pipe(
     catchError((error: HttpErrorResponse) => {
-      const isCredentialCheck = CREDENTIAL_ENDPOINTS.some((path) => request.url.endsWith(path));
-
-      if (
-        error.status === HttpStatusCode.Unauthorized &&
-        isApiRequest &&
-        token &&
-        !isCredentialCheck
-      ) {
-        sessionService.clear();
-        void router.navigate(['/sign-in'], {
-          queryParams: { returnUrl: router.url, reason: 'session-expired' }
-        });
+      if (error.status !== HttpStatusCode.Unauthorized || !canRefresh) {
+        return throwError(() => toError(error));
       }
 
-      const message =
-        error.error?.error?.message ?? 'We could not complete that request.';
-      return throwError(() => new Error(message));
+      return sessionService.refresh().pipe(
+        catchError(() => expireSession()),
+        switchMap((freshToken) =>
+          next(withToken(apiRequest, freshToken)).pipe(
+            catchError((retryError: HttpErrorResponse) =>
+              retryError.status === HttpStatusCode.Unauthorized
+                ? expireSession()
+                : throwError(() => toError(retryError))
+            )
+          )
+        )
+      );
     })
   );
 };

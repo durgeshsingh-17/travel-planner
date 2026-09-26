@@ -5,6 +5,8 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 import { MatToolbarModule } from '@angular/material/toolbar';
 
+import { SessionService } from '../../core/auth/session.service';
+
 @Component({
   selector: 'app-header',
   standalone: true,
@@ -15,6 +17,7 @@ import { MatToolbarModule } from '@angular/material/toolbar';
 })
 export class HeaderComponent {
   private readonly document = inject(DOCUMENT);
+  protected readonly session = inject(SessionService);
 
   protected readonly isDarkMode = signal(false);
 

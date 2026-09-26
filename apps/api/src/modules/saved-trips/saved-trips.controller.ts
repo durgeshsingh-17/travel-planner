@@ -6,18 +6,15 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
-  Put,
-  UseGuards
+  Put
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { AuthGuard } from '../auth/auth.guard';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { ImportSavedTripsDto } from './dto/import-saved-trips.dto';
 import { SavedTripsService } from './saved-trips.service';
 
 @ApiTags('saved-trips')
-@UseGuards(AuthGuard)
 @Controller({
   path: 'me/saved-trips',
   version: '1'

@@ -81,7 +81,11 @@ npm run dev:web
 | `POSTGRES_DB` | Local PostgreSQL database. |
 | `POSTGRES_PORT` | Local PostgreSQL port. |
 | `AUTH_TOKEN_SECRET` | **Required.** HMAC secret for sign-in tokens, at least 32 characters. The API refuses to start without it. Generate with `openssl rand -base64 48`. |
-| `AUTH_TOKEN_TTL_SECONDS` | Sign-in token lifetime. Defaults to `604800` (7 days). |
+| `AUTH_ACCESS_TOKEN_TTL_SECONDS` | Access token lifetime. Defaults to `900` (15 minutes). The app refreshes it silently. |
+| `AUTH_REFRESH_TOKEN_TTL_DAYS` | Refresh token lifetime (httpOnly cookie, rotated on every use). Defaults to `30`. |
+| `AUTH_RATE_LIMIT_PER_MINUTE` | Per-IP limit for sign-in, sign-up, refresh and password endpoints. Defaults to `10`. |
+| `API_RATE_LIMIT_PER_MINUTE` | Per-IP limit for everything else. Defaults to `300`. |
+| `TRUST_PROXY` | Set to `true` behind a load balancer so rate limits see the client IP. |
 | `FUEL_PRICE_PETROL_INR` | Configurable petrol price for later cost calculations. |
 | `FUEL_PRICE_DIESEL_INR` | Configurable diesel price for later cost calculations. |
 
@@ -111,6 +115,30 @@ Errors use:
   }
 }
 ```
+
+## Tests
+
+```bash
+npm test --workspace api        # unit tests, including the route-access rules
+npm test --workspace web        # Angular unit tests
+```
+
+End-to-end API tests start the built API against a disposable, migrated and seeded database:
+
+```bash
+createdb travel_planner_e2e
+cd apps/api
+DATABASE_URL=postgresql://…/travel_planner_e2e npx prisma migrate deploy
+DATABASE_URL=postgresql://…/travel_planner_e2e npm run prisma:seed
+npm run build
+E2E_DATABASE_URL=postgresql://…/travel_planner_e2e npm run test:e2e
+```
+
+CI (`.github/workflows/ci.yml`) runs all of the above on every pull request, and fails if `schema.prisma` changes without a matching migration.
+
+### Access rules
+
+Every API route requires sign-in unless it is decorated with `@Public()`. `src/route-access.spec.ts` lists the public routes explicitly, so adding one fails the tests until it is added to that list on purpose. Admin routes must also declare `@Roles(...)`.
 
 ## Verification
 

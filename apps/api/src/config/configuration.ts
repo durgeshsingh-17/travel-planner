@@ -5,7 +5,8 @@ export const configuration = () => ({
   },
   auth: {
     tokenSecret: process.env.AUTH_TOKEN_SECRET,
-    tokenTtlSeconds: parseInt(process.env.AUTH_TOKEN_TTL_SECONDS ?? '604800', 10)
+    accessTokenTtlSeconds: parseInt(process.env.AUTH_ACCESS_TOKEN_TTL_SECONDS ?? '900', 10),
+    refreshTokenTtlDays: parseInt(process.env.AUTH_REFRESH_TOKEN_TTL_DAYS ?? '30', 10)
   },
   database: {
     url: process.env.DATABASE_URL

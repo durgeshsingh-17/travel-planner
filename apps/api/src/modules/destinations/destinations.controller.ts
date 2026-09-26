@@ -2,8 +2,10 @@ import { Controller, Get, Param, Query } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { DestinationsService } from './destinations.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('destinations')
+@Public()
 @Controller({
   path: 'destinations',
   version: '1'

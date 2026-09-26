@@ -18,7 +18,16 @@
     >
       Dark
     </mat-slide-toggle>
-    <a mat-button routerLink="/sign-in">Sign in</a>
+    @if (session.session().user; as user) {
+      @if (session.isEditor()) {
+        <a mat-button routerLink="/admin">Admin</a>
+      }
+      <a mat-button routerLink="/profile" [attr.aria-label]="'Profile for ' + user.name">
+        {{ user.name.split(' ')[0] }}
+      </a>
+    } @else {
+      <a mat-button routerLink="/sign-in">Sign in</a>
+    }
     <a mat-flat-button color="primary" routerLink="/plan">Plan Trip</a>
   </div>
 </mat-toolbar>

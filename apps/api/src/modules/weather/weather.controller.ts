@@ -3,8 +3,10 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { WeatherQueryDto } from './dto/weather-query.dto';
 import { WeatherService } from './weather.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('weather')
+@Public()
 @Controller({
   path: 'weather',
   version: '1'
