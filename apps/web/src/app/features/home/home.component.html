@@ -7,9 +7,10 @@
         Routes, stops, places, stays, budget and vehicle planning — built for
         travelling across India.
       </p>
+      <app-search-box label="Where do you want to go?" />
       <div class="hero-actions">
         <a mat-flat-button color="primary" routerLink="/plan">Plan My Trip</a>
-        <a mat-stroked-button routerLink="/" fragment="trending">Explore trips</a>
+        <a mat-stroked-button routerLink="/destinations">Explore destinations</a>
       </div>
     </div>
 
@@ -130,44 +131,73 @@
   <div class="content-wrap" id="trending">
     @if (isLoading()) {
       <app-loading-state label="Loading trip ideas" [count]="4" />
-    } @else {
-      <app-section-carousel
-        eyebrow="Trending Road Trips"
-        title="Road trips people are planning this season"
-        description="Curated India-first routes with realistic distances, stops and trip rhythm."
-        [cards]="trendingRoadTrips()"
-      />
+    } @else if (home(); as home) {
+      @if (bestNow().length) {
+        <section class="content-section">
+          <header>
+            <div>
+              <p class="eyebrow">{{ home.trending.length ? 'Best in ' + monthName() : 'Popular now' }}</p>
+              <h2>{{ home.trending.length ? 'Great places to visit in ' + monthName() : 'Destinations people are planning' }}</h2>
+            </div>
+            <a mat-button routerLink="/destinations" [queryParams]="home.trending.length ? { month: home.month } : {}">See all</a>
+          </header>
+          <div class="card-grid">
+            @for (destination of bestNow(); track destination.id; let index = $index) {
+              <app-destination-card [destination]="destination" [priority]="index < 2" />
+            }
+          </div>
+        </section>
+      }
 
-      <app-section-carousel
-        eyebrow="Popular Destinations"
-        title="Places that work beautifully for road travel"
-        description="Destination ideas selected for route quality, weather windows and traveller fit."
-        [cards]="popularDestinations()"
-      />
+      @if (home.themes.length) {
+        <section class="content-section" aria-labelledby="themes-heading">
+          <header>
+            <div>
+              <p class="eyebrow">Explore by theme</p>
+              <h2 id="themes-heading">Pick the kind of trip you want</h2>
+            </div>
+          </header>
+          <ul class="chip-row themes">
+            @for (theme of home.themes; track theme.slug) {
+              <li>
+                <a class="chip" routerLink="/destinations" [queryParams]="{ tag: theme.slug }">
+                  {{ theme.name }} <span class="muted">{{ theme.destinationCount }}</span>
+                </a>
+              </li>
+            }
+          </ul>
+        </section>
+      }
 
-      <app-section-carousel
-        eyebrow="Trips Under Rs 10,000"
-        title="Smart breaks without stretching the budget"
-        description="Shorter routes and realistic plans for travellers who want control over cost."
-        [cards]="budgetTrips()"
-      />
+      @if (home.collections.length) {
+        <section class="content-section">
+          <header>
+            <div>
+              <p class="eyebrow">Collections</p>
+              <h2>Trip ideas, grouped</h2>
+            </div>
+          </header>
+          <div class="collection-grid">
+            @for (collection of home.collections; track collection.id) {
+              <a class="collection-card" [routerLink]="['/collections', collection.slug]">
+                <h3>{{ collection.title }}</h3>
+                <p>{{ collection.intro }}</p>
+                <span class="muted">{{ collection.itemCount }} ideas</span>
+              </a>
+            }
+          </div>
+        </section>
+      }
+
+      @if (stats().length) {
+        <section class="stats" aria-label="In numbers">
+          @for (stat of stats(); track stat.label) {
+            <p><strong>{{ stat.value.toLocaleString('en-IN') }}</strong> {{ stat.label }}</p>
+          }
+        </section>
+      }
+    } @else if (errorMessage()) {
+      <p class="muted">Trip ideas are unavailable right now. You can still plan a trip above.</p>
     }
-
-    <section class="mood-section" aria-labelledby="mood-heading">
-      <div>
-        <span class="eyebrow">Explore by Mood</span>
-        <h2 id="mood-heading">Pick the trip that matches your pace</h2>
-      </div>
-      <div class="mood-grid">
-        @for (mood of moodCards(); track mood.label) {
-          <a [routerLink]="mood.link" class="mood-card">
-            <mat-card appearance="outlined">
-              <h3>{{ mood.label }}</h3>
-              <p>{{ mood.description }}</p>
-            </mat-card>
-          </a>
-        }
-      </div>
-    </section>
   </div>
 </main>

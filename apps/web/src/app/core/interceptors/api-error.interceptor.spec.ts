@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { TestBed } from '@angular/core/testing';
 import { Router, provideRouter } from '@angular/router';
 
-import { API_BASE_URL } from '../config/api.config';
+import { API_BASE_URL as API_BASE_URL_TOKEN } from '../config/api.config';
 import { SessionService } from '../auth/session.service';
 import { apiErrorInterceptor } from './api-error.interceptor';
 
@@ -13,6 +13,7 @@ describe('apiErrorInterceptor', () => {
   let http: HttpClient;
   let backend: HttpTestingController;
   let session: SessionService;
+  let API_BASE_URL: string;
 
   beforeEach(() => {
     localStorage.clear();
@@ -26,6 +27,7 @@ describe('apiErrorInterceptor', () => {
     http = TestBed.inject(HttpClient);
     backend = TestBed.inject(HttpTestingController);
     session = TestBed.inject(SessionService);
+    API_BASE_URL = TestBed.inject(API_BASE_URL_TOKEN);
     session.adopt({ token: 'old-token', expiresAt: '2026-01-01T00:00:00Z', user });
   });
 

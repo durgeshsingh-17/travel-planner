@@ -1,13 +1,24 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
 <head>
   <meta charset="utf-8">
-  <title>Web</title>
+  <title>Travel Platform — plan India road trips and explore destinations</title>
+  <meta name="description" content="Destination guides, places to visit and day-wise road-trip plans with vehicle-aware costs for travel across India.">
   <base href="/">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b625d">
   <link rel="icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
+  <script>
+    // Apply the saved or system theme before first paint so server-rendered pages do not flash.
+    try {
+      var theme = localStorage.getItem('theme');
+      if (theme === 'dark' || (!theme && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.body.classList.add('dark-theme');
+      }
+    } catch (e) {}
+  </script>
   <app-root></app-root>
 </body>
 </html>

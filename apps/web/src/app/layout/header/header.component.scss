@@ -26,7 +26,7 @@ a {
   font-weight: 900;
 }
 
-.brand span {
+.brand-mark {
   display: grid;
   width: 34px;
   height: 34px;
@@ -86,10 +86,22 @@ mat-slide-toggle {
 
 @media (max-width: 520px) {
   .brand {
-    max-width: calc(100% - 120px);
+    max-width: calc(100% - 150px);
+    overflow: hidden;
+    white-space: nowrap;
   }
 
-  .header-actions a:first-child {
+  .brand-name {
+    display: none;
+  }
+
+  .header-actions {
+    gap: 2px;
+  }
+
+  // Keep the theme switch and primary action; the rest is reachable from the nav row.
+  .theme-label,
+  .header-actions .secondary {
     display: none;
   }
 }

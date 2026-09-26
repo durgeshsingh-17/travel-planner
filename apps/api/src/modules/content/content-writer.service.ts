@@ -7,6 +7,7 @@ import { MediaRefDto } from './documents/common.dto';
 import { PlaceDocumentDto } from './documents/place-document.dto';
 import { TagDocumentDto } from './documents/tag-document.dto';
 import { decimalToNumber } from '../../common/utils/number.util';
+import { mediaUrl } from './shared/media-url';
 
 type Tx = Prisma.TransactionClient;
 
@@ -484,7 +485,7 @@ export class ContentWriterService {
           orderBy: { sortOrder: 'asc' },
           include: {
             destination: { select: { id: true, slug: true } },
-            place: { select: { id: true, slug: true, destination: { select: { slug: true } } } }
+            place: { select: { id: true, slug: true, destination: { select: { id: true, slug: true } } } }
           }
         },
         media: { orderBy: { sortOrder: 'asc' }, include: { media: true } }
@@ -503,6 +504,7 @@ export class ContentWriterService {
         item.place
           ? {
               placeId: item.place.id,
+              destinationId: item.place.destination.id,
               destinationSlug: item.place.destination.slug,
               placeSlug: item.place.slug,
               blurb: item.blurb
@@ -824,11 +826,11 @@ export class ContentWriterService {
 
   private exportMediaRef(attachment: {
     isCover: boolean;
-    media: { id: string; url: string; altText: string; credit: string | null; license: string };
+    media: { id: string; url: string; storageKey: string | null; altText: string; credit: string | null; license: string };
   }): ExportedMediaRef & MediaRefDto {
     return {
       mediaId: attachment.media.id,
-      url: attachment.media.url,
+      url: mediaUrl(attachment.media),
       altText: attachment.media.altText,
       credit: attachment.media.credit,
       license: attachment.media.license,

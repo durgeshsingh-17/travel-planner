@@ -23,16 +23,21 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
-import { Destination } from '../destinations/destination.model';
-import { DestinationsApiService } from '../destinations/destinations-api.service';
+import { ContentApiService } from '../content/content-api.service';
+import { DestinationCardComponent } from '../../shared/ui/content-cards/destination-card.component';
+import { HomeContent } from '../content/content.models';
+import { MONTH_NAMES } from '../../shared/utils/content-format.util';
+import { SearchBoxComponent } from '../../shared/ui/search-box/search-box.component';
+import { SeoService } from '../../core/seo/seo.service';
 import { Location } from '../locations/location.model';
 import { LocationsApiService } from '../locations/locations-api.service';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
-import { SectionCarouselComponent } from '../../shared/ui/section-carousel/section-carousel.component';
-import { TravelCard } from './models/travel-card.model';
 
-const fallbackImageUrl =
-  'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80';
+/** Local calendar date (not UTC), so "today" is right in India before 05:30. */
+function localIsoDate(date = new Date()): string {
+  const offset = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offset).toISOString().slice(0, 10);
+}
 
 @Component({
   selector: 'app-home',
@@ -48,27 +53,29 @@ const fallbackImageUrl =
     LoadingStateComponent,
     ReactiveFormsModule,
     RouterLink,
-    SectionCarouselComponent
+    DestinationCardComponent,
+    SearchBoxComponent
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class HomeComponent {
-  private readonly destinationsApi = inject(DestinationsApiService);
+  private readonly content = inject(ContentApiService);
+  private readonly seo = inject(SeoService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly fb = inject(FormBuilder);
   private readonly locationsApi = inject(LocationsApiService);
   private readonly router = inject(Router);
 
-  protected readonly destinations = signal<Destination[]>([]);
+  protected readonly home = signal<HomeContent | null>(null);
   protected readonly locations = signal<Location[]>([]);
   protected readonly sourceOptions = signal<Location[]>([]);
   protected readonly destinationOptions = signal<Location[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly submitted = signal(false);
-  protected readonly today = new Date().toISOString().slice(0, 10);
+  protected readonly today = localIsoDate();
   protected readonly quickForm = this.fb.nonNullable.group(
     {
       source: this.fb.nonNullable.control('', [Validators.required]),
@@ -94,34 +101,53 @@ export class HomeComponent {
     }
   );
 
-  protected readonly trendingRoadTrips = computed(() => this.toCards(this.destinations()));
-  protected readonly popularDestinations = computed(() => this.toCards(this.destinations()));
-  protected readonly budgetTrips = computed(() =>
-    this.toCards(
-      this.destinations().filter((destination) =>
-        /uttarakhand|himachal|rajasthan|kerala|goa/i.test(
-          `${destination.state} ${destination.name}`
-        )
-      )
-    )
-  );
-  protected readonly moodCards = computed(() =>
-    this.destinations()
-      .slice(0, 8)
-      .map((destination) => ({
-        label: destination.state,
-        description: destination.shortDescription,
-        link: ['/destinations', destination.slug]
-      }))
-  );
+  protected readonly monthName = computed(() => MONTH_NAMES[(this.home()?.month ?? 1) - 1]);
+  protected readonly bestNow = computed(() => {
+    const home = this.home();
+    return home?.trending.length ? home.trending : (home?.featured ?? []);
+  });
+  protected readonly stats = computed(() => {
+    const stats = this.home()?.stats;
+
+    if (!stats) {
+      return [];
+    }
+
+    // Real counts only, and only once they are worth showing.
+    return [
+      { label: 'destination guides', value: stats.destinations },
+      { label: 'places to visit', value: stats.places },
+      { label: 'trips planned', value: stats.tripsPlanned }
+    ].filter((stat) => stat.value >= 5);
+  });
 
   constructor() {
-    this.destinationsApi
-      .list()
+    this.seo.setPage({
+      title: 'Travel Platform: plan India road trips and explore destinations',
+      description:
+        'Destination guides, places to visit and day-wise road-trip plans with vehicle-aware costs for travel across India.',
+      path: '/',
+      jsonLd: [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'WebSite',
+          name: 'Travel Platform',
+          url: this.seo.absolute('/'),
+          potentialAction: {
+            '@type': 'SearchAction',
+            target: `${this.seo.absolute('/destinations')}?q={search_term_string}`,
+            'query-input': 'required name=search_term_string'
+          }
+        }
+      ]
+    });
+
+    this.content
+      .home()
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
-        next: (destinations) => {
-          this.destinations.set(destinations);
+        next: (home) => {
+          this.home.set(home);
           this.isLoading.set(false);
         },
         error: (error: Error) => {
@@ -268,17 +294,6 @@ export class HomeComponent {
     return this.locations().find(
       (location) => location.name.trim().toLowerCase() === normalizedName
     );
-  }
-
-  private toCards(destinations: Destination[]): TravelCard[] {
-    return destinations.map((destination) => ({
-      title: destination.name,
-      subtitle: destination.shortDescription,
-      imageUrl: destination.heroImageUrl ?? fallbackImageUrl,
-      meta: `${destination.state} • ${destination.bestTimeToVisit ?? destination.country}`,
-      tag: destination.country,
-      link: ['/destinations', destination.slug]
-    }));
   }
 
   private dateRangeValidator(control: AbstractControl) {

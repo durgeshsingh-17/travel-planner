@@ -199,8 +199,6 @@ async function main(): Promise<void> {
       longitude: 78.2676,
       shortDescription:
         'River views, rafting, yoga, forest roads and weekend-friendly drives from Delhi NCR.',
-      heroImageUrl:
-        'https://images.unsplash.com/photo-1588084603723-41322210d3f6?auto=format&fit=crop&w=1600&q=85',
       bestTimeToVisit: 'October to April',
       status: 'PUBLISHED',
       publishedAt: new Date()

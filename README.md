@@ -69,6 +69,45 @@ Run the frontend:
 npm run dev:web
 ```
 
+### First admin and starter content
+
+Create an account in the app, then promote it and load the starter content (drafts for review):
+
+```bash
+cd apps/api && npm run build
+npm run user:promote -- you@example.com ADMIN
+npm run content:import -- prisma/content/starter-content.json          # dry run
+npm run content:import -- prisma/content/starter-content.json --apply  # write
+```
+
+The admin area is at `/admin` (editors and admins). See `apps/api/prisma/content/README.md`.
+
+### Server-side rendering
+
+Public pages (home, destinations, places, collections, shared trips) are server-rendered for search engines;
+personal pages (trips, profile, admin) render in the browser.
+
+```bash
+npm run build:web
+cd apps/web
+SITE_URL=http://localhost:4000 \
+SSR_API_BASE_URL=http://localhost:3000/api/v1 \
+API_PROXY_TARGET=http://localhost:3000 \
+ALLOWED_HOSTS=localhost \
+npm run serve:ssr:web
+```
+
+| SSR variable | Description |
+| --- | --- |
+| `SITE_URL` | Public origin, used for canonical URLs, JSON-LD and `/sitemap.xml`. |
+| `SSR_API_BASE_URL` | API base the server uses while rendering (can be an internal address). |
+| `API_PROXY_TARGET` | Optional. When set, the SSR server forwards `/api` and `/uploads` to the API so the site runs on one origin. Leave unset when a load balancer routes those paths. |
+| `ALLOWED_HOSTS` | Comma-separated host names the SSR server answers for (guards against SSRF via the Host header). |
+| `PORT` | SSR server port (default 4000). |
+
+The production web build calls the API at the relative `/api/v1`, so either set `API_PROXY_TARGET` or route
+`/api` and `/uploads` to the API at your load balancer.
+
 ## Environment Variables
 
 | Variable | Description |
@@ -86,6 +125,8 @@ npm run dev:web
 | `AUTH_RATE_LIMIT_PER_MINUTE` | Per-IP limit for sign-in, sign-up, refresh and password endpoints. Defaults to `10`. |
 | `API_RATE_LIMIT_PER_MINUTE` | Per-IP limit for everything else. Defaults to `300`. |
 | `TRUST_PROXY` | Set to `true` behind a load balancer so rate limits see the client IP. |
+| `MEDIA_STORAGE_DIR` | Where uploaded images are stored (local disk driver). Defaults to `uploads`. |
+| `MEDIA_PUBLIC_BASE_URL` | Public base URL for uploaded images (`/uploads` behind the SSR proxy, or a CDN). URLs are computed on read, so changing it never breaks existing images. |
 | `FUEL_PRICE_PETROL_INR` | Configurable petrol price for later cost calculations. |
 | `FUEL_PRICE_DIESEL_INR` | Configurable diesel price for later cost calculations. |
 

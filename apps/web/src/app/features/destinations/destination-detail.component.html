@@ -1,0 +1,192 @@
+@if (isLoading()) {
+  <main class="content-page"><app-loading-state label="Loading destination" /></main>
+} @else if (notFound()) {
+  <main class="content-page">
+    <div class="state-message">
+      <h1>We could not find that destination</h1>
+      <p class="muted">It may have moved or not be published yet.</p>
+      <a mat-flat-button color="primary" routerLink="/destinations">Explore destinations</a>
+    </div>
+  </main>
+} @else if (errorMessage()) {
+  <main class="content-page">
+    <div class="state-message">
+      <h1>Something went wrong</h1>
+      <p class="muted">{{ errorMessage() }}</p>
+      <a mat-stroked-button routerLink="/destinations">Back to destinations</a>
+    </div>
+  </main>
+} @else if (destination(); as item) {
+  <main class="content-page">
+    <section class="page-hero">
+      @if (item.cover; as cover) {
+        <img appHideOnError [ngSrc]="cover.url" [alt]="cover.altText" fill priority sizes="100vw" />
+      }
+      <ol class="breadcrumbs" aria-label="Breadcrumb">
+        <li><a routerLink="/destinations">Destinations</a></li>
+        <li>{{ item.state }}</li>
+      </ol>
+      <h1>{{ item.name }}</h1>
+      @if (item.tagline) {
+        <p class="tagline">{{ item.tagline }}</p>
+      }
+      @if (item.cover?.credit) {
+        <small class="credit">Photo: {{ item.cover?.credit }}</small>
+      }
+    </section>
+
+    @if (themes().length) {
+      <ul class="chip-row" aria-label="Themes">
+        @for (tag of themes(); track tag.slug) {
+          <li>
+            @if (tag.kind === 'THEME') {
+              <a class="chip" routerLink="/destinations" [queryParams]="{ tag: tag.slug }">{{ tag.name }}</a>
+            } @else {
+              <span class="chip">{{ tag.name }}</span>
+            }
+          </li>
+        }
+      </ul>
+    }
+
+    @if (facts().length) {
+      <dl class="fact-list" aria-label="Quick facts">
+        @for (fact of facts(); track fact.label) {
+          <div>
+            <dt>{{ fact.label }}</dt>
+            <dd>{{ fact.value }}</dd>
+          </div>
+        }
+      </dl>
+    }
+
+    <section class="content-section overview">
+      <div class="prose">
+        <p class="lead">{{ item.shortDescription }}</p>
+        @for (paragraph of overview(); track $index) {
+          <p>{{ paragraph }}</p>
+        }
+      </div>
+      <aside class="plan-card">
+        <h2>Plan a trip to {{ item.name }}</h2>
+        <p class="muted">Get a day-wise itinerary with drive times and a cost estimate for your vehicle.</p>
+        <a mat-flat-button color="primary" routerLink="/plan" [queryParams]="{ destination: item.name }">
+          Plan this trip
+        </a>
+      </aside>
+    </section>
+
+    @if (item.places.length) {
+      <section class="content-section" id="places">
+        <header>
+          <h2>Places to visit in {{ item.name }}</h2>
+          @if (item.placeCount > item.places.length) {
+            <a mat-button [routerLink]="['/destinations', item.slug, 'places']">See all {{ item.placeCount }} places</a>
+          }
+        </header>
+        <div class="card-grid">
+          @for (place of item.places; track place.id) {
+            <app-place-card [place]="place" />
+          }
+        </div>
+      </section>
+    }
+
+    @if (item.months.length) {
+      <section class="content-section" id="best-time">
+        <header><h2>Best time to visit</h2></header>
+        <ol class="month-strip">
+          @for (entry of monthStrip(); track entry.name) {
+            <li [class]="'month ' + (entry.info?.rating ?? 'UNKNOWN').toLowerCase()">
+              <strong>{{ entry.name.slice(0, 3) }}</strong>
+              <span>{{ entry.info ? ratingLabels[entry.info.rating] : '—' }}</span>
+              @if (entry.info?.avgMinC != null && entry.info?.avgMaxC != null) {
+                <small>{{ entry.info?.avgMinC }}–{{ entry.info?.avgMaxC }}°C</small>
+              }
+            </li>
+          }
+        </ol>
+        <ul class="month-notes">
+          @for (entry of item.months; track entry.month) {
+            @if (entry.notes || entry.events.length) {
+              <li>
+                <strong>{{ monthNames[entry.month - 1] }}:</strong>
+                {{ entry.notes }}
+                @if (entry.events.length) {
+                  <span class="muted"> Events: {{ entry.events.join(', ') }}</span>
+                }
+              </li>
+            }
+          }
+        </ul>
+      </section>
+    }
+
+    @if (item.howToReach.length) {
+      <section class="content-section" id="how-to-reach">
+        <header><h2>How to reach {{ item.name }}</h2></header>
+        <div class="reach-list">
+          @for (route of item.howToReach; track $index) {
+            <article>
+              <p class="eyebrow">{{ reachLabels[route.mode] }}</p>
+              <h3>{{ route.hubName }}</h3>
+              <p>{{ route.summary }}</p>
+              <p class="muted">
+                @if (route.distanceKm) { {{ route.distanceKm }} km }
+                @if (route.distanceKm && route.durationMinutes) { · }
+                @if (route.durationMinutes) { about {{ formatMinutes(route.durationMinutes) }} }
+                @if (inrRange(route.costMin, route.costMax); as cost) { · {{ cost }} }
+              </p>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (item.gallery.length > 1) {
+      <section class="content-section" id="photos">
+        <header><h2>Photos</h2></header>
+        <div class="gallery">
+          @for (image of item.gallery; track image.url) {
+            <figure>
+              <img appHideOnError [ngSrc]="image.url" [alt]="image.altText" fill sizes="(max-width: 640px) 50vw, 25vw" />
+              @if (image.credit) {
+                <figcaption>{{ image.credit }}</figcaption>
+              }
+            </figure>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="content-section" id="map">
+      <header><h2>Map</h2></header>
+      <app-route-map [destinationLatitude]="item.latitude" [destinationLongitude]="item.longitude" />
+    </section>
+
+    @if (item.faqs.length) {
+      <section class="content-section faq-list" id="faqs">
+        <header><h2>Frequently asked questions</h2></header>
+        <div>
+          @for (faq of item.faqs; track faq.question) {
+            <details>
+              <summary>{{ faq.question }}</summary>
+              <p>{{ faq.answer }}</p>
+            </details>
+          }
+        </div>
+      </section>
+    }
+
+    @if (item.similar.length) {
+      <section class="content-section">
+        <header><h2>Similar destinations</h2></header>
+        <div class="card-grid">
+          @for (similar of item.similar; track similar.id) {
+            <app-destination-card [destination]="similar" />
+          }
+        </div>
+      </section>
+    }
+  </main>
+}

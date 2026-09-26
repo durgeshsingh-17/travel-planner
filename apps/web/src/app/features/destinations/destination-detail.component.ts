@@ -1,223 +1,184 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ChangeDetectionStrategy, Component, PLATFORM_ID, computed, inject, signal } from '@angular/core';
+import { NgOptimizedImage, isPlatformBrowser } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { switchMap } from 'rxjs';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
-import { MatCardModule } from '@angular/material/card';
-import { MatChipsModule } from '@angular/material/chips';
 
-import { Destination, DestinationPlace } from './destination.model';
-import { DestinationsApiService } from './destinations-api.service';
-import { EmptyStateComponent } from '../../shared/components/empty-state.component';
+import { HideOnErrorDirective } from '../../shared/directives/hide-on-error.directive';
+import { ContentApiService } from '../content/content-api.service';
+import { DestinationCardComponent } from '../../shared/ui/content-cards/destination-card.component';
+import { DestinationDetail, HowToReach, MonthRating } from '../content/content.models';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
+import { PlaceCardComponent } from '../../shared/ui/content-cards/place-card.component';
 import { RouteMapComponent } from '../../shared/ui/route-map/route-map.component';
+import { SeoService } from '../../core/seo/seo.service';
+import {
+  MONTH_NAMES,
+  dayRange,
+  formatMinutes,
+  inrRange,
+  labelize,
+  monthRanges,
+  paragraphs
+} from '../../shared/utils/content-format.util';
+
+const REACH_LABELS: Record<HowToReach['mode'], string> = {
+  ROAD: 'By road',
+  TRAIN: 'By train',
+  AIR: 'By air',
+  BUS: 'By bus'
+};
+
+const RATING_LABELS: Record<MonthRating, string> = { GOOD: 'Great time', OK: 'Okay', AVOID: 'Avoid' };
 
 @Component({
   selector: 'app-destination-detail',
   standalone: true,
   imports: [
-    EmptyStateComponent,
+    HideOnErrorDirective,
+    DestinationCardComponent,
     LoadingStateComponent,
     MatButtonModule,
-    MatCardModule,
-    MatChipsModule,
+    NgOptimizedImage,
+    PlaceCardComponent,
     RouteMapComponent,
     RouterLink
   ],
-  template: `
-    <main class="destination-page">
-      @if (isLoading()) {
-        <app-loading-state label="Loading destination" />
-      } @else if (errorMessage()) {
-        <app-empty-state title="Destination unavailable" [message]="errorMessage() ?? ''" />
-      } @else if (destination(); as destination) {
-        <section
-          class="hero"
-          [style.background]="heroBackground(destination.heroImageUrl)"
-        >
-          <p>{{ destination.state }}, {{ destination.country }}</p>
-          <h1>{{ destination.name }}</h1>
-          <span>{{ destination.bestTimeToVisit ?? 'Year-round depending on route conditions' }}</span>
-        </section>
-
-        <section class="content-grid">
-          <mat-card appearance="outlined">
-            <h2>Why go</h2>
-            <p>{{ destination.shortDescription }}</p>
-            <a mat-flat-button color="primary" routerLink="/plan">Plan a trip</a>
-          </mat-card>
-          <app-route-map
-            [sourceLatitude]="28.4595"
-            [sourceLongitude]="77.0266"
-            [destinationLatitude]="destination.latitude"
-            [destinationLongitude]="destination.longitude"
-          />
-        </section>
-
-        <section class="places">
-          <div>
-            <p>Places</p>
-            <h2>Build your day around these stops</h2>
-          </div>
-          <div class="place-grid">
-            @for (place of destination.places ?? []; track place.id) {
-              <mat-card appearance="outlined">
-                <mat-chip-set aria-label="Place category">
-                  <mat-chip>{{ place.category }}</mat-chip>
-                </mat-chip-set>
-                <h3>{{ place.name }}</h3>
-                <p>{{ place.description }}</p>
-                <small>
-                  {{ place.averageVisitMinutes ?? 60 }} min •
-                  Rs {{ place.estimatedCost ?? 0 }} •
-                  {{ place.rating ?? 4.2 }}/5
-                </small>
-              </mat-card>
-            }
-          </div>
-        </section>
-      }
-    </main>
-  `,
-  styles: [
-    `
-      .destination-page {
-        color: #17211b;
-      }
-
-      .hero {
-        display: grid;
-        align-content: end;
-        min-height: 62vh;
-        padding: 44px 24px;
-        color: #ffffff;
-        background-position: center;
-        background-size: cover;
-      }
-
-      .hero p,
-      .places > div > p {
-        margin: 0;
-        color: #68d7c8;
-        font-weight: 900;
-        text-transform: uppercase;
-      }
-
-      h1 {
-        max-width: 980px;
-        margin: 12px 0;
-        font-size: clamp(3rem, 8vw, 7rem);
-        line-height: 0.92;
-      }
-
-      .content-grid,
-      .places {
-        max-width: 1120px;
-        margin: 0 auto;
-        padding: 44px 24px;
-      }
-
-      .content-grid {
-        display: grid;
-        grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
-        gap: 18px;
-      }
-
-      .content-grid mat-card,
-      .place-grid mat-card {
-        padding: 22px;
-      }
-
-      h2,
-      h3,
-      p {
-        margin: 0;
-      }
-
-      .content-grid p,
-      .place-grid p {
-        margin-top: 10px;
-        color: #66706a;
-        line-height: 1.65;
-      }
-
-      a {
-        width: fit-content;
-        margin-top: 18px;
-      }
-
-      .place-grid {
-        display: grid;
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-        gap: 16px;
-        margin-top: 22px;
-      }
-
-      small {
-        display: block;
-        margin-top: 12px;
-        color: #7a4b24;
-        font-weight: 850;
-      }
-
-      @media (max-width: 820px) {
-        .content-grid,
-        .place-grid {
-          grid-template-columns: 1fr;
-        }
-      }
-    `
-  ],
+  templateUrl: './destination-detail.component.html',
+  styleUrl: './destination-detail.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class DestinationDetailComponent {
+  private readonly content = inject(ContentApiService);
+  private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
   private readonly route = inject(ActivatedRoute);
-  private readonly destinationsApi = inject(DestinationsApiService);
+  private readonly router = inject(Router);
+  private readonly seo = inject(SeoService);
 
-  protected readonly destination = signal<Destination | null>(null);
+  protected readonly destination = signal<DestinationDetail | null>(null);
   protected readonly isLoading = signal(true);
+  protected readonly notFound = signal(false);
   protected readonly errorMessage = signal<string | null>(null);
+
+  protected readonly reachLabels = REACH_LABELS;
+  protected readonly ratingLabels = RATING_LABELS;
+  protected readonly monthNames = MONTH_NAMES;
+  protected readonly formatMinutes = formatMinutes;
+  protected readonly inrRange = inrRange;
+
+  protected readonly overview = computed(() => paragraphs(this.destination()?.overview));
+  protected readonly facts = computed(() => {
+    const item = this.destination();
+
+    if (!item) {
+      return [];
+    }
+
+    const good = item.months.filter((month) => month.rating === 'GOOD').map((month) => month.month);
+    return [
+      { label: 'Best time', value: monthRanges(good) ?? item.bestTimeToVisit },
+      { label: 'Ideal trip', value: dayRange(item.idealDaysMin, item.idealDaysMax) },
+      { label: 'Budget per day', value: inrRange(item.budgetPerDayMin, item.budgetPerDayMax) },
+      { label: 'Altitude', value: item.altitudeM ? `${item.altitudeM.toLocaleString('en-IN')} m` : null },
+      {
+        label: 'Nearest airport',
+        value: item.nearestAirport
+          ? `${item.nearestAirport}${item.nearestAirportKm ? ` (${item.nearestAirportKm} km)` : ''}`
+          : null
+      },
+      {
+        label: 'Nearest railway',
+        value: item.nearestRailway
+          ? `${item.nearestRailway}${item.nearestRailwayKm ? ` (${item.nearestRailwayKm} km)` : ''}`
+          : null
+      }
+    ].filter((fact): fact is { label: string; value: string } => Boolean(fact.value));
+  });
+  protected readonly monthStrip = computed(() => {
+    const months = new Map((this.destination()?.months ?? []).map((month) => [month.month, month]));
+    return MONTH_NAMES.map((name, index) => ({ name, info: months.get(index + 1) ?? null }));
+  });
+  protected readonly themes = computed(() => (this.destination()?.tags ?? []).map((tag) => ({ ...tag, label: labelize(tag.kind) })));
 
   constructor() {
     this.route.paramMap
       .pipe(
-        switchMap((params) => this.destinationsApi.getBySlug(params.get('slug') ?? '')),
+        map((params) => params.get('slug') ?? ''),
+        tap(() => {
+          this.isLoading.set(true);
+          this.notFound.set(false);
+          this.errorMessage.set(null);
+        }),
+        switchMap((slug) =>
+          this.content.destination(slug).pipe(
+            map((destination) => ({ slug, destination })),
+            catchError((error: Error & { status?: number }) => {
+              if (error.status === 404) {
+                this.notFound.set(true);
+                this.seo.notFound('Destination');
+              } else {
+                this.errorMessage.set(error.message);
+              }
+
+              return of({ slug, destination: null });
+            })
+          )
+        ),
         takeUntilDestroyed()
       )
-      .subscribe({
-        next: (destination) => {
-          this.destination.set(destination);
-          this.isLoading.set(false);
-        },
-        error: (error: Error) => {
-          this.errorMessage.set(error.message);
-          this.isLoading.set(false);
+      .subscribe(({ slug, destination }) => {
+        this.isLoading.set(false);
+        this.destination.set(destination);
+
+        if (!destination) {
+          return;
         }
+
+        if (destination.slug !== slug) {
+          // The API followed a slug redirect: make the URL match the content.
+          this.seo.movedPermanently(`/destinations/${destination.slug}`);
+
+          if (this.isBrowser) {
+            void this.router.navigate(['/destinations', destination.slug], { replaceUrl: true });
+          }
+        }
+
+        this.updateSeo(destination);
       });
   }
 
-  /** Only facts we actually have; missing values are hidden rather than guessed. */
-  protected placeFacts(place: DestinationPlace): string[] {
-    const facts: string[] = [];
+  private updateSeo(item: DestinationDetail): void {
+    const path = `/destinations/${item.slug}`;
 
-    if (place.averageVisitMinutes) {
-      facts.push(`${place.averageVisitMinutes} min`);
-    }
-
-    if (place.estimatedCost === 0) {
-      facts.push('Free entry');
-    } else if (place.estimatedCost) {
-      facts.push(`Rs ${place.estimatedCost}`);
-    }
-
-    if (place.rating) {
-      facts.push(`${place.rating}/5`);
-    }
-
-    return facts;
-  }
-
-  protected heroBackground(imageUrl?: string | null): string {
-    return `linear-gradient(180deg, rgba(8,18,14,0.12), rgba(8,18,14,0.78)), url("${imageUrl ?? 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=85'}")`;
+    this.seo.setPage({
+      title: item.seoTitle ?? `${item.name} travel guide: places to visit, best time, how to reach`,
+      description: item.seoDescription ?? item.shortDescription,
+      path,
+      image: item.cover?.url,
+      type: 'article',
+      jsonLd: [
+        {
+          '@context': 'https://schema.org',
+          '@type': 'TouristDestination',
+          name: item.name,
+          description: item.shortDescription,
+          url: this.seo.absolute(path),
+          image: item.gallery.map((image) => image.url).slice(0, 5),
+          geo: { '@type': 'GeoCoordinates', latitude: item.latitude, longitude: item.longitude },
+          containedInPlace: { '@type': 'AdministrativeArea', name: item.state },
+          includesAttraction: item.places.map((place) => ({
+            '@type': 'TouristAttraction',
+            name: place.name,
+            url: this.seo.absolute(`${path}/places/${place.slug}`)
+          }))
+        },
+        this.seo.breadcrumbs([
+          { name: 'Destinations', path: '/destinations' },
+          { name: item.name, path }
+        ]),
+        ...[this.seo.faqPage(item.faqs)].filter((entry): entry is object => entry !== null)
+      ]
+    });
   }
 }

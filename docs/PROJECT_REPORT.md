@@ -96,6 +96,8 @@ Structural gaps (details and proposed schema in the roadmap, §4):
 
 ### 5.1 P0 — fix before anything else
 
+> **Update 2026-09-29 (Weeks 2–3 complete):** content platform, admin panel, importer and SSR. See the checklist in §6. Note: PR #6 described removing the hardcoded Gurgaon map origin and the made-up place values on the destination page, but those two changes did not reach `main`. The rewritten destination page on `feature/content-platform` fixes both.
+
 > **Update 2026-09-28 (Week 1 complete):** 15-minute access tokens with rotating httpOnly refresh cookies (reuse detection revokes the session family), auth rate limiting, a global secure-by-default guard with an app-wide route-access test, `RolesGuard`, real profile endpoints and page, request IDs, and GitHub Actions CI.
 
 > **Update 2026-09-27:** all four P0 issues below, plus P1 #3, #4, #5, #7, #10 and #13 and the P2 note on manual header parsing, are fixed on branch `fix/trip-security-and-data-integrity`. They are covered by unit tests and an end-to-end API check run against a real database.
@@ -156,12 +158,15 @@ Checklist grouped by the phases in the roadmap. ✅ = done today, ⬜ = to do.
 - ✅ CI: build, unit, migration drift check, Postgres-backed e2e on every PR
 
 ### Content platform (weeks 2–3)
-- ⬜ Schema: `Media`, `Tag`, `Collection`, rich `Destination`/`Place` fields, `Location` ↔ `Destination` link, `PlaceTiming`, `DestinationMonthInfo`, `HowToReach`, `Faq`
-- ⬜ Place detail page + endpoint; destination page sections (quick facts, best time, how to reach, FAQs, similar places)
-- ⬜ Collections pages (hill stations, heritage, road trips…)
-- ⬜ Admin CMS v1 (CRUD + publish workflow + media upload)
-- ⬜ Seed/import pipeline (CSV/JSON) for ≥ 50 destinations and ≥ 500 places
-- ⬜ SSR/prerender + meta/JSON-LD + sitemap
+- ✅ Schema: `Media`, `MediaAttachment`, `Tag`, `Collection`, rich `Destination`/`Place` fields, `PlaceTiming`, `DestinationMonthInfo`, `HowToReach`, `Faq`, `SlugRedirect`, `AuditLog`, publish status, location aliases, trigram search indexes
+- ✅ Place detail page + endpoint; destination page sections (quick facts, best time, how to reach, gallery, map, FAQs, similar destinations)
+- ✅ Collections pages; faceted explore (state, theme, month, trip length, budget); grouped search suggest; home rails from real data
+- ✅ Admin CMS v1: editors for destinations, places, collections and tags; publish rules with a health score; concurrent-edit detection; media library with uploads; audit log; user roles
+- ✅ Import pipeline: JSON bundles and CSV, dry run that rolls back, all-or-nothing apply, CLI and admin screen
+- ⬜ Content volume: the starter bundle has 6 destinations and 20 places (4 destinations as drafts for review). The ≥ 50 / ≥ 500 target is editorial work, not engineering.
+- ✅ SSR (public pages), per-page meta, canonical, Open Graph, JSON-LD, real 404 and 301 status, `/sitemap.xml`, `robots.txt`
+- ⬜ Image resizing and responsive variants (uploads are stored as-is; a sharp or CDN step is the next media task)
+- ⬜ Location ↔ Destination link, so the planner can offer guide content for a chosen destination
 
 ### Marketplace (weeks 3–5)
 - ⬜ `Agent`, `Package`, `PackageTier`, `PackageDay`, `PackageStay`, `PackageInclusion`, `PackagePolicy`, `PackageDeparture`

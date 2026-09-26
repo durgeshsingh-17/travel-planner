@@ -5,6 +5,7 @@ import { AuditService } from '../content/audit.service';
 import { MediaMetadataDto, RegisterExternalMediaDto } from './dto/admin.dto';
 import { MediaStorageService } from '../content/media-storage.service';
 import { PrismaService } from '../../database/prisma.service';
+import { mediaUrl } from '../content/shared/media-url';
 
 const PAGE_SIZE = 40;
 
@@ -135,7 +136,7 @@ export class AdminMediaService {
   private serialize(media: Media) {
     return {
       id: media.id,
-      url: media.url,
+      url: mediaUrl(media),
       altText: media.altText,
       credit: media.credit,
       license: media.license,

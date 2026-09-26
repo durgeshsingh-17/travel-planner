@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { mkdir, rm, writeFile } from 'fs/promises';
 import { dirname, join, resolve } from 'path';
 
+import { configureMediaBaseUrl } from './shared/media-url';
 import { probeImage } from '../../common/utils/image-probe.util';
 
 export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
@@ -29,6 +30,7 @@ export class MediaStorageService {
   constructor(config: ConfigService) {
     this.directory = resolve(config.get<string>('media.storageDir') ?? 'uploads');
     this.publicBaseUrl = (config.get<string>('media.publicBaseUrl') ?? '/uploads').replace(/\/$/, '');
+    configureMediaBaseUrl(this.publicBaseUrl);
   }
 
   async save(buffer: Buffer): Promise<StoredFile> {

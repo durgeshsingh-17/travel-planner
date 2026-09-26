@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client';
 
 import { decimalToNumber } from '../../../common/utils/number.util';
+import { mediaUrl } from './media-url';
 
 /** Prisma include for an ordered image list with its media rows. */
 export const mediaInclude = {
@@ -27,7 +28,7 @@ export interface ImageView {
 
 export function imageView(attachment: AttachmentWithMedia): ImageView {
   return {
-    url: attachment.media.url,
+    url: mediaUrl(attachment.media),
     altText: attachment.media.altText,
     width: attachment.media.width,
     height: attachment.media.height,
