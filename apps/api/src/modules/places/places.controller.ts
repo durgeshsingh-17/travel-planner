@@ -3,8 +3,10 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { ListPlacesQueryDto } from './dto/list-places-query.dto';
 import { PlacesService } from './places.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('places')
+@Public()
 @Controller({
   path: 'places',
   version: '1'

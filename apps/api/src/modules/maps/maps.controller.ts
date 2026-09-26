@@ -3,8 +3,10 @@ import { ApiTags } from '@nestjs/swagger';
 
 import { MapsService } from './maps.service';
 import { RouteQueryDto } from './dto/route-query.dto';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('maps')
+@Public()
 @Controller({
   path: 'maps',
   version: '1'

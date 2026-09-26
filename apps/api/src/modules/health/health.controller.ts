@@ -2,8 +2,10 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
 import { HealthService, HealthStatus } from './health.service';
+import { Public } from '../auth/public.decorator';
 
 @ApiTags('health')
+@Public()
 @Controller({
   path: 'health',
   version: '1'

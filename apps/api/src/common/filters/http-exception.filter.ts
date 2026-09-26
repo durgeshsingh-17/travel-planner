@@ -1,12 +1,18 @@
 import {
   ArgumentsHost,
+  BadRequestException,
   Catch,
+  ConflictException,
   ExceptionFilter,
   HttpException,
   HttpStatus,
-  Logger
+  Logger,
+  NotFoundException
 } from '@nestjs/common';
-import { Response } from 'express';
+import { Prisma } from '@prisma/client';
+import { Request, Response } from 'express';
+
+import { RequestWithId } from '../middleware/request-context.middleware';
 
 interface ApiErrorBody {
   success: false;
@@ -14,6 +20,7 @@ interface ApiErrorBody {
     code: string;
     message: string;
     details?: unknown;
+    requestId?: string;
   };
 }
 
@@ -21,9 +28,11 @@ interface ApiErrorBody {
 export class HttpExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
-  catch(exception: unknown, host: ArgumentsHost): void {
+  catch(rawException: unknown, host: ArgumentsHost): void {
+    const exception = this.translatePrismaError(rawException);
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
+    const request = ctx.getRequest<Request & RequestWithId>();
     const status =
       exception instanceof HttpException
         ? exception.getStatus()
@@ -34,7 +43,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
       this.logger.error(
-        exception instanceof Error ? exception.message : 'Unhandled exception',
+        `[${request.requestId ?? '-'}] ${
+          exception instanceof Error ? exception.message : 'Unhandled exception'
+        }`,
         exception instanceof Error ? exception.stack : undefined
       );
     }
@@ -44,11 +55,33 @@ export class HttpExceptionFilter implements ExceptionFilter {
       error: {
         code: this.resolveCode(status),
         message: this.resolveMessage(exceptionResponse),
-        details: this.resolveDetails(exceptionResponse)
+        details: this.resolveDetails(exceptionResponse),
+        requestId: request.requestId
       }
     };
 
     response.status(status).json(body);
+  }
+
+  /** Known database errors become client errors instead of opaque 500s. */
+  private translatePrismaError(exception: unknown): unknown {
+    if (!(exception instanceof Prisma.PrismaClientKnownRequestError)) {
+      return exception;
+    }
+
+    if (exception.code === 'P2025') {
+      return new NotFoundException('The requested record no longer exists');
+    }
+
+    if (exception.code === 'P2002') {
+      return new ConflictException('A record with these details already exists');
+    }
+
+    if (exception.code === 'P2003') {
+      return new BadRequestException('A referenced record does not exist');
+    }
+
+    return exception;
   }
 
   private resolveCode(status: number): string {

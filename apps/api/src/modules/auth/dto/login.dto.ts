@@ -1,10 +1,13 @@
-import { IsEmail, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsString, MaxLength, MinLength } from 'class-validator';
+
+import { PASSWORD_MAX_LENGTH } from '../../../common/validators/identity.patterns';
 
 export class LoginDto {
   @IsEmail()
   email!: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(1)
+  @MaxLength(PASSWORD_MAX_LENGTH)
   password!: string;
 }

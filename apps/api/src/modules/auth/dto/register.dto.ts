@@ -1,7 +1,11 @@
-import { IsEmail, IsOptional, IsString, Matches, MinLength } from 'class-validator';
+import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
 
-const PERSON_NAME_PATTERN = /^[A-Za-z][A-Za-z'. -]{1,78}$/;
-const INDIA_PHONE_PATTERN = /^(?:\+91[\s-]?)?[6-9]\d{9}$/;
+import {
+  INDIA_PHONE_PATTERN,
+  PASSWORD_MAX_LENGTH,
+  PASSWORD_MIN_LENGTH,
+  PERSON_NAME_PATTERN
+} from '../../../common/validators/identity.patterns';
 
 export class RegisterDto {
   @IsString()
@@ -12,10 +16,12 @@ export class RegisterDto {
   name!: string;
 
   @IsEmail()
+  @MaxLength(254)
   email!: string;
 
   @IsString()
-  @MinLength(8)
+  @MinLength(PASSWORD_MIN_LENGTH)
+  @MaxLength(PASSWORD_MAX_LENGTH)
   password!: string;
 
   @IsOptional()

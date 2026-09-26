@@ -1,0 +1,16 @@
+import { CanActivateFn, Router } from '@angular/router';
+import { inject } from '@angular/core';
+
+import { SessionService } from '../auth/session.service';
+
+/** Editorial areas. The API enforces roles too; this only avoids showing a broken page. */
+export const editorGuard: CanActivateFn = (_route, state) => {
+  const session = inject(SessionService);
+  const router = inject(Router);
+
+  if (!session.session().isAuthenticated) {
+    return router.createUrlTree(['/sign-in'], { queryParams: { returnUrl: state.url } });
+  }
+
+  return session.isEditor() ? true : router.createUrlTree(['/']);
+};

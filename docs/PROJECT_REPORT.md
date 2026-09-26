@@ -46,7 +46,7 @@ travel-platform/
 | --- | --- | --- |
 | health | `GET /health` | Pings DB with `SELECT 1` |
 | auth | `GET /auth/status`, `POST /auth/register`, `POST /auth/login`, `GET /auth/me` | Email + password, scrypt hashing, custom HMAC token |
-| users | `GET /users/me` | **Stub** — always returns `{ user: null, authenticated: false }` |
+| users | `GET/PATCH /me`, `PATCH /me/profile`, `POST /me/password`, `DELETE /me` | Profile, travel preferences, password change, account deletion _(Week 1)_ |
 | locations | `GET /locations?q&state&limit` | Autocomplete source for From/To; handles missing-table error with 503 |
 | destinations | `GET /destinations?q&state&limit`, `GET /destinations/:slug` | Detail includes places |
 | places | `GET /places?destinationSlug&category` | No detail endpoint, no pagination |
@@ -95,6 +95,8 @@ Structural gaps (details and proposed schema in the roadmap, §4):
 ## 5. Issues found during the audit
 
 ### 5.1 P0 — fix before anything else
+
+> **Update 2026-09-28 (Week 1 complete):** 15-minute access tokens with rotating httpOnly refresh cookies (reuse detection revokes the session family), auth rate limiting, a global secure-by-default guard with an app-wide route-access test, `RolesGuard`, real profile endpoints and page, request IDs, and GitHub Actions CI.
 
 > **Update 2026-09-27:** all four P0 issues below, plus P1 #3, #4, #5, #7, #10 and #13 and the P2 note on manual header parsing, are fixed on branch `fix/trip-security-and-data-integrity`. They are covered by unit tests and an end-to-end API check run against a real database.
 
@@ -146,12 +148,12 @@ Checklist grouped by the phases in the roadmap. ✅ = done today, ⬜ = to do.
 ### Foundation (week 1)
 - ✅ Monorepo, modular API, Prisma migrations, seed, Swagger, envelope, validation
 - ✅ Email/password auth, trip planner, traveller details, vehicles, generation, result, share, toasts, loaders, dark mode
-- ⬜ Fix P0 #1–4 (guards, visibility, JWT + refresh, required secret)
-- ⬜ Real `users/me` + profile update + change password
-- ⬜ Error codes (`UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`, `VALIDATION_FAILED`) + structured logging (pino) + request IDs
-- ⬜ Apply `authGuard` on private routes; clear session on 401
-- ⬜ Server-side `SavedItem` (trips, destinations, places, packages)
-- ⬜ CI: build + test + prisma validate on every PR
+- ✅ Fix P0 #1–4 (guards, visibility, JWT + refresh, required secret)
+- ✅ Real `/me` + profile update + change password + account deletion
+- ✅ Error codes (`UNAUTHORIZED`, `FORBIDDEN`, `CONFLICT`, `RATE_LIMITED`) + JSON request logs + request IDs
+- ✅ Apply `authGuard` on private routes; silent refresh, then sign-out on 401
+- ✅ Server-side `SavedItem` for trips (destinations, places and packages to follow)
+- ✅ CI: build, unit, migration drift check, Postgres-backed e2e on every PR
 
 ### Content platform (weeks 2–3)
 - ⬜ Schema: `Media`, `Tag`, `Collection`, rich `Destination`/`Place` fields, `Location` ↔ `Destination` link, `PlaceTiming`, `DestinationMonthInfo`, `HowToReach`, `Faq`

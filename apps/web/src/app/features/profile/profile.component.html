@@ -1,0 +1,184 @@
+<main class="profile-page app-page">
+  @if (isLoading()) {
+    <app-loading-state label="Loading your profile" />
+  } @else if (errorMessage()) {
+    <p class="error" role="alert">{{ errorMessage() }}</p>
+  } @else if (me(); as me) {
+    <header class="profile-head">
+      <div>
+        <p class="page-kicker">Profile</p>
+        <h1 class="page-title">{{ me.name }}</h1>
+        <p class="muted">{{ me.email }}</p>
+      </div>
+      <button mat-stroked-button type="button" (click)="signOut()">Sign out</button>
+    </header>
+
+    <mat-card appearance="outlined" class="section">
+      <h2>Account</h2>
+      <form [formGroup]="accountForm" (ngSubmit)="saveAccount()" class="grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Full name</mat-label>
+          <input matInput formControlName="name" autocomplete="name" />
+          @if (accountForm.controls.name.invalid) {
+            <mat-error>Use letters, spaces, apostrophes, dots and hyphens.</mat-error>
+          }
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Mobile number</mat-label>
+          <input matInput formControlName="phone" autocomplete="tel" inputmode="tel" />
+          <mat-hint>Optional. Indian mobile, e.g. 98765 43210</mat-hint>
+          @if (accountForm.controls.phone.invalid) {
+            <mat-error>Enter a valid Indian mobile number.</mat-error>
+          }
+        </mat-form-field>
+        <div class="actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving() === 'account'">
+            Save account
+          </button>
+        </div>
+      </form>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="section">
+      <h2>Travel preferences</h2>
+      <p class="muted">Used to prefill the planner and shape generated itineraries.</p>
+      <form [formGroup]="preferencesForm" (ngSubmit)="savePreferences()" class="grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Home city</mat-label>
+          <input
+            matInput
+            formControlName="homeCity"
+            [matAutocomplete]="cities"
+            placeholder="Start typing a city"
+          />
+          @if (preferencesForm.controls.homeCity.value) {
+            <button matSuffix mat-button type="button" (click)="clearCity()">Clear</button>
+          }
+          <mat-autocomplete #cities="matAutocomplete">
+            @for (city of cityOptions(); track city.id) {
+              <mat-option [value]="city.name + ', ' + city.state" (onSelectionChange)="selectCity(city)">
+                {{ city.name }}, {{ city.state }}
+              </mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Default vehicle</mat-label>
+          <mat-select formControlName="defaultUserVehicleId">
+            <mat-option [value]="null">None</mat-option>
+            @for (entry of garage(); track entry.id) {
+              <mat-option [value]="entry.id">{{ garageLabel(entry) }}</mat-option>
+            }
+          </mat-select>
+          @if (garage().length === 0) {
+            <mat-hint>Add vehicles on the Vehicles page.</mat-hint>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Travel pace</mat-label>
+          <mat-select formControlName="pace">
+            @for (option of paceOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }} · {{ option.hint }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Usual way of travelling</mat-label>
+          <mat-select formControlName="preferredTravelMode">
+            <mat-option [value]="null">No preference</mat-option>
+            @for (mode of travelModes; track mode.value) {
+              <mat-option [value]="mode.value">{{ mode.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Food preference</mat-label>
+          <mat-select formControlName="dietaryPreference">
+            <mat-option [value]="null">No preference</mat-option>
+            @for (option of dietOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Budget style</mat-label>
+          <mat-select formControlName="budgetBand">
+            <mat-option [value]="null">No preference</mat-option>
+            @for (option of budgetOptions; track option.value) {
+              <mat-option [value]="option.value">{{ option.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="wide">
+          <p class="label" id="interests-label">Interests</p>
+          <mat-chip-listbox formControlName="interests" multiple aria-labelledby="interests-label">
+            @for (option of interestOptions; track option.value) {
+              <mat-chip-option [value]="option.value">{{ option.label }}</mat-chip-option>
+            }
+          </mat-chip-listbox>
+        </div>
+
+        <mat-checkbox class="wide" formControlName="marketingOptIn">
+          Email me occasional trip ideas and offers
+        </mat-checkbox>
+
+        <div class="actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving() === 'preferences'">
+            Save preferences
+          </button>
+        </div>
+      </form>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="section">
+      <h2>Security</h2>
+      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" class="grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Current password</mat-label>
+          <input matInput type="password" formControlName="currentPassword" autocomplete="current-password" />
+        </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>New password</mat-label>
+          <input matInput type="password" formControlName="newPassword" autocomplete="new-password" />
+          <mat-hint>At least 8 characters. Other devices will be signed out.</mat-hint>
+          @if (passwordForm.controls.newPassword.invalid) {
+            <mat-error>Use 8 to 128 characters.</mat-error>
+          }
+        </mat-form-field>
+        <div class="actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="saving() === 'password'">
+            Change password
+          </button>
+          <button mat-stroked-button type="button" (click)="signOutEverywhere()">
+            Sign out on all devices
+          </button>
+        </div>
+      </form>
+    </mat-card>
+
+    <mat-card appearance="outlined" class="section danger">
+      <h2>Delete account</h2>
+      <p class="muted">
+        Permanently deletes your account, trips, traveller details, saved vehicles and saved trips.
+        This cannot be undone.
+      </p>
+      <form [formGroup]="deleteForm" (ngSubmit)="deleteAccount()" class="grid">
+        <mat-form-field appearance="outline">
+          <mat-label>Confirm with your password</mat-label>
+          <input matInput type="password" formControlName="password" autocomplete="current-password" />
+        </mat-form-field>
+        <div class="actions">
+          <button mat-stroked-button class="danger-button" type="submit" [disabled]="saving() === 'delete'">
+            Delete my account
+          </button>
+        </div>
+      </form>
+    </mat-card>
+  }
+</main>

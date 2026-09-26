@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api:
+    name: API · build, unit, migrations, e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgis/postgis:16-3.4
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: travel_planner_e2e
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/travel_planner_e2e?schema=public
+      E2E_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/travel_planner_e2e?schema=public
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/travel_planner_shadow?schema=public
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install -g npm@11
+      - run: npm ci
+      - name: Prisma client and schema validation
+        working-directory: apps/api
+        run: |
+          npx prisma generate
+          npx prisma validate
+      - name: Fail if the schema changed without a migration
+        working-directory: apps/api
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -c "CREATE DATABASE travel_planner_shadow"
+          npx prisma migrate diff \
+            --from-migrations prisma/migrations \
+            --to-schema-datamodel prisma/schema.prisma \
+            --shadow-database-url "$SHADOW_DATABASE_URL" \
+            --exit-code
+      - name: Build
+        run: npm run build:api
+      - name: Unit tests (includes the route-access rules)
+        working-directory: apps/api
+        run: npm test
+      - name: Apply migrations and seed
+        working-directory: apps/api
+        run: |
+          npx prisma migrate deploy
+          npm run prisma:seed
+      - name: End-to-end API tests
+        working-directory: apps/api
+        run: npm run test:e2e
+
+  web:
+    name: Web · build and unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install -g npm@11
+      - run: npm ci
+      - name: Build
+        run: npm run build:web
+      - name: Unit tests
+        working-directory: apps/web
+        run: npm test
