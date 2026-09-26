@@ -51,6 +51,7 @@ export interface TripCostBreakdown {
   total: number;
   fuelRequiredLitres: number;
   fuelPricePerLitre: number;
+  mileageKmPerLitre: number;
 }
 
 export interface TripVehicle {
@@ -61,6 +62,15 @@ export interface TripVehicle {
   fuelType: string;
   averageMileage?: number | null;
 }
+
+export interface TripUserVehicle {
+  id: string;
+  nickname?: string | null;
+  customMileage?: number | null;
+  registrationNumber?: string | null;
+}
+
+export type TripVisibility = 'PRIVATE' | 'UNLISTED';
 
 export interface TripTraveller {
   id: string;
@@ -82,7 +92,8 @@ export interface Trip {
   startDate: string;
   endDate: string;
   travellerCount: number;
-  travellers: TripTraveller[];
+  /** Omitted from shared (public) trips. */
+  travellers?: TripTraveller[];
   travelMode: string;
   budget?: number | null;
   interests: string[];
@@ -94,8 +105,17 @@ export interface Trip {
   estimatedTotalCost?: number | null;
   estimatedFuelCost?: number | null;
   vehicle?: TripVehicle | null;
+  userVehicle?: TripUserVehicle | null;
+  visibility?: TripVisibility;
+  shareSlug?: string | null;
   days: TripDay[];
   costBreakdown?: TripCostBreakdown | null;
+}
+
+export interface TripSharing {
+  id: string;
+  visibility: TripVisibility;
+  shareSlug: string | null;
 }
 
 export interface CreateTripRequest {
@@ -119,7 +139,7 @@ export interface CreateTripRequest {
   }>;
   budget?: number;
   travelMode: string;
-  vehicleId?: string;
+  userVehicleId?: string;
   interests: string[];
   preferences?: string[];
   notes?: string;

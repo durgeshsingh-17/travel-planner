@@ -8,9 +8,8 @@ import { MatChipsModule } from '@angular/material/chips';
 
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
-import { SavedTripsService } from './saved-trips.service';
-import { Trip } from '../trip-result/models/trip.model';
-import { TripsApiService } from '../trip-result/services/trips-api.service';
+import { SavedTrip, SavedTripsService } from './saved-trips.service';
+import { ToastService } from '../../shared/services/toast.service';
 
 @Component({
   selector: 'app-saved-trips',
@@ -40,36 +39,59 @@ import { TripsApiService } from '../trip-result/services/trips-api.service';
       } @else if (savedTrips().length === 0) {
         <app-empty-state
           title="No saved trips yet"
-          message="Save a generated trip from the trip result page and it will appear here."
+          message="Save a generated trip from the trip result page and it will appear here on every device you sign in on."
         />
       } @else {
         <section class="trip-grid" aria-label="Saved trips">
-          @for (trip of savedTrips(); track trip.id) {
+          @for (item of savedTrips(); track item.tripId) {
             <mat-card appearance="outlined">
-              <div>
-                <mat-chip-set aria-label="Trip status">
-                  <mat-chip>{{ trip.status }}</mat-chip>
-                </mat-chip-set>
-                <h2>{{ trip.sourceName }} -> {{ trip.destinationName }}</h2>
-                <p>
-                  {{ trip.startDate }} to {{ trip.endDate }} •
-                  {{ trip.travellerCount }} travellers
-                </p>
-              </div>
-              <dl>
+              @if (item.trip; as trip) {
                 <div>
-                  <dt>Distance</dt>
-                  <dd>{{ trip.estimatedDistanceKm ?? 0 }} km</dd>
+                  <mat-chip-set aria-label="Trip status">
+                    <mat-chip>{{ trip.status }}</mat-chip>
+                    @if (!item.isOwner) {
+                      <mat-chip>Shared with you</mat-chip>
+                    }
+                  </mat-chip-set>
+                  <h2>{{ trip.sourceName }} -> {{ trip.destinationName }}</h2>
+                  <p>
+                    {{ trip.startDate }} to {{ trip.endDate }} •
+                    {{ trip.travellerCount }} travellers
+                  </p>
                 </div>
+                <dl>
+                  <div>
+                    <dt>Distance</dt>
+                    <dd>{{ trip.estimatedDistanceKm ?? 0 }} km</dd>
+                  </div>
+                  <div>
+                    <dt>Cost</dt>
+                    <dd>{{ formatCurrency(trip.estimatedTotalCost) }}</dd>
+                  </div>
+                </dl>
+                <footer>
+                  <a
+                    mat-flat-button
+                    color="primary"
+                    [routerLink]="item.isOwner ? ['/trip', item.tripId] : ['/t', item.shareSlug]"
+                  >
+                    Open
+                  </a>
+                  <button mat-stroked-button type="button" (click)="removeSavedTrip(item.tripId)">
+                    Remove
+                  </button>
+                </footer>
+              } @else {
                 <div>
-                  <dt>Cost</dt>
-                  <dd>{{ formatCurrency(trip.estimatedTotalCost) }}</dd>
+                  <h2>Trip no longer shared</h2>
+                  <p>The owner turned off sharing for this trip.</p>
                 </div>
-              </dl>
-              <footer>
-                <a mat-flat-button color="primary" [routerLink]="['/trip', trip.id]">Open</a>
-                <button mat-stroked-button type="button" (click)="removeSavedTrip(trip.id)">Remove</button>
-              </footer>
+                <footer>
+                  <button mat-stroked-button type="button" (click)="removeSavedTrip(item.tripId)">
+                    Remove
+                  </button>
+                </footer>
+              }
             </mat-card>
           }
         </section>
@@ -151,31 +173,34 @@ import { TripsApiService } from '../trip-result/services/trips-api.service';
 })
 export class SavedTripsComponent {
   private readonly savedTripsService = inject(SavedTripsService);
-  private readonly tripsApi = inject(TripsApiService);
+  private readonly toast = inject(ToastService);
 
-  protected readonly trips = signal<Trip[]>([]);
+  protected readonly items = signal<SavedTrip[]>([]);
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly savedTrips = computed(() => {
     const savedIds = this.savedTripsService.ids();
-    return this.trips().filter((trip) => savedIds.has(trip.id));
+    return this.items().filter((item) => savedIds.has(item.tripId));
   });
 
   constructor() {
-    this.tripsApi
-      .listTrips()
+    this.savedTripsService
+      .list()
       .pipe(
         finalize(() => this.isLoading.set(false)),
         takeUntilDestroyed()
       )
       .subscribe({
-        next: (trips) => this.trips.set(trips),
+        next: (items) => this.items.set(items),
         error: (error: Error) => this.errorMessage.set(error.message)
       });
   }
 
   protected removeSavedTrip(tripId: string): void {
-    this.savedTripsService.remove(tripId);
+    this.savedTripsService.remove(tripId).subscribe({
+      next: () => this.toast.success('Trip removed from saved'),
+      error: (error: Error) => this.toast.error(error.message)
+    });
   }
 
   protected formatCurrency(value?: number | null): string {

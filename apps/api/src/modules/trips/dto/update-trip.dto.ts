@@ -73,9 +73,15 @@ export class UpdateTripDto {
   @IsString()
   notes?: string;
 
+  /** Saved garage entry. Send `null` to detach the vehicle. */
   @IsOptional()
   @IsUUID()
-  vehicleId?: string;
+  userVehicleId?: string | null;
+
+  /** @deprecated Catalog vehicle id. Prefer `userVehicleId`. Send `null` to detach. */
+  @IsOptional()
+  @IsUUID()
+  vehicleId?: string | null;
 
   @IsOptional()
   @IsEnum(TripStatus)

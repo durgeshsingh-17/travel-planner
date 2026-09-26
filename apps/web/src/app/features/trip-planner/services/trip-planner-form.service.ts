@@ -25,7 +25,7 @@ export class TripPlannerFormService {
         endDate: this.fb.nonNullable.control('', [Validators.required]),
         passengers: this.fb.array([this.createPassengerFormGroup()]),
         travelMode: this.fb.nonNullable.control('', [Validators.required]),
-        vehicleId: this.fb.nonNullable.control(''),
+        userVehicleId: this.fb.nonNullable.control(''),
         budget: this.fb.control<number | null>(null, [
           Validators.required,
           Validators.min(0)

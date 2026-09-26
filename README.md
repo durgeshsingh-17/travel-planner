@@ -80,6 +80,8 @@ npm run dev:web
 | `POSTGRES_PASSWORD` | Local PostgreSQL password. |
 | `POSTGRES_DB` | Local PostgreSQL database. |
 | `POSTGRES_PORT` | Local PostgreSQL port. |
+| `AUTH_TOKEN_SECRET` | **Required.** HMAC secret for sign-in tokens, at least 32 characters. The API refuses to start without it. Generate with `openssl rand -base64 48`. |
+| `AUTH_TOKEN_TTL_SECONDS` | Sign-in token lifetime. Defaults to `604800` (7 days). |
 | `FUEL_PRICE_PETROL_INR` | Configurable petrol price for later cost calculations. |
 | `FUEL_PRICE_DIESEL_INR` | Configurable diesel price for later cost calculations. |
 

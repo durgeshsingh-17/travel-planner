@@ -3,20 +3,20 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
   ParseUUIDPipe,
   Patch,
   Post,
-  UnauthorizedException
+  UseGuards
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
+import { AuthGuard } from '../auth/auth.guard';
+import { CurrentUserId } from '../auth/current-user.decorator';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { PreviewTripDto } from './dto/preview-trip.dto';
 import { TripsService } from './trips.service';
 import { UpdateTripDto } from './dto/update-trip.dto';
-import { AuthService } from '../auth/auth.service';
 
 @ApiTags('trips')
 @Controller({
@@ -24,10 +24,7 @@ import { AuthService } from '../auth/auth.service';
   version: '1'
 })
 export class TripsController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly tripsService: TripsService
-  ) {}
+  constructor(private readonly tripsService: TripsService) {}
 
   @Post('preview')
   preview(@Body() dto: PreviewTripDto) {
@@ -35,59 +32,69 @@ export class TripsController {
   }
 
   @Post()
-  create(@Body() dto: CreateTripDto, @Headers('authorization') authorization?: string) {
-    return this.tripsService.create(dto, this.requiredUserId(authorization));
+  @UseGuards(AuthGuard)
+  create(@Body() dto: CreateTripDto, @CurrentUserId() userId: string) {
+    return this.tripsService.create(dto, userId);
   }
 
   @Get()
-  findAll(@Headers('authorization') authorization?: string) {
-    return this.tripsService.findAll(this.optionalUserId(authorization));
+  @UseGuards(AuthGuard)
+  findAll(@CurrentUserId() userId: string) {
+    return this.tripsService.findAll(userId);
   }
 
   @Get(':id')
+  @UseGuards(AuthGuard)
   findById(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Headers('authorization') authorization?: string
+    @CurrentUserId() userId: string
   ) {
-    return this.tripsService.findById(id, this.optionalUserId(authorization));
+    return this.tripsService.findById(id, userId);
   }
 
   @Patch(':id')
+  @UseGuards(AuthGuard)
   update(
     @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateTripDto,
-    @Headers('authorization') authorization?: string
+    @CurrentUserId() userId: string
   ) {
-    return this.tripsService.update(id, dto, this.optionalUserId(authorization));
+    return this.tripsService.update(id, dto, userId);
   }
 
   @Delete(':id')
+  @UseGuards(AuthGuard)
   delete(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Headers('authorization') authorization?: string
+    @CurrentUserId() userId: string
   ) {
-    return this.tripsService.delete(id, this.optionalUserId(authorization));
+    return this.tripsService.delete(id, userId);
   }
 
   @Post(':id/generate-itinerary')
+  @UseGuards(AuthGuard)
   generateItinerary(
     @Param('id', new ParseUUIDPipe()) id: string,
-    @Headers('authorization') authorization?: string
+    @CurrentUserId() userId: string
   ) {
-    return this.tripsService.generateItinerary(id, this.requiredUserId(authorization));
+    return this.tripsService.generateItinerary(id, userId);
   }
 
-  private optionalUserId(authorization?: string): string | undefined {
-    return authorization
-      ? this.authService.resolveUserIdFromAuthorization(authorization)
-      : undefined;
+  @Post(':id/share')
+  @UseGuards(AuthGuard)
+  enableSharing(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUserId() userId: string
+  ) {
+    return this.tripsService.enableSharing(id, userId);
   }
 
-  private requiredUserId(authorization?: string): string {
-    if (!authorization) {
-      throw new UnauthorizedException('Sign in to generate and save trips.');
-    }
-
-    return this.authService.resolveUserIdFromAuthorization(authorization);
+  @Delete(':id/share')
+  @UseGuards(AuthGuard)
+  disableSharing(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @CurrentUserId() userId: string
+  ) {
+    return this.tripsService.disableSharing(id, userId);
   }
 }

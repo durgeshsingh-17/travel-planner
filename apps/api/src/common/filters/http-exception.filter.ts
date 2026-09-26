@@ -3,7 +3,8 @@ import {
   Catch,
   ExceptionFilter,
   HttpException,
-  HttpStatus
+  HttpStatus,
+  Logger
 } from '@nestjs/common';
 import { Response } from 'express';
 
@@ -18,6 +19,8 @@ interface ApiErrorBody {
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(HttpExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -28,6 +31,13 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const exceptionResponse =
       exception instanceof HttpException ? exception.getResponse() : null;
+
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      this.logger.error(
+        exception instanceof Error ? exception.message : 'Unhandled exception',
+        exception instanceof Error ? exception.stack : undefined
+      );
+    }
 
     const body: ApiErrorBody = {
       success: false,
@@ -46,8 +56,24 @@ export class HttpExceptionFilter implements ExceptionFilter {
       return 'BAD_REQUEST';
     }
 
+    if (status === HttpStatus.UNAUTHORIZED) {
+      return 'UNAUTHORIZED';
+    }
+
+    if (status === HttpStatus.FORBIDDEN) {
+      return 'FORBIDDEN';
+    }
+
     if (status === HttpStatus.NOT_FOUND) {
       return 'NOT_FOUND';
+    }
+
+    if (status === HttpStatus.CONFLICT) {
+      return 'CONFLICT';
+    }
+
+    if (status === HttpStatus.TOO_MANY_REQUESTS) {
+      return 'RATE_LIMITED';
     }
 
     return status >= 500 ? 'INTERNAL_SERVER_ERROR' : 'REQUEST_FAILED';

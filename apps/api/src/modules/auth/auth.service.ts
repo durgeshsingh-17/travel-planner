@@ -18,12 +18,40 @@ import { RegisterDto } from './dto/register.dto';
 
 const scrypt = promisify(scryptCallback);
 
+const MIN_SECRET_LENGTH = 32;
+const DEFAULT_TOKEN_TTL_SECONDS = 7 * 24 * 60 * 60;
+const TOKEN_HEADER = Buffer.from(
+  JSON.stringify({ alg: 'HS256', typ: 'JWT' })
+).toString('base64url');
+
+export interface AuthTokenPayload {
+  sub: string;
+  iat: number;
+  exp: number;
+}
+
 @Injectable()
 export class AuthService {
+  private readonly tokenSecret: string;
+  private readonly tokenTtlSeconds: number;
+
   constructor(
     private readonly prisma: PrismaService,
-    private readonly config: ConfigService
-  ) {}
+    config: ConfigService
+  ) {
+    const secret = config.get<string>('auth.tokenSecret');
+
+    if (!secret || secret.length < MIN_SECRET_LENGTH) {
+      throw new Error(
+        `AUTH_TOKEN_SECRET must be set to at least ${MIN_SECRET_LENGTH} characters. ` +
+          'Generate one with: openssl rand -base64 48'
+      );
+    }
+
+    this.tokenSecret = secret;
+    this.tokenTtlSeconds =
+      config.get<number>('auth.tokenTtlSeconds') || DEFAULT_TOKEN_TTL_SECONDS;
+  }
 
   status() {
     return {
@@ -68,10 +96,9 @@ export class AuthService {
     return this.authResponse(user);
   }
 
-  async me(token?: string) {
-    const payload = this.verifyToken(token);
+  async me(userId: string) {
     const user = await this.prisma.user.findUnique({
-      where: { id: payload.sub }
+      where: { id: userId }
     });
 
     if (!user) {
@@ -81,8 +108,30 @@ export class AuthService {
     return this.serializeUser(user);
   }
 
-  resolveUserIdFromAuthorization(authorization?: string): string {
-    return this.verifyToken(authorization).sub;
+  verifyToken(authorization?: string): AuthTokenPayload {
+    if (!authorization) {
+      throw new UnauthorizedException('Missing auth token');
+    }
+
+    const token = authorization.replace(/^Bearer\s+/i, '');
+    const [header, payload, signature] = token.split('.');
+
+    if (
+      header !== TOKEN_HEADER ||
+      !payload ||
+      !signature ||
+      !this.signatureMatches(`${header}.${payload}`, signature)
+    ) {
+      throw new UnauthorizedException('Invalid auth token');
+    }
+
+    const claims = this.parseClaims(payload);
+
+    if (claims.exp <= Math.floor(Date.now() / 1000)) {
+      throw new UnauthorizedException('Session has expired. Please sign in again.');
+    }
+
+    return claims;
   }
 
   private async hashPassword(password: string): Promise<string> {
@@ -132,38 +181,46 @@ export class AuthService {
   }
 
   private signToken(userId: string): string {
+    const issuedAt = Math.floor(Date.now() / 1000);
     const payload = Buffer.from(
       JSON.stringify({
         sub: userId,
-        iat: Date.now()
-      })
+        iat: issuedAt,
+        exp: issuedAt + this.tokenTtlSeconds
+      } satisfies AuthTokenPayload)
     ).toString('base64url');
-    return `${payload}.${this.signPayload(payload)}`;
+    const signingInput = `${TOKEN_HEADER}.${payload}`;
+
+    return `${signingInput}.${this.sign(signingInput)}`;
   }
 
-  private verifyToken(token?: string): { sub: string } {
-    if (!token) {
-      throw new UnauthorizedException('Missing auth token');
+  private parseClaims(payload: string): AuthTokenPayload {
+    try {
+      const claims = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as
+        Partial<AuthTokenPayload>;
+
+      if (
+        typeof claims.sub === 'string' &&
+        typeof claims.iat === 'number' &&
+        typeof claims.exp === 'number'
+      ) {
+        return claims as AuthTokenPayload;
+      }
+    } catch {
+      // Fall through to the generic invalid-token error.
     }
 
-    const normalizedToken = token.replace(/^Bearer\s+/i, '');
-    const [payload, signature] = normalizedToken.split('.');
-
-    if (!payload || !signature || this.signPayload(payload) !== signature) {
-      throw new UnauthorizedException('Invalid auth token');
-    }
-
-    return JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) as {
-      sub: string;
-    };
+    throw new UnauthorizedException('Invalid auth token');
   }
 
-  private signPayload(payload: string): string {
-    return createHmac(
-      'sha256',
-      this.config.get<string>('AUTH_TOKEN_SECRET', 'dev-auth-secret')
-    )
-      .update(payload)
-      .digest('base64url');
+  private signatureMatches(signingInput: string, signature: string): boolean {
+    const expected = Buffer.from(this.sign(signingInput));
+    const actual = Buffer.from(signature);
+
+    return expected.length === actual.length && timingSafeEqual(expected, actual);
+  }
+
+  private sign(signingInput: string): string {
+    return createHmac('sha256', this.tokenSecret).update(signingInput).digest('base64url');
   }
 }

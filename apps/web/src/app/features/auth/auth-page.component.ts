@@ -46,11 +46,16 @@ export class AuthPageComponent {
   protected readonly title = computed(() =>
     this.mode() === 'signup' ? 'Create your travel account' : 'Welcome back'
   );
-  protected readonly authReason = computed(() =>
-    this.route.snapshot.queryParamMap.get('reason') === 'generate-trip'
-      ? 'Sign in or create an account to generate and save your trip.'
-      : null
-  );
+  protected readonly authReason = computed(() => {
+    switch (this.route.snapshot.queryParamMap.get('reason')) {
+      case 'generate-trip':
+        return 'Sign in or create an account to generate and save your trip.';
+      case 'session-expired':
+        return 'Your session has expired. Please sign in again.';
+      default:
+        return null;
+    }
+  });
   protected readonly form = this.fb.nonNullable.group({
     name: ['', [Validators.pattern(PERSON_NAME_PATTERN)]],
     email: ['', [Validators.required, Validators.email]],

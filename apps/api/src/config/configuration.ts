@@ -3,6 +3,10 @@ export const configuration = () => ({
     port: parseInt(process.env.API_PORT ?? '3000', 10),
     corsOrigin: process.env.API_CORS_ORIGIN ?? 'http://localhost:4200'
   },
+  auth: {
+    tokenSecret: process.env.AUTH_TOKEN_SECRET,
+    tokenTtlSeconds: parseInt(process.env.AUTH_TOKEN_TTL_SECONDS ?? '604800', 10)
+  },
   database: {
     url: process.env.DATABASE_URL
   },
