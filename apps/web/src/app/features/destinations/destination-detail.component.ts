@@ -6,7 +6,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatChipsModule } from '@angular/material/chips';
 
-import { Destination } from './destination.model';
+import { Destination, DestinationPlace } from './destination.model';
 import { DestinationsApiService } from './destinations-api.service';
 import { EmptyStateComponent } from '../../shared/components/empty-state.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
@@ -194,6 +194,27 @@ export class DestinationDetailComponent {
           this.isLoading.set(false);
         }
       });
+  }
+
+  /** Only facts we actually have; missing values are hidden rather than guessed. */
+  protected placeFacts(place: DestinationPlace): string[] {
+    const facts: string[] = [];
+
+    if (place.averageVisitMinutes) {
+      facts.push(`${place.averageVisitMinutes} min`);
+    }
+
+    if (place.estimatedCost === 0) {
+      facts.push('Free entry');
+    } else if (place.estimatedCost) {
+      facts.push(`Rs ${place.estimatedCost}`);
+    }
+
+    if (place.rating) {
+      facts.push(`${place.rating}/5`);
+    }
+
+    return facts;
   }
 
   protected heroBackground(imageUrl?: string | null): string {

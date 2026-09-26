@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import { ActivatedRoute, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, switchMap } from 'rxjs';
 import { MatButtonModule } from '@angular/material/button';
@@ -13,6 +13,7 @@ import { EmptyStateComponent } from '../../shared/components/empty-state.compone
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
 import { RouteMapComponent } from '../../shared/ui/route-map/route-map.component';
 import { SavedTripsService } from '../saved-trips/saved-trips.service';
+import { SessionService } from '../../core/auth/session.service';
 import { ToastService } from '../../shared/services/toast.service';
 import { Trip } from './models/trip.model';
 import { TripsApiService } from './services/trips-api.service';
@@ -38,11 +39,26 @@ import { TripsApiService } from './services/trips-api.service';
 export class TripResultComponent {
   private readonly api = inject(ApiService);
   private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly savedTrips = inject(SavedTripsService);
+  private readonly session = inject(SessionService);
   private readonly toast = inject(ToastService);
   private readonly tripsApi = inject(TripsApiService);
 
   protected readonly trip = signal<Trip | null>(null);
+  /** True on the public `/t/:shareSlug` view, where the viewer may not own the trip. */
+  protected readonly isSharedView = signal(false);
+  protected readonly isSignedIn = computed(() => this.session.session().isAuthenticated);
+  protected readonly isUpdatingShare = signal(false);
+  protected readonly effectiveMileage = computed(() => {
+    const trip = this.trip();
+    return (
+      trip?.costBreakdown?.mileageKmPerLitre ??
+      trip?.userVehicle?.customMileage ??
+      trip?.vehicle?.averageMileage ??
+      null
+    );
+  });
   protected readonly isLoading = signal(true);
   protected readonly errorMessage = signal<string | null>(null);
   protected readonly weatherDays = signal<
@@ -90,9 +106,13 @@ export class TripResultComponent {
     this.route.paramMap
       .pipe(
         switchMap((params) => {
+          const shareSlug = params.get('shareSlug');
           this.isLoading.set(true);
           this.errorMessage.set(null);
-          return this.tripsApi.getTrip(params.get('id') ?? '');
+          this.isSharedView.set(shareSlug !== null);
+          return shareSlug !== null
+            ? this.tripsApi.getSharedTrip(shareSlug)
+            : this.tripsApi.getTrip(params.get('id') ?? '');
         }),
         finalize(() => this.isLoading.set(false)),
         takeUntilDestroyed()
@@ -131,25 +151,81 @@ export class TripResultComponent {
   }
 
   protected toggleSavedTrip(tripId: string): void {
-    const saved = this.savedTrips.toggle(tripId);
-    this.toast.success(saved ? 'Trip saved' : 'Trip removed from saved');
-  }
-
-  protected async shareTrip(trip: Trip): Promise<void> {
-    const shareUrl = window.location.href;
-    const shareText = `${trip.sourceName} to ${trip.destinationName} • ${trip.startDate} to ${trip.endDate}`;
-
-    if (navigator.share) {
-      await navigator.share({
-        title: trip.title,
-        text: shareText,
-        url: shareUrl
+    if (!this.isSignedIn()) {
+      void this.router.navigate(['/sign-in'], {
+        queryParams: { returnUrl: this.router.url }
       });
       return;
     }
 
-    await navigator.clipboard.writeText(shareUrl);
-    this.toast.success('Trip link copied');
+    this.savedTrips.toggle(tripId).subscribe({
+      next: (saved) => this.toast.success(saved ? 'Trip saved' : 'Trip removed from saved'),
+      error: (error: Error) => this.toast.error(error.message)
+    });
+  }
+
+  protected shareTrip(trip: Trip): void {
+    if (this.isSharedView()) {
+      void this.openShareSheet(trip, window.location.href);
+      return;
+    }
+
+    if (trip.visibility === 'UNLISTED' && trip.shareSlug) {
+      void this.openShareSheet(trip, this.shareUrl(trip.shareSlug));
+      return;
+    }
+
+    this.isUpdatingShare.set(true);
+    this.tripsApi
+      .enableSharing(trip.id)
+      .pipe(finalize(() => this.isUpdatingShare.set(false)))
+      .subscribe({
+        next: (sharing) => {
+          this.trip.set({ ...trip, ...sharing });
+
+          if (sharing.shareSlug) {
+            void this.openShareSheet(trip, this.shareUrl(sharing.shareSlug));
+          }
+        },
+        error: (error: Error) => this.toast.error(error.message)
+      });
+  }
+
+  protected stopSharing(trip: Trip): void {
+    this.isUpdatingShare.set(true);
+    this.tripsApi
+      .disableSharing(trip.id)
+      .pipe(finalize(() => this.isUpdatingShare.set(false)))
+      .subscribe({
+        next: (sharing) => {
+          this.trip.set({ ...trip, ...sharing });
+          this.toast.success('Sharing turned off. Old links no longer work.');
+        },
+        error: (error: Error) => this.toast.error(error.message)
+      });
+  }
+
+  private shareUrl(shareSlug: string): string {
+    return `${window.location.origin}/t/${shareSlug}`;
+  }
+
+  private async openShareSheet(trip: Trip, shareUrl: string): Promise<void> {
+    const shareText = `${trip.sourceName} to ${trip.destinationName} • ${trip.startDate} to ${trip.endDate}`;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: trip.title, text: shareText, url: shareUrl });
+        return;
+      }
+
+      await navigator.clipboard.writeText(shareUrl);
+      this.toast.success('Share link copied. Traveller details stay private.');
+    } catch (error) {
+      // Closing the native share sheet rejects with AbortError; that is not a failure.
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        this.toast.error('Could not share the link. Please copy it from the address bar.');
+      }
+    }
   }
 
   private loadWeather(trip: Trip): void {

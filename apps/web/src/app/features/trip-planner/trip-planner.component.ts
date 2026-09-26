@@ -266,7 +266,7 @@ export class TripPlannerComponent {
       endDate: '',
       passengers: [],
       travelMode: '',
-      vehicleId: '',
+      userVehicleId: '',
       budget: null,
       interests: [],
       preferences: [],
@@ -309,7 +309,7 @@ export class TripPlannerComponent {
       | 'startDate'
       | 'endDate'
       | 'travelMode'
-      | 'vehicleId'
+      | 'userVehicleId'
       | 'budget'
   ): boolean {
     const control = this.form.controls[controlName];
@@ -432,7 +432,7 @@ export class TripPlannerComponent {
       })),
       budget: value.budget === null ? undefined : Number(value.budget),
       travelMode: value.travelMode,
-      vehicleId: value.vehicleId || undefined,
+      userVehicleId: value.userVehicleId || undefined,
       interests: value.interests,
       preferences: value.preferences,
       notes: value.notes || undefined

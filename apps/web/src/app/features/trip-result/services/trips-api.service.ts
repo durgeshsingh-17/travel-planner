@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import { ApiService } from '../../../core/services/api.service';
-import { CreateTripRequest, Trip } from '../models/trip.model';
+import { CreateTripRequest, Trip, TripSharing } from '../models/trip.model';
 
 @Injectable({
   providedIn: 'root'
@@ -27,5 +27,17 @@ export class TripsApiService {
 
   listTrips(): Observable<Trip[]> {
     return this.api.get<Trip[]>('/trips');
+  }
+
+  getSharedTrip(shareSlug: string): Observable<Trip> {
+    return this.api.get<Trip>(`/shared-trips/${encodeURIComponent(shareSlug)}`);
+  }
+
+  enableSharing(tripId: string): Observable<TripSharing> {
+    return this.api.post<TripSharing, Record<string, never>>(`/trips/${tripId}/share`, {});
+  }
+
+  disableSharing(tripId: string): Observable<TripSharing> {
+    return this.api.delete<TripSharing>(`/trips/${tripId}/share`);
   }
 }

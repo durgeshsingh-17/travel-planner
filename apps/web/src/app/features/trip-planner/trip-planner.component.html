@@ -258,10 +258,10 @@
       } @else {
         <mat-form-field class="vehicle-select" appearance="outline">
           <mat-label>Choose vehicle</mat-label>
-          <mat-select formControlName="vehicleId">
+          <mat-select formControlName="userVehicleId">
             <mat-option value="">No vehicle</mat-option>
             @for (entry of userVehicles(); track entry.id) {
-              <mat-option [value]="entry.vehicle.id">
+              <mat-option [value]="entry.id">
                 {{ entry.nickname || entry.vehicle.brand + ' ' + entry.vehicle.model }}
                 • {{ entry.customMileage ?? entry.vehicle.averageMileage ?? 18 }} km/l
               </mat-option>

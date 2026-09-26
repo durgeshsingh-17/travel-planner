@@ -7,7 +7,7 @@
   } @else if (trip(); as trip) {
     <section class="summary" aria-labelledby="trip-title">
       <div class="summary-copy">
-        <p class="page-kicker">Trip Result</p>
+        <p class="page-kicker">{{ isSharedView() ? 'Shared Trip' : 'Trip Result' }}</p>
         <h1 class="page-title" id="trip-title">
           <span>{{ trip.sourceName }}</span>
           <small>to</small>
@@ -21,9 +21,30 @@
 
       <div class="summary-actions">
         <button mat-flat-button color="primary" type="button" (click)="toggleSavedTrip(trip.id)">
-          {{ isSaved() ? 'Saved' : 'Save Trip' }}
+          @if (!isSignedIn()) {
+            Sign in to save
+          } @else {
+            {{ isSaved() ? 'Saved' : 'Save Trip' }}
+          }
         </button>
-        <button mat-stroked-button type="button" (click)="shareTrip(trip)">Share Trip</button>
+        <button
+          mat-stroked-button
+          type="button"
+          [disabled]="isUpdatingShare()"
+          (click)="shareTrip(trip)"
+        >
+          {{ isSharedView() || trip.visibility === 'UNLISTED' ? 'Copy share link' : 'Share Trip' }}
+        </button>
+        @if (!isSharedView() && trip.visibility === 'UNLISTED') {
+          <button
+            mat-button
+            type="button"
+            [disabled]="isUpdatingShare()"
+            (click)="stopSharing(trip)"
+          >
+            Stop sharing
+          </button>
+        }
       </div>
     </section>
 
@@ -55,11 +76,19 @@
             <dl>
               <div>
                 <dt>Vehicle</dt>
-                <dd>{{ trip.vehicle.brand }} {{ trip.vehicle.model }}</dd>
+                <dd>
+                  {{ trip.userVehicle?.nickname || trip.vehicle.brand + ' ' + trip.vehicle.model }}
+                </dd>
               </div>
               <div>
-                <dt>Estimated mileage</dt>
-                <dd>{{ trip.vehicle.averageMileage ?? 18 }} km/l</dd>
+                <dt>{{ trip.userVehicle?.customMileage ? 'Your mileage' : 'Estimated mileage' }}</dt>
+                <dd>
+                  @if (effectiveMileage(); as mileage) {
+                    {{ mileage }} km/l
+                  } @else {
+                    Not available
+                  }
+                </dd>
               </div>
               <div>
                 <dt>Trip distance</dt>
@@ -87,17 +116,21 @@
 
 	        <mat-card class="overview-card travellers-card" appearance="outlined">
 	          <h2>Travellers</h2>
-	          <div class="traveller-list">
-	            @for (traveller of trip.travellers; track traveller.id) {
-	              <div class="traveller-row">
-	                <span class="traveller-avatar">{{ traveller.fullName.charAt(0) }}</span>
-	                <div>
-	                  <strong>{{ traveller.fullName }}</strong>
-	                  <span>{{ traveller.age }} yrs • {{ labelize(traveller.gender) }}</span>
+	          @if (trip.travellers) {
+	            <div class="traveller-list">
+	              @for (traveller of trip.travellers; track traveller.id) {
+	                <div class="traveller-row">
+	                  <span class="traveller-avatar">{{ traveller.fullName.charAt(0) }}</span>
+	                  <div>
+	                    <strong>{{ traveller.fullName }}</strong>
+	                    <span>{{ traveller.age }} yrs • {{ labelize(traveller.gender) }}</span>
+	                  </div>
 	                </div>
-	              </div>
-	            }
-	          </div>
+	              }
+	            </div>
+	          } @else {
+	            <p>{{ trip.travellerCount }} travellers. Names are kept private on shared trips.</p>
+	          }
 	        </mat-card>
 	      </section>
       </mat-tab>

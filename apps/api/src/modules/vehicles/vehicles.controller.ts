@@ -3,16 +3,18 @@ import {
   Controller,
   Delete,
   Get,
-  Headers,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
-  Query
+  Query,
+  UseGuards
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
-import { AuthService } from '../auth/auth.service';
+import { AuthGuard } from '../auth/auth.guard';
+import { CurrentUserId } from '../auth/current-user.decorator';
 import { CreateUserVehicleDto } from './dto/create-user-vehicle.dto';
 import { ListVehiclesQueryDto } from './dto/list-vehicles-query.dto';
 import { UpdateUserVehicleDto } from './dto/update-user-vehicle.dto';
@@ -24,10 +26,7 @@ import { VehiclesService } from './vehicles.service';
   version: '1'
 })
 export class VehiclesController {
-  constructor(
-    private readonly authService: AuthService,
-    private readonly vehiclesService: VehiclesService
-  ) {}
+  constructor(private readonly vehiclesService: VehiclesService) {}
 
   @Get()
   findAll(@Query() query: ListVehiclesQueryDto) {
@@ -35,57 +34,43 @@ export class VehiclesController {
   }
 
   @Get('my')
-  findMine(@Headers('authorization') authorization?: string) {
-    return this.vehiclesService.findUserVehicles(
-      this.authService.resolveUserIdFromAuthorization(authorization)
-    );
+  @UseGuards(AuthGuard)
+  findMine(@CurrentUserId() userId: string) {
+    return this.vehiclesService.findUserVehicles(userId);
   }
 
   @Post('my')
-  createMine(
-    @Headers('authorization') authorization: string | undefined,
-    @Body() dto: CreateUserVehicleDto
-  ) {
-    return this.vehiclesService.createUserVehicle(
-      this.authService.resolveUserIdFromAuthorization(authorization),
-      dto
-    );
+  @UseGuards(AuthGuard)
+  createMine(@CurrentUserId() userId: string, @Body() dto: CreateUserVehicleDto) {
+    return this.vehiclesService.createUserVehicle(userId, dto);
   }
 
   @Patch('my/:id')
+  @UseGuards(AuthGuard)
   updateMine(
-    @Headers('authorization') authorization: string | undefined,
-    @Param('id') id: string,
+    @CurrentUserId() userId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateUserVehicleDto
   ) {
-    return this.vehiclesService.updateUserVehicle(
-      this.authService.resolveUserIdFromAuthorization(authorization),
-      id,
-      dto
-    );
+    return this.vehiclesService.updateUserVehicle(userId, id, dto);
   }
 
   @Put('my/:id')
+  @UseGuards(AuthGuard)
   replaceMine(
-    @Headers('authorization') authorization: string | undefined,
-    @Param('id') id: string,
+    @CurrentUserId() userId: string,
+    @Param('id', new ParseUUIDPipe()) id: string,
     @Body() dto: UpdateUserVehicleDto
   ) {
-    return this.vehiclesService.updateUserVehicle(
-      this.authService.resolveUserIdFromAuthorization(authorization),
-      id,
-      dto
-    );
+    return this.vehiclesService.updateUserVehicle(userId, id, dto);
   }
 
   @Delete('my/:id')
+  @UseGuards(AuthGuard)
   deleteMine(
-    @Headers('authorization') authorization: string | undefined,
-    @Param('id') id: string
+    @CurrentUserId() userId: string,
+    @Param('id', new ParseUUIDPipe()) id: string
   ) {
-    return this.vehiclesService.deleteUserVehicle(
-      this.authService.resolveUserIdFromAuthorization(authorization),
-      id
-    );
+    return this.vehiclesService.deleteUserVehicle(userId, id);
   }
 }

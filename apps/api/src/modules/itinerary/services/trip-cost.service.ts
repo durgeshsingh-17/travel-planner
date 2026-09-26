@@ -13,6 +13,7 @@ export interface TripCostBreakdown {
   total: number;
   fuelRequiredLitres: number;
   fuelPricePerLitre: number;
+  mileageKmPerLitre: number;
 }
 
 @Injectable()
@@ -50,7 +51,8 @@ export class TripCostService {
       miscellaneous,
       total,
       fuelRequiredLitres: Math.round(fuelRequiredLitres * 10) / 10,
-      fuelPricePerLitre: fuelPrice
+      fuelPricePerLitre: fuelPrice,
+      mileageKmPerLitre: mileage
     };
   }
 

@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Headers, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 
+import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
+import { CurrentUserId } from './current-user.decorator';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 
@@ -29,7 +31,8 @@ export class AuthController {
   }
 
   @Get('me')
-  me(@Headers('authorization') authorization?: string) {
-    return this.authService.me(authorization);
+  @UseGuards(AuthGuard)
+  me(@CurrentUserId() userId: string) {
+    return this.authService.me(userId);
   }
 }

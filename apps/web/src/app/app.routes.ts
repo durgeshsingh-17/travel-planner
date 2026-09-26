@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 
 import { ShellComponent } from './layout/shell/shell.component';
+import { authGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
   {
@@ -23,6 +24,14 @@ export const routes: Routes = [
       },
       {
         path: 'trip/:id',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/trip-result/trip-result.component').then(
+            (component) => component.TripResultComponent
+          )
+      },
+      {
+        path: 't/:shareSlug',
         loadComponent: () =>
           import('./features/trip-result/trip-result.component').then(
             (component) => component.TripResultComponent
@@ -44,6 +53,7 @@ export const routes: Routes = [
       },
       {
         path: 'itinerary',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/itinerary/itinerary.component').then(
             (component) => component.ItineraryComponent
@@ -51,6 +61,7 @@ export const routes: Routes = [
       },
       {
         path: 'profile',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/profile/profile.component').then(
             (component) => component.ProfileComponent
@@ -58,6 +69,7 @@ export const routes: Routes = [
       },
       {
         path: 'saved-trips',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/saved-trips/saved-trips.component').then(
             (component) => component.SavedTripsComponent
@@ -65,6 +77,7 @@ export const routes: Routes = [
       },
       {
         path: 'trip-details',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/trip-details/trip-details.component').then(
             (component) => component.TripDetailsComponent
@@ -72,6 +85,7 @@ export const routes: Routes = [
       },
       {
         path: 'trip-details/:id',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/trip-details/trip-details.component').then(
             (component) => component.TripDetailsComponent
@@ -79,6 +93,7 @@ export const routes: Routes = [
       },
       {
         path: 'vehicles',
+        canActivate: [authGuard],
         loadComponent: () =>
           import('./features/vehicles/vehicles.component').then(
             (component) => component.VehiclesComponent

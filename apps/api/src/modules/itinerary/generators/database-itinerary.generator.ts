@@ -94,12 +94,11 @@ export class DatabaseItineraryGenerator implements ItineraryGenerator {
       this.arrivalDay(input, places.slice(0, 1), oneWayDistance)
     ];
     const middleDayCount = Math.max(dayCount - 2, 0);
-    const middlePlaces = places.slice(1);
+    const middleDayPlaces = this.distributePlaces(places.slice(1), middleDayCount);
 
-    for (let index = 0; index < middleDayCount; index += 1) {
-      const dayPlaces = this.pickPlacesForDay(middlePlaces, index);
+    middleDayPlaces.forEach((dayPlaces, index) => {
       days.push(this.localDay(input, dayPlaces, index + 2));
-    }
+    });
 
     days.push(this.returnDay(input, oneWayDistance, dayCount));
     return days;
@@ -199,9 +198,14 @@ export class DatabaseItineraryGenerator implements ItineraryGenerator {
       date: this.dateForDay(input.startDate, dayNumber),
       title: places.length
         ? `${input.destinationName}: ${places.map((place) => place.name).join(' + ')}`
-        : `${input.destinationName} local exploration`,
-      description: this.planDescription(input, 'Local exploration built from saved destination places.'),
-      estimatedDistanceKm: Math.max(18, places.length * 12),
+        : `${input.destinationName}: free day`,
+      description: places.length
+        ? this.planDescription(input, 'Local exploration built from saved destination places.')
+        : this.planDescription(
+            input,
+            'A free day to explore at your own pace. We have no more curated stops for this destination yet.'
+          ),
+      estimatedDistanceKm: places.length ? Math.max(18, places.length * 12) : 0,
       estimatedCost: this.estimateDayCost(activities, input.travellerCount),
       activities
     };
@@ -236,16 +240,20 @@ export class DatabaseItineraryGenerator implements ItineraryGenerator {
     };
   }
 
-  private pickPlacesForDay(places: PlaceForPlan[], dayIndex: number): PlaceForPlan[] {
-    const placesPerDay = 3;
-    const start = dayIndex * placesPerDay;
-    const picked = places.slice(start, start + placesPerDay);
+  /**
+   * Spreads places over the middle days without repeating any stop. When
+   * places run out, the remaining days stay empty and become free days.
+   */
+  private distributePlaces(places: PlaceForPlan[], dayCount: number): PlaceForPlan[][] {
+    const maxPlacesPerDay = 3;
+    const placesPerDay = Math.min(
+      maxPlacesPerDay,
+      Math.max(1, Math.ceil(places.length / Math.max(dayCount, 1)))
+    );
 
-    if (picked.length > 0) {
-      return picked;
-    }
-
-    return places.slice(0, Math.min(places.length, placesPerDay));
+    return Array.from({ length: dayCount }, (_, dayIndex) =>
+      places.slice(dayIndex * placesPerDay, (dayIndex + 1) * placesPerDay)
+    );
   }
 
   private placeActivities(
@@ -365,9 +373,7 @@ export class DatabaseItineraryGenerator implements ItineraryGenerator {
     const preferenceText = input.preferences.length
       ? ` Preferences considered: ${input.preferences.join(', ')}.`
       : '';
-    const notesText = input.notes ? ` Notes: ${input.notes}` : '';
-
-    return `${fallback}${preferenceText}${notesText}`;
+    return `${fallback}${preferenceText}`;
   }
 
   private calculateDayCount(startDate: string, endDate: string): number {

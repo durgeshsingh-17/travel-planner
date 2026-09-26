@@ -9,6 +9,7 @@ import { HealthModule } from './modules/health/health.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { MapsModule } from './modules/maps/maps.module';
 import { PlacesModule } from './modules/places/places.module';
+import { SavedTripsModule } from './modules/saved-trips/saved-trips.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
@@ -26,6 +27,7 @@ import { WeatherModule } from './modules/weather/weather.module';
     AuthModule,
     UsersModule,
     TripsModule,
+    SavedTripsModule,
     LocationsModule,
     DestinationsModule,
     PlacesModule,
