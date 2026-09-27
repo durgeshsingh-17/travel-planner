@@ -52,18 +52,24 @@ export class MeService {
 
     return {
       ...this.authService.serializeUser(user),
+      phoneVerifiedAt: user.phoneVerifiedAt?.toISOString() ?? null,
       createdAt: user.createdAt.toISOString(),
       profile: this.serializeProfile(user.profile)
     };
   }
 
   async update(userId: string, dto: UpdateMeDto) {
+    const current = await this.prisma.user.findUnique({ where: { id: userId }, select: { phone: true } });
+    const phoneChanged = dto.phone !== undefined && dto.phone !== current?.phone;
+
     await this.prisma.user.update({
       where: { id: userId },
       data: {
         name: dto.name?.trim(),
         phone: dto.phone,
-        avatarUrl: dto.avatarUrl
+        avatarUrl: dto.avatarUrl,
+        // A new number has to be verified again before it is used for quotes.
+        ...(phoneChanged ? { phoneVerifiedAt: null } : {})
       }
     });
 

@@ -253,3 +253,141 @@ export const PLACE_CATEGORIES = [
   'MECHANIC',
   'PARKING'
 ];
+
+export interface PackageDocument {
+  slug: string;
+  title: string;
+  summary: string;
+  overview?: string | null;
+  durationDays: number;
+  durationNights: number;
+  startLocationSlug?: string | null;
+  availableMonths?: number[];
+  minPax?: number;
+  maxPax?: number | null;
+  isCustomizable?: boolean;
+  popularityScore?: number;
+  isFeatured?: boolean;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  tags?: string[];
+  route?: Array<{ destinationSlug: string; nights: number }>;
+  tiers?: Array<{
+    level: 'BUDGET' | 'MID_RANGE' | 'PREMIUM' | 'LUXURY';
+    pricePerPerson: number;
+    compareAtPrice?: number | null;
+    childPrice?: number | null;
+    singleSupplement?: number | null;
+    taxesIncluded?: boolean;
+    hotelCategory?: number | null;
+    transportNote?: string | null;
+  }>;
+  days?: Array<{
+    dayNumber: number;
+    title: string;
+    description: string;
+    overnightDestinationSlug?: string | null;
+    mealsIncluded?: string[];
+    places?: Array<{ destinationSlug: string; placeSlug: string }>;
+  }>;
+  stays?: Array<{
+    tierLevel: 'BUDGET' | 'MID_RANGE' | 'PREMIUM' | 'LUXURY';
+    destinationSlug: string;
+    nights: number;
+    hotelName: string;
+    orSimilar?: boolean;
+    hotelCategory?: number | null;
+    roomType?: string | null;
+    mealPlan: 'EP' | 'CP' | 'MAP' | 'AP';
+  }>;
+  inclusions?: string[];
+  exclusions?: string[];
+  policies?: Array<{ kind: 'CANCELLATION' | 'PAYMENT' | 'CHILD' | 'GENERAL'; body: string }>;
+  faqs?: Faq[];
+  media?: MediaRef[];
+}
+
+export interface PackageRow {
+  id: string;
+  slug: string;
+  title: string;
+  status: ContentStatus;
+  durationDays: number;
+  durationNights: number;
+  fromPrice: number | null;
+  route: string;
+  updatedAt: string;
+  health: ContentHealth;
+}
+
+export interface AgentInput {
+  slug: string;
+  displayName: string;
+  email: string;
+  phone: string;
+  city?: string | null;
+  serviceStates?: string[];
+  isActive?: boolean;
+  maxOpenLeads?: number;
+  notes?: string | null;
+  userEmail?: string | null;
+}
+
+export interface AgentRow extends Required<Omit<AgentInput, 'userEmail'>> {
+  id: string;
+  userEmail: string | null;
+  lastRoutedAt: string | null;
+  requestsReceived: number;
+  quotesSent: number;
+  quotesAccepted: number;
+}
+
+export interface AdminQuoteRequestRow {
+  id: string;
+  status: string;
+  createdAt: string;
+  package: { title: string } | null;
+  destination: { name: string } | null;
+  startDate: string | null;
+  flexibleMonth: number | null;
+  nights: number;
+  adults: number;
+  children: number;
+  quotesReceived: number;
+  traveller: { name: string; email: string };
+  routings: Array<{ agent: string; status: string }>;
+  unrouted: boolean;
+}
+
+export interface AdminQuoteRequestDetail {
+  id: string;
+  status: string;
+  package: { title: string } | null;
+  destination: { name: string } | null;
+  startDate: string | null;
+  flexibleMonth: number | null;
+  nights: number;
+  adults: number;
+  childAges: number[];
+  rooms: number;
+  contactName: string;
+  contactPhone: string;
+  contactEmail: string | null;
+  notes: string | null;
+  expiresAt: string;
+  quotes: Array<{ id: string; status: string; totalPrice: number; pricePerPerson: number; agent: { id: string; displayName: string } }>;
+  routings: Array<{ status: string; notifiedAt: string; viewedAt: string | null; respondedAt: string | null; declineReason: string | null; agent: { id: string; displayName: string } }>;
+}
+
+export interface ModerationReview {
+  id: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  moderationNote: string | null;
+  rating: number;
+  title: string | null;
+  body: string;
+  isVerified: boolean;
+  createdAt: string;
+  target: { type: string; name: string; path: string };
+  author: { name: string; email: string };
+}

@@ -7,15 +7,17 @@ import {
   ContentHealth,
   collectionHealth,
   destinationHealth,
+  packageHealth,
   placeHealth
 } from '../content/shared/content-rules';
+import { PackageDocumentDto } from '../content/documents/package-document.dto';
 import { ContentValidationError, ContentWriterService } from '../content/content-writer.service';
 import { DestinationDocumentDto } from '../content/documents/destination-document.dto';
 import { PlaceDocumentDto } from '../content/documents/place-document.dto';
 import { PrismaService } from '../../database/prisma.service';
 import { TagDocumentDto } from '../content/documents/tag-document.dto';
 
-export type ContentEntity = 'DESTINATION' | 'PLACE' | 'COLLECTION';
+export type ContentEntity = 'DESTINATION' | 'PLACE' | 'COLLECTION' | 'PACKAGE';
 
 export interface AdminListQuery {
   q?: string;
@@ -318,6 +320,130 @@ export class AdminContentService {
     return this.getCollection(id);
   }
 
+  // ───────────────────────── Packages ─────────────────────────
+
+  async listPackages(query: AdminListQuery) {
+    const page = query.page ?? 1;
+    const pageSize = Math.min(query.pageSize ?? 25, 100);
+    const where: Prisma.PackageWhereInput = {
+      status: query.status,
+      destinations: query.destinationId ? { some: { destinationId: query.destinationId } } : undefined,
+      OR: query.q
+        ? [
+            { title: { contains: query.q, mode: 'insensitive' } },
+            { slug: { contains: query.q, mode: 'insensitive' } }
+          ]
+        : undefined
+    };
+    const [total, rows] = await this.prisma.$transaction([
+      this.prisma.package.count({ where }),
+      this.prisma.package.findMany({
+        where,
+        include: { destinations: { orderBy: { sortOrder: 'asc' }, include: { destination: { select: { name: true } } } } },
+        orderBy: { updatedAt: 'desc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize
+      })
+    ]);
+
+    return {
+      items: await Promise.all(
+        rows.map(async (row) => ({
+          id: row.id,
+          slug: row.slug,
+          title: row.title,
+          status: row.status,
+          durationDays: row.durationDays,
+          durationNights: row.durationNights,
+          fromPrice: row.fromPrice,
+          route: row.destinations.map((stop) => `${stop.destination.name} ${stop.nights}N`).join(' → '),
+          updatedAt: row.updatedAt.toISOString(),
+          health: await this.packageHealthOf(row.id)
+        }))
+      ),
+      page,
+      pageSize,
+      total
+    };
+  }
+
+  async getPackage(id: string) {
+    const row = await this.prisma.package.findUnique({ where: { id } });
+
+    if (!row) {
+      throw new NotFoundException(`Package '${id}' was not found`);
+    }
+
+    return {
+      id: row.id,
+      status: row.status,
+      publishedAt: row.publishedAt?.toISOString() ?? null,
+      updatedAt: row.updatedAt.toISOString(),
+      health: await this.packageHealthOf(id),
+      document: await this.writer.exportPackage(this.prisma, id)
+    };
+  }
+
+  async createPackage(doc: PackageDocumentDto, actorId: string) {
+    const { id } = await this.prisma.$transaction(async (tx) => {
+      const result = await this.writer.savePackage(tx, doc, { actorId });
+      await this.audit.record({ actorId, action: 'CREATE', entityType: 'PACKAGE', entityId: result.id, summary: doc.title }, tx);
+      return result;
+    });
+
+    return this.getPackage(id);
+  }
+
+  async updatePackage(id: string, doc: PackageDocumentDto, actorId: string, expectedUpdatedAt?: string) {
+    await this.prisma.$transaction(async (tx) => {
+      const before = await this.lockForUpdate(tx, 'PACKAGE', id, expectedUpdatedAt);
+      const changes = this.writer.changedFields(await this.writer.exportPackage(tx, id), doc);
+      await this.writer.savePackage(tx, doc, { id, actorId });
+      await this.audit.record(
+        { actorId, action: 'UPDATE', entityType: 'PACKAGE', entityId: id, summary: before.label, changes },
+        tx
+      );
+    });
+
+    return this.getPackage(id);
+  }
+
+  async packageHealthOf(id: string, tx: Prisma.TransactionClient = this.prisma): Promise<ContentHealth> {
+    const row = await tx.package.findUniqueOrThrow({
+      where: { id },
+      include: {
+        destinations: { select: { destination: { select: { status: true } } } },
+        tiers: { select: { level: true } },
+        stays: { select: { tierLevel: true } },
+        inclusions: { select: { type: true } },
+        policies: { select: { kind: true } },
+        media: { select: { isCover: true } },
+        _count: { select: { days: true, faqs: true, tags: true } }
+      }
+    });
+    const tiersWithStays = new Set(row.stays.map((stay) => stay.tierLevel));
+
+    return packageHealth({
+      summary: row.summary,
+      overview: row.overview,
+      durationDays: row.durationDays,
+      routeCount: row.destinations.length,
+      unpublishedRouteDestinations: row.destinations.filter((stop) => stop.destination.status !== 'PUBLISHED').length,
+      tierCount: row.tiers.length,
+      dayCount: row._count.days,
+      tiersWithoutStays: row.tiers.filter((tier) => !tiersWithStays.has(tier.level)).length,
+      inclusionCount: row.inclusions.filter((entry) => entry.type === 'INCLUSION').length,
+      exclusionCount: row.inclusions.filter((entry) => entry.type === 'EXCLUSION').length,
+      hasCancellationPolicy: row.policies.some((policy) => policy.kind === 'CANCELLATION'),
+      imageCount: row.media.length,
+      hasCover: row.media.length > 0,
+      faqCount: row._count.faqs,
+      tagCount: row._count.tags,
+      seoTitle: row.seoTitle,
+      seoDescription: row.seoDescription
+    });
+  }
+
   // ───────────────────────── Workflow shared by all three ─────────────────────────
 
   async health(entity: ContentEntity, id: string): Promise<ContentHealth> {
@@ -327,6 +453,10 @@ export class AdminContentService {
 
     if (entity === 'PLACE') {
       return (await this.getPlace(id)).health;
+    }
+
+    if (entity === 'PACKAGE') {
+      return this.packageHealthOf(id);
     }
 
     return this.collectionHealthOf(id);
@@ -353,6 +483,8 @@ export class AdminContentService {
         await tx.destination.update({ where: { id }, data });
       } else if (entity === 'PLACE') {
         await tx.place.update({ where: { id }, data });
+      } else if (entity === 'PACKAGE') {
+        await tx.package.update({ where: { id }, data });
       } else {
         await tx.collection.update({ where: { id }, data });
       }
@@ -373,7 +505,9 @@ export class AdminContentService {
       ? this.getDestination(id)
       : entity === 'PLACE'
         ? this.getPlace(id)
-        : this.getCollection(id);
+        : entity === 'PACKAGE'
+          ? this.getPackage(id)
+          : this.getCollection(id);
   }
 
   /** Only drafts and archived content can be deleted; unpublish first. */
@@ -389,6 +523,8 @@ export class AdminContentService {
         await tx.destination.delete({ where: { id } });
       } else if (entity === 'PLACE') {
         await tx.place.delete({ where: { id } });
+      } else if (entity === 'PACKAGE') {
+        await tx.package.delete({ where: { id } });
       } else {
         await tx.collection.delete({ where: { id } });
       }
@@ -573,7 +709,11 @@ export class AdminContentService {
         ? await tx.destination.findUnique({ where: { id }, select: { name: true, status: true, updatedAt: true } })
         : entity === 'PLACE'
           ? await tx.place.findUnique({ where: { id }, select: { name: true, status: true, updatedAt: true } })
-          : await tx.collection
+          : entity === 'PACKAGE'
+            ? await tx.package
+                .findUnique({ where: { id }, select: { title: true, status: true, updatedAt: true } })
+                .then((found) => found && { name: found.title, status: found.status, updatedAt: found.updatedAt })
+            : await tx.collection
               .findUnique({ where: { id }, select: { title: true, status: true, updatedAt: true } })
               .then((found) => found && { name: found.title, status: found.status, updatedAt: found.updatedAt });
 

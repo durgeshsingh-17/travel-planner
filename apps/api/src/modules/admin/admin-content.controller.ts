@@ -16,8 +16,10 @@ import {
   AdminListQueryDto,
   UpdateCollectionDto,
   UpdateDestinationDto,
+  UpdatePackageDto,
   UpdatePlaceDto
 } from './dto/admin.dto';
+import { PackageDocumentDto } from '../content/documents/package-document.dto';
 import { CollectionDocumentDto } from '../content/documents/collection-document.dto';
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { DestinationDocumentDto } from '../content/documents/destination-document.dto';
@@ -167,6 +169,48 @@ export class AdminContentController {
   @Delete('collections/:id')
   deleteCollection(@Param('id', uuid) id: string, @CurrentUserId() actorId: string) {
     return this.content.remove('COLLECTION', id, actorId);
+  }
+
+  // Packages
+
+  @Get('packages')
+  listPackages(@Query() query: AdminListQueryDto) {
+    return this.content.listPackages(query);
+  }
+
+  @Get('packages/:id')
+  getPackage(@Param('id', uuid) id: string) {
+    return this.content.getPackage(id);
+  }
+
+  @Post('packages')
+  createPackage(@Body() doc: PackageDocumentDto, @CurrentUserId() actorId: string) {
+    return this.content.createPackage(doc, actorId);
+  }
+
+  @Put('packages/:id')
+  updatePackage(
+    @Param('id', uuid) id: string,
+    @Body() { expectedUpdatedAt, ...doc }: UpdatePackageDto,
+    @CurrentUserId() actorId: string
+  ) {
+    return this.content.updatePackage(id, doc, actorId, expectedUpdatedAt);
+  }
+
+  @Post('packages/:id/publish')
+  publishPackage(@Param('id', uuid) id: string, @CurrentUserId() actorId: string) {
+    return this.content.setStatus('PACKAGE', id, 'PUBLISHED', actorId);
+  }
+
+  @Post('packages/:id/unpublish')
+  unpublishPackage(@Param('id', uuid) id: string, @CurrentUserId() actorId: string) {
+    return this.content.setStatus('PACKAGE', id, 'DRAFT', actorId);
+  }
+
+  @Roles('ADMIN')
+  @Delete('packages/:id')
+  deletePackage(@Param('id', uuid) id: string, @CurrentUserId() actorId: string) {
+    return this.content.remove('PACKAGE', id, actorId);
   }
 
   // Tags

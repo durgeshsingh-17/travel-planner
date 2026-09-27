@@ -78,6 +78,9 @@ app.get('/robots.txt', (_req, res) => {
       'Disallow: /vehicles',
       'Disallow: /sign-in',
       'Disallow: /sign-up',
+      'Disallow: /quote',
+      'Disallow: /quotes',
+      'Disallow: /agent',
       `Sitemap: ${siteUrl}/sitemap.xml`,
       ''
     ].join('\n')

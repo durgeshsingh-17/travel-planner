@@ -6,6 +6,7 @@
   <nav aria-label="Primary navigation">
     <a mat-button routerLink="/plan">Plan</a>
     <a mat-button routerLink="/destinations">Explore</a>
+    <a mat-button routerLink="/packages">Packages</a>
     <a mat-button routerLink="/itinerary">Itinerary</a>
     <a mat-button routerLink="/saved-trips">Saved</a>
     <a mat-button routerLink="/vehicles">Vehicles</a>
@@ -22,6 +23,10 @@
       @if (session.isEditor()) {
         <a mat-button class="secondary" routerLink="/admin">Admin</a>
       }
+      @if (session.isAgent()) {
+        <a mat-button class="secondary" routerLink="/agent">Agency</a>
+      }
+      <a mat-button class="secondary" routerLink="/quotes">Quotes</a>
       <a mat-button routerLink="/profile" [attr.aria-label]="'Profile for ' + user.name">
         {{ user.name.split(' ')[0] }}
       </a>

@@ -1,0 +1,199 @@
+<main class="admin-page">
+  <h1>{{ id() ? form.controls.basics.controls.title.value || 'Package' : 'New package' }}</h1>
+  @if (isLoading()) {
+    <app-loading-state label="Loading package" />
+  } @else {
+    <div class="editor-layout">
+      <form [formGroup]="form" (ngSubmit)="save()">
+        <mat-tab-group mat-stretch-tabs="false" animationDuration="0ms">
+          <mat-tab label="Basics">
+            <div class="form-grid tab" formGroupName="basics">
+              <mat-form-field appearance="outline" class="wide"><mat-label>Title</mat-label><input matInput formControlName="title" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Slug</mat-label><input matInput formControlName="slug" /><mat-hint>/packages/{{ form.controls.basics.controls.slug.value }}</mat-hint></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Nights</mat-label><input matInput type="number" formControlName="durationNights" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Days</mat-label><input matInput type="number" formControlName="durationDays" /><mat-hint>Nights or nights + 1</mat-hint></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Starts from (location slug)</mat-label><input matInput formControlName="startLocationSlug" placeholder="delhi" /></mat-form-field>
+              <mat-form-field appearance="outline" class="wide"><mat-label>Summary</mat-label><textarea matInput rows="2" formControlName="summary"></textarea><mat-hint align="end">{{ form.controls.basics.controls.summary.value.length }}/400 · shown on cards</mat-hint></mat-form-field>
+              <mat-form-field appearance="outline" class="wide"><mat-label>Overview</mat-label><textarea matInput rows="8" formControlName="overview"></textarea><mat-hint>Plain text, blank line between paragraphs</mat-hint></mat-form-field>
+              <div class="wide">
+                <p class="muted">Runs in (leave empty for all year)</p>
+                <mat-chip-listbox multiple formControlName="availableMonths" aria-label="Months">
+                  @for (month of months; track month.value) { <mat-chip-option [value]="month.value">{{ month.label }}</mat-chip-option> }
+                </mat-chip-listbox>
+              </div>
+              <mat-form-field appearance="outline"><mat-label>Min group size</mat-label><input matInput type="number" formControlName="minPax" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Max group size</mat-label><input matInput type="number" formControlName="maxPax" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Popularity score</mat-label><input matInput type="number" formControlName="popularityScore" /></mat-form-field>
+              <mat-checkbox formControlName="isCustomizable">Customisable</mat-checkbox>
+              <mat-checkbox formControlName="isFeatured">Feature on the home page</mat-checkbox>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Route & prices">
+            <div class="tab">
+              <h3>Route <span class="muted">({{ routeNights() }} of {{ form.controls.basics.controls.durationNights.value }} nights)</span></h3>
+              <div class="row-list">
+                @for (group of routeArray.controls; track group; let index = $index) {
+                  <div class="row" [formGroup]="group">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Destination</mat-label>
+                      <mat-select formControlName="destinationSlug">
+                        @for (destination of destinations(); track destination.id) {
+                          <mat-option [value]="destination.slug">{{ destination.name }}{{ destination.status !== 'PUBLISHED' ? ' (draft)' : '' }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline"><mat-label>Nights</mat-label><input matInput type="number" formControlName="nights" /></mat-form-field>
+                    <button mat-button type="button" (click)="removeRow(routeArray, index)">Remove</button>
+                  </div>
+                }
+                <button mat-stroked-button type="button" (click)="addStop()">Add stop</button>
+              </div>
+
+              <h3>Price tiers (per person, twin sharing)</h3>
+              <div class="row-list">
+                @for (group of tiersArray.controls; track group; let index = $index) {
+                  <div class="row" [formGroup]="group">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Tier</mat-label>
+                      <mat-select formControlName="level">
+                        @for (tier of tierLevels; track tier.value) { <mat-option [value]="tier.value">{{ tier.label }}</mat-option> }
+                      </mat-select>
+                    </mat-form-field>
+                    <mat-form-field appearance="outline"><mat-label>Price (₹)</mat-label><input matInput type="number" formControlName="pricePerPerson" /></mat-form-field>
+                    <mat-form-field appearance="outline"><mat-label>Was (₹, real only)</mat-label><input matInput type="number" formControlName="compareAtPrice" /></mat-form-field>
+                    <mat-form-field appearance="outline"><mat-label>Child (₹)</mat-label><input matInput type="number" formControlName="childPrice" /></mat-form-field>
+                    <mat-form-field appearance="outline"><mat-label>Single room extra (₹)</mat-label><input matInput type="number" formControlName="singleSupplement" /></mat-form-field>
+                    <mat-form-field appearance="outline"><mat-label>Hotel stars</mat-label><input matInput type="number" formControlName="hotelCategory" /></mat-form-field>
+                    <mat-form-field appearance="outline"><mat-label>Transport</mat-label><input matInput formControlName="transportNote" /></mat-form-field>
+                    <mat-checkbox formControlName="taxesIncluded">Taxes included</mat-checkbox>
+                    <button mat-button type="button" (click)="removeRow(tiersArray, index)">Remove</button>
+                  </div>
+                }
+                <button mat-stroked-button type="button" (click)="addTier()">Add tier</button>
+              </div>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Day by day">
+            <div class="tab row-list">
+              <p class="muted">One entry per day. <button mat-button type="button" (click)="matchDays()">Match to {{ form.controls.basics.controls.durationDays.value }} days</button></p>
+              @for (group of daysArray.controls; track group; let index = $index) {
+                <div class="row day-row" [formGroup]="group">
+                  <strong>Day {{ index + 1 }}</strong>
+                  <mat-form-field appearance="outline"><mat-label>Title</mat-label><input matInput formControlName="title" /></mat-form-field>
+                  <mat-form-field appearance="outline" class="wide-field"><mat-label>What happens</mat-label><textarea matInput rows="3" formControlName="description"></textarea></mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Overnight in</mat-label>
+                    <mat-select formControlName="overnightDestinationSlug">
+                      <mat-option value="">—</mat-option>
+                      @for (destination of routeDestinations(); track destination.id) { <mat-option [value]="destination.slug">{{ destination.name }}</mat-option> }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Places visited</mat-label>
+                    <mat-select formControlName="places" multiple>
+                      @for (place of routePlaces(); track place.value) { <mat-option [value]="place.value">{{ place.label }}</mat-option> }
+                    </mat-select>
+                  </mat-form-field>
+                  <span class="meals">
+                    <mat-checkbox formControlName="mealB">Breakfast</mat-checkbox>
+                    <mat-checkbox formControlName="mealL">Lunch</mat-checkbox>
+                    <mat-checkbox formControlName="mealD">Dinner</mat-checkbox>
+                  </span>
+                  <button mat-button type="button" (click)="removeRow(daysArray, index)">Remove</button>
+                </div>
+              }
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Hotels">
+            <div class="tab row-list">
+              <p class="muted">For each tier, hotel nights should add up to the package's nights.</p>
+              @for (group of staysArray.controls; track group; let index = $index) {
+                <div class="row" [formGroup]="group">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Tier</mat-label>
+                    <mat-select formControlName="tierLevel">
+                      @for (tier of tiersArray.controls; track tier) { <mat-option [value]="tier.value['level']">{{ tierLabel(tier.value['level']) }}</mat-option> }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Destination</mat-label>
+                    <mat-select formControlName="destinationSlug">
+                      @for (destination of routeDestinations(); track destination.id) { <mat-option [value]="destination.slug">{{ destination.name }}</mat-option> }
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>Hotel</mat-label><input matInput formControlName="hotelName" /></mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>Nights</mat-label><input matInput type="number" formControlName="nights" /></mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>Stars</mat-label><input matInput type="number" formControlName="hotelCategory" /></mat-form-field>
+                  <mat-form-field appearance="outline"><mat-label>Room</mat-label><input matInput formControlName="roomType" /></mat-form-field>
+                  <mat-form-field appearance="outline">
+                    <mat-label>Meals</mat-label>
+                    <mat-select formControlName="mealPlan">
+                      <mat-option value="EP">Room only (EP)</mat-option>
+                      <mat-option value="CP">Breakfast (CP)</mat-option>
+                      <mat-option value="MAP">Breakfast + dinner (MAP)</mat-option>
+                      <mat-option value="AP">All meals (AP)</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+                  <mat-checkbox formControlName="orSimilar">or similar</mat-checkbox>
+                  <button mat-button type="button" (click)="removeRow(staysArray, index)">Remove</button>
+                </div>
+              }
+              <button mat-stroked-button type="button" (click)="addStay()">Add hotel</button>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Inclusions & policies">
+            <div class="form-grid tab">
+              <mat-form-field appearance="outline"><mat-label>Included (one per line)</mat-label><textarea matInput rows="8" formControlName="inclusions"></textarea></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Not included (one per line)</mat-label><textarea matInput rows="8" formControlName="exclusions"></textarea></mat-form-field>
+              <ng-container formGroupName="policies">
+                @for (policy of policyKinds; track policy.kind) {
+                  <mat-form-field appearance="outline" class="wide"><mat-label>{{ policy.label }}</mat-label><textarea matInput rows="3" [formControlName]="policy.kind"></textarea></mat-form-field>
+                }
+              </ng-container>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="FAQs"><div class="tab"><app-faq-fields [faqs]="form.controls.faqs" /></div></mat-tab>
+
+          <mat-tab label="Tags">
+            <div class="tab">
+              <mat-chip-listbox multiple formControlName="tags" aria-label="Tags">
+                @for (tag of tagOptions(); track tag.id) { <mat-chip-option [value]="tag.slug">{{ tag.name }}</mat-chip-option> }
+              </mat-chip-listbox>
+            </div>
+          </mat-tab>
+
+          <mat-tab label="Images"><div class="tab"><app-media-fields [media]="form.controls.media" /></div></mat-tab>
+
+          <mat-tab label="SEO">
+            <div class="form-grid tab" formGroupName="seo">
+              <mat-form-field appearance="outline" class="wide"><mat-label>SEO title</mat-label><input matInput formControlName="seoTitle" /><mat-hint align="end">{{ form.controls.seo.controls.seoTitle.value.length }}/70</mat-hint></mat-form-field>
+              <mat-form-field appearance="outline" class="wide"><mat-label>SEO description</mat-label><textarea matInput rows="3" formControlName="seoDescription"></textarea><mat-hint align="end">{{ form.controls.seo.controls.seoDescription.value.length }}/170</mat-hint></mat-form-field>
+            </div>
+          </mat-tab>
+        </mat-tab-group>
+
+        <app-editor-actions
+          [status]="status()"
+          [isNew]="!id()"
+          [busy]="busy()"
+          [dirty]="form.dirty"
+          [canPublish]="health()?.canPublish ?? false"
+          [canDelete]="isAdmin"
+          [publicPath]="publicPath()"
+          [problems]="problems()"
+          [conflict]="conflict()"
+          (save)="save()"
+          (statusChange)="setStatus($event)"
+          (remove)="remove()"
+          (reload)="reload()"
+        />
+      </form>
+      @if (health(); as value) { <app-health-panel [health]="value" /> }
+    </div>
+  }
+</main>

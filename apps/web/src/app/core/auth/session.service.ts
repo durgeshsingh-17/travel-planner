@@ -21,6 +21,7 @@ export class SessionService {
   private refreshInFlight: Observable<string> | null = null;
 
   readonly session = this.state.asReadonly();
+  readonly isAgent = computed(() => this.state().user?.role === 'AGENT');
   readonly isEditor = computed(() => {
     const role = this.state().user?.role;
     return role === 'EDITOR' || role === 'ADMIN';

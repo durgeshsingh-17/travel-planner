@@ -1,0 +1,140 @@
+<main class="content-page">
+  @if (request(); as item) {
+    <header class="head">
+      <ol class="breadcrumbs" aria-label="Breadcrumb"><li><a routerLink="/quotes">My quotes</a></li><li>Request</li></ol>
+      <h1>{{ item.package?.title ?? item.destination?.name ?? 'Custom trip' }}</h1>
+      <p class="muted">
+        {{ when(item) }} · {{ item.nights }} nights · {{ item.adults }} adult{{ item.adults === 1 ? '' : 's' }}
+        @if (item.childAges.length) { · {{ item.childAges.length }} child{{ item.childAges.length === 1 ? '' : 'ren' }} }
+        · {{ item.rooms }} room{{ item.rooms === 1 ? '' : 's' }}
+        @if (item.packageTier) { · {{ tierLabels[item.packageTier] }} }
+      </p>
+      <p class="status" [class]="'status ' + item.status.toLowerCase()">{{ statusLabels[item.status] }}</p>
+    </header>
+
+    @if (accepted(); as chosen) {
+      <section class="accepted">
+        <h2>You accepted {{ chosen.agent.displayName }}</h2>
+        <p>They will contact you to confirm details and take payment. You can also reach them directly:</p>
+        <p><strong>{{ chosen.agent.phone }}</strong> · <a [href]="'mailto:' + chosen.agent.email">{{ chosen.agent.email }}</a></p>
+        <p class="muted small">Payments are made directly to the agency. Never pay anyone who contacts you claiming to be from us.</p>
+      </section>
+    }
+
+    @if (quotes().length) {
+      <section class="content-section">
+        <header><h2>Compare quotes</h2></header>
+        <div class="compare" role="region" aria-label="Quote comparison" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col"><span class="visually-hidden">Detail</span></th>
+                @for (quote of quotes(); track quote.id) {
+                  <th scope="col" [class.dim]="quote.status === 'REJECTED' || quote.status === 'EXPIRED'">
+                    {{ quote.agent.displayName }}
+                    @if (quote.agent.city) { <span class="muted small">{{ quote.agent.city }}</span> }
+                    @if (item.comparison.cheapestQuoteId === quote.id && quote.status === 'SENT') { <span class="badge">Lowest price</span> }
+                  </th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Per person</th>
+                @for (quote of quotes(); track quote.id) { <td><strong>{{ format(quote.pricePerPerson) }}</strong></td> }
+              </tr>
+              <tr>
+                <th scope="row">Total</th>
+                @for (quote of quotes(); track quote.id) {
+                  <td>{{ format(quote.totalPrice) }} <span class="muted small">{{ quote.taxesIncluded ? 'incl. taxes' : '+ taxes' }}</span></td>
+                }
+              </tr>
+              <tr>
+                <th scope="row">Tier</th>
+                @for (quote of quotes(); track quote.id) { <td>{{ quote.tier ? tierLabels[quote.tier] : '—' }}</td> }
+              </tr>
+              <tr>
+                <th scope="row">Hotels</th>
+                @for (quote of quotes(); track quote.id) {
+                  <td>
+                    @for (hotel of quote.hotels; track $index) {
+                      <div class="small">{{ hotel.hotelName }} ({{ hotel.destinationName }}, {{ hotel.nights }}N{{ hotel.hotelCategory ? ', ' + hotel.hotelCategory + '★' : '' }}{{ hotel.mealPlan ? ', ' + mealPlans[hotel.mealPlan] : '' }})</div>
+                    } @empty { <span class="muted">Not specified</span> }
+                  </td>
+                }
+              </tr>
+              @for (row of item.comparison.inclusions; track row.item) {
+                <tr>
+                  <th scope="row" class="inclusion">{{ row.item }}</th>
+                  @for (quote of quotes(); track quote.id) {
+                    <td class="mark" [class.yes]="covers(quote, row.coveredBy)">
+                      {{ covers(quote, row.coveredBy) ? '✓' : '—' }}
+                      <span class="visually-hidden">{{ covers(quote, row.coveredBy) ? 'included' : 'not included' }}</span>
+                    </td>
+                  }
+                </tr>
+              }
+              <tr>
+                <th scope="row">Message</th>
+                @for (quote of quotes(); track quote.id) { <td class="small">{{ quote.message ?? '—' }}</td> }
+              </tr>
+              <tr>
+                <th scope="row">Status</th>
+                @for (quote of quotes(); track quote.id) {
+                  <td>
+                    @switch (quote.status) {
+                      @case ('SENT') {
+                        <p class="small muted">{{ daysLeft(quote) }}</p>
+                        @if (isOpen()) {
+                          <button mat-flat-button color="primary" type="button" [disabled]="busy()" (click)="accept(quote)">Accept</button>
+                          <button mat-button type="button" [disabled]="busy()" (click)="decline(quote)">Decline</button>
+                        }
+                      }
+                      @case ('ACCEPTED') { <strong class="ok">Accepted</strong> }
+                      @case ('REJECTED') { <span class="muted">Declined</span> }
+                      @case ('EXPIRED') { <span class="muted">Expired</span> }
+                      @default { <span class="muted">Withdrawn</span> }
+                    }
+                  </td>
+                }
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    } @else if (isOpen()) {
+      <section class="waiting">
+        <h2>Waiting for quotes</h2>
+        <p>
+          @if (item.agenciesContacted) {
+            We sent your request to {{ item.agenciesContacted }} verified agenc{{ item.agenciesContacted === 1 ? 'y' : 'ies' }}. Most reply within a day.
+          } @else {
+            We are finding agencies for your trip. Our team will pass it on shortly.
+          }
+        </p>
+      </section>
+    }
+
+    <section class="content-section">
+      <h2>Your request</h2>
+      <dl class="fact-list">
+        @if (item.departureLocation) { <div><dt>From</dt><dd>{{ item.departureLocation.name }}</dd></div> }
+        @if (item.budgetPerPersonMin || item.budgetPerPersonMax) {
+          <div><dt>Budget per person</dt><dd>{{ item.budgetPerPersonMin ? format(item.budgetPerPersonMin) : '' }}{{ item.budgetPerPersonMin && item.budgetPerPersonMax ? '–' : '' }}{{ item.budgetPerPersonMax ? format(item.budgetPerPersonMax) : '' }}</dd></div>
+        }
+        @if (item.hotelCategory) { <div><dt>Hotels</dt><dd>{{ item.hotelCategory }}-star</dd></div> }
+        @if (item.childAges.length) { <div><dt>Children's ages</dt><dd>{{ item.childAges.join(', ') }}</dd></div> }
+        <div><dt>Contact</dt><dd>{{ item.contactName }}, {{ item.contactPhone }}</dd></div>
+        <div><dt>Open until</dt><dd>{{ item.expiresAt.slice(0, 10) }}</dd></div>
+      </dl>
+      @if (item.notes) { <p class="muted">“{{ item.notes }}”</p> }
+      @if (isOpen()) {
+        <div><button mat-button class="danger" type="button" [disabled]="busy()" (click)="cancel()">Cancel request</button></div>
+      }
+    </section>
+  } @else if (error()) {
+    <div class="state-message"><h1>Request not found</h1><a mat-flat-button color="primary" routerLink="/quotes">My quotes</a></div>
+  } @else {
+    <app-loading-state label="Loading your quotes" />
+  }
+</main>

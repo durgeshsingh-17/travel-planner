@@ -25,7 +25,8 @@ interface Row {
 const LABELS: Record<EditableEntity, { title: string; singular: string }> = {
   destinations: { title: 'Destinations', singular: 'destination' },
   places: { title: 'Places', singular: 'place' },
-  collections: { title: 'Collections', singular: 'collection' }
+  collections: { title: 'Collections', singular: 'collection' },
+  packages: { title: 'Packages', singular: 'package' }
 };
 
 /** One list screen for destinations, places and collections (route data picks which). */
@@ -126,6 +127,18 @@ export class AdminContentListComponent {
             ...item,
             title: item.name,
             subtitle: `${item.destination.name} · ${labelize(item.category)}${item.rankInDestination ? ` · #${item.rankInDestination}` : ''}`
+          }))
+        }))
+      );
+    }
+
+    if (this.entity === 'packages') {
+      return this.admin.listPackages({ q, status }).pipe(
+        map((page) => ({
+          total: page.total,
+          rows: page.items.map((item) => ({
+            ...item,
+            subtitle: `${item.durationNights}N/${item.durationDays}D · ${item.route || 'no route yet'}${item.fromPrice ? ` · from ₹${item.fromPrice.toLocaleString('en-IN')}` : ''}`
           }))
         }))
       );

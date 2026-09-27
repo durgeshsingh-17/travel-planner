@@ -210,3 +210,57 @@ export function collectionHealth(snapshot: CollectionSnapshot): ContentHealth {
     }
   ]);
 }
+
+export interface PackageSnapshot {
+  summary: string;
+  overview?: string | null;
+  durationDays: number;
+  routeCount: number;
+  unpublishedRouteDestinations: number;
+  tierCount: number;
+  dayCount: number;
+  tiersWithoutStays: number;
+  inclusionCount: number;
+  exclusionCount: number;
+  hasCancellationPolicy: boolean;
+  imageCount: number;
+  hasCover: boolean;
+  faqCount: number;
+  tagCount: number;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+}
+
+export function packageHealth(snapshot: PackageSnapshot): ContentHealth {
+  return summarize([
+    { id: 'summary', label: 'Summary of at least 20 characters', passed: snapshot.summary.trim().length >= 20, severity: 'error' },
+    { id: 'route', label: 'At least one destination on the route', passed: snapshot.routeCount > 0, severity: 'error' },
+    {
+      id: 'route-published',
+      label: 'Every destination on the route is published',
+      passed: snapshot.unpublishedRouteDestinations === 0,
+      severity: 'error'
+    },
+    { id: 'tiers', label: 'At least one price tier', passed: snapshot.tierCount > 0, severity: 'error' },
+    {
+      id: 'days',
+      label: 'A day-by-day itinerary for every day',
+      passed: snapshot.dayCount === snapshot.durationDays,
+      severity: 'error'
+    },
+    { id: 'overview', label: 'Overview of at least 150 words', passed: wordCount(snapshot.overview) >= 150, severity: 'warning' },
+    { id: 'stays', label: 'Hotels listed for every tier', passed: snapshot.tiersWithoutStays === 0, severity: 'warning' },
+    {
+      id: 'inclusions',
+      label: 'Inclusions and exclusions',
+      passed: snapshot.inclusionCount > 0 && snapshot.exclusionCount > 0,
+      severity: 'warning'
+    },
+    { id: 'cancellation', label: 'A cancellation policy', passed: snapshot.hasCancellationPolicy, severity: 'warning' },
+    { id: 'cover', label: 'A cover image', passed: snapshot.hasCover, severity: 'warning' },
+    { id: 'gallery', label: 'At least 3 images', passed: snapshot.imageCount >= 3, severity: 'warning' },
+    { id: 'faqs', label: 'At least 3 FAQs', passed: snapshot.faqCount >= 3, severity: 'warning' },
+    { id: 'tags', label: 'At least 1 theme tag', passed: snapshot.tagCount >= 1, severity: 'warning' },
+    { id: 'seo', label: 'SEO title and description', passed: Boolean(snapshot.seoTitle && snapshot.seoDescription), severity: 'warning' }
+  ]);
+}

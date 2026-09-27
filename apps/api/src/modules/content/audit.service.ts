@@ -5,8 +5,29 @@ import { PrismaService } from '../../database/prisma.service';
 
 export interface AuditEntry {
   actorId?: string | null;
-  action: 'CREATE' | 'UPDATE' | 'PUBLISH' | 'UNPUBLISH' | 'ARCHIVE' | 'DELETE' | 'IMPORT' | 'ROLE_CHANGE';
-  entityType: 'DESTINATION' | 'PLACE' | 'COLLECTION' | 'TAG' | 'MEDIA' | 'IMPORT' | 'USER';
+  action:
+    | 'CREATE'
+    | 'UPDATE'
+    | 'PUBLISH'
+    | 'UNPUBLISH'
+    | 'ARCHIVE'
+    | 'DELETE'
+    | 'IMPORT'
+    | 'ROLE_CHANGE'
+    | 'ROUTE'
+    | 'MODERATE';
+  entityType:
+    | 'DESTINATION'
+    | 'PLACE'
+    | 'COLLECTION'
+    | 'PACKAGE'
+    | 'TAG'
+    | 'MEDIA'
+    | 'IMPORT'
+    | 'USER'
+    | 'AGENT'
+    | 'QUOTE_REQUEST'
+    | 'REVIEW';
   entityId: string;
   summary?: string;
   changes?: Prisma.InputJsonValue;

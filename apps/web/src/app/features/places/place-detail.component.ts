@@ -10,6 +10,7 @@ import { ContentApiService } from '../content/content-api.service';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
 import { OpenState, PlaceDetail } from '../content/content.models';
 import { PlaceCardComponent } from '../../shared/ui/content-cards/place-card.component';
+import { ReviewsSectionComponent } from '../../shared/ui/reviews/reviews-section.component';
 import { RouteMapComponent } from '../../shared/ui/route-map/route-map.component';
 import { SeoService } from '../../core/seo/seo.service';
 import { WEEKDAY_NAMES, durationRange, formatInr, labelize, paragraphs } from '../../shared/utils/content-format.util';
@@ -19,7 +20,7 @@ const SCHEMA_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Fr
 @Component({
   selector: 'app-place-detail',
   standalone: true,
-  imports: [HideOnErrorDirective, LoadingStateComponent, MatButtonModule, NgOptimizedImage, PlaceCardComponent, RouteMapComponent, RouterLink],
+  imports: [HideOnErrorDirective, LoadingStateComponent, MatButtonModule, NgOptimizedImage, PlaceCardComponent, ReviewsSectionComponent, RouteMapComponent, RouterLink],
   template: `
     @if (isLoading()) {
       <main class="content-page"><app-loading-state label="Loading place" /></main>
@@ -138,6 +139,8 @@ const SCHEMA_DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Fr
             </div>
           </section>
         }
+
+        <app-reviews-section [target]="{ destinationSlug: item.destination.slug, placeSlug: item.slug }" />
 
         @if (item.nearby.length) {
           <section class="content-section">

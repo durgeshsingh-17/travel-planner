@@ -16,9 +16,10 @@ type Suggestion =
   | { kind: 'destination'; label: string; hint: string; slug: string }
   | { kind: 'place'; label: string; hint: string; slug: string; destinationSlug: string }
   | { kind: 'collection'; label: string; hint: string; slug: string }
+  | { kind: 'package'; label: string; hint: string; slug: string }
   | { kind: 'location'; label: string; hint: string; name: string };
 
-const EMPTY: SearchSuggestions = { destinations: [], places: [], collections: [], locations: [] };
+const EMPTY: SearchSuggestions = { destinations: [], places: [], packages: [], collections: [], locations: [] };
 
 @Component({
   selector: 'app-search-box',
@@ -97,6 +98,9 @@ export class SearchBoxComponent {
       case 'collection':
         void this.router.navigate(['/collections', item.slug]);
         break;
+      case 'package':
+        void this.router.navigate(['/packages', item.slug]);
+        break;
       case 'location':
         void this.router.navigate(['/plan'], { queryParams: { destination: item.name } });
         break;
@@ -128,6 +132,15 @@ export class SearchBoxComponent {
           hint: `${labelize(entry.category)} · ${entry.destination.name}`,
           slug: entry.slug,
           destinationSlug: entry.destination.slug
+        }))
+      },
+      {
+        title: 'Packages',
+        items: (suggestions.packages ?? []).map<Suggestion>((entry) => ({
+          kind: 'package',
+          label: entry.title,
+          hint: `${entry.durationNights}N/${entry.durationDays}D`,
+          slug: entry.slug
         }))
       },
       {

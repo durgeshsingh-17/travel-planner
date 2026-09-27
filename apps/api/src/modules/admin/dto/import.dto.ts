@@ -11,6 +11,7 @@ import {
 
 import { CollectionDocumentDto } from '../../content/documents/collection-document.dto';
 import { DestinationDocumentDto } from '../../content/documents/destination-document.dto';
+import { PackageDocumentDto } from '../../content/documents/package-document.dto';
 import { PlaceDocumentDto } from '../../content/documents/place-document.dto';
 import { TagDocumentDto } from '../../content/documents/tag-document.dto';
 
@@ -25,6 +26,12 @@ export class ImportDestinationDto extends DestinationDocumentDto {
 }
 
 export class ImportPlaceDto extends PlaceDocumentDto {
+  @IsOptional()
+  @IsIn(IMPORT_STATUSES)
+  status?: ImportStatus;
+}
+
+export class ImportPackageDto extends PackageDocumentDto {
   @IsOptional()
   @IsIn(IMPORT_STATUSES)
   status?: ImportStatus;
@@ -57,6 +64,13 @@ export class ImportBundleDto {
   @ValidateNested({ each: true })
   @Type(() => ImportPlaceDto)
   places?: ImportPlaceDto[];
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(1000)
+  @ValidateNested({ each: true })
+  @Type(() => ImportPackageDto)
+  packages?: ImportPackageDto[];
 
   @IsOptional()
   @IsArray()

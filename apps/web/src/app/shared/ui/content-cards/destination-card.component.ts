@@ -21,7 +21,7 @@ import { dayRange, inrRange, monthRanges } from '../../utils/content-format.util
             [ngSrc]="cover.url"
             [alt]="cover.altText"
             fill
-            sizes="(max-width: 640px) 100vw, 300px"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
             [priority]="priority()"
           />
         } @else {

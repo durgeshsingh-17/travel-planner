@@ -3,12 +3,14 @@ import { Prisma } from '@prisma/client';
 import { plainToInstance } from 'class-transformer';
 import { ValidationError, validate } from 'class-validator';
 
+import { AdminContentService } from './admin-content.service';
 import { AuditService } from '../content/audit.service';
 import { ContentValidationError, ContentWriterService } from '../content/content-writer.service';
 import {
   ImportBundleDto,
   ImportCollectionDto,
   ImportDestinationDto,
+  ImportPackageDto,
   ImportPlaceDto,
   ImportStatus
 } from './dto/import.dto';
@@ -18,7 +20,7 @@ import { collectionHealth, destinationHealth, placeHealth } from '../content/sha
 import { parseCsv } from '../../common/utils/csv.util';
 
 type Tx = Prisma.TransactionClient;
-type Entity = 'tag' | 'destination' | 'place' | 'collection' | 'location';
+type Entity = 'tag' | 'destination' | 'place' | 'package' | 'collection' | 'location';
 
 export interface ImportRowResult {
   entity: Entity;
@@ -68,7 +70,8 @@ export class ImportService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly writer: ContentWriterService,
-    private readonly audit: AuditService
+    private readonly audit: AuditService,
+    private readonly adminContent: AdminContentService
   ) {}
 
   async importBundle(bundle: ImportBundleDto, options: { dryRun: boolean; actorId: string | null }) {
@@ -91,6 +94,10 @@ export class ImportService {
             this.importPlace(tx, place, options.actorId)
           )
         );
+      }
+
+      for (const pkg of bundle.packages ?? []) {
+        rows.push(await this.row(tx, 'package', pkg.slug, () => this.importPackage(tx, pkg, options.actorId)));
       }
 
       for (const collection of bundle.collections ?? []) {
@@ -209,6 +216,33 @@ export class ImportService {
       actorId: actorId ?? undefined
     });
     const published = wantsPublish ? await this.publishPlace(tx, id) : undefined;
+    return { action: existing ? ('update' as const) : ('create' as const), changes, published };
+  }
+
+  private async importPackage(tx: Tx, input: ImportPackageDto, actorId: string | null) {
+    const { status, ...doc } = input;
+    const existing = await tx.package.findUnique({ where: { slug: doc.slug }, select: { id: true, status: true } });
+    const current = existing ? await this.writer.exportPackage(tx, existing.id) : null;
+    const changes = current ? this.writer.changedFields(current, doc) : [];
+    const wantsPublish = status === 'PUBLISHED' && existing?.status !== 'PUBLISHED';
+
+    if (existing && !changes.length && !wantsPublish) {
+      return { action: 'unchanged' as const };
+    }
+
+    const { id } = await this.writer.savePackage(tx, this.merge(current, doc), {
+      id: existing?.id,
+      actorId: actorId ?? undefined
+    });
+    let published: boolean | undefined;
+
+    if (wantsPublish) {
+      const health = await this.adminContent.packageHealthOf(id, tx);
+      this.assertPublishable(health.errors);
+      await tx.package.update({ where: { id }, data: { status: 'PUBLISHED', publishedAt: new Date() } });
+      published = true;
+    }
+
     return { action: existing ? ('update' as const) : ('create' as const), changes, published };
   }
 
@@ -450,6 +484,7 @@ export class ImportService {
       tag: blank(),
       destination: blank(),
       place: blank(),
+      package: blank(),
       collection: blank(),
       location: blank()
     };

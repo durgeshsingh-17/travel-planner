@@ -19,10 +19,17 @@ import {
   Page,
   PlaceDocument,
   PlaceRow,
-  TagRow
+  TagRow,
+  PackageRow,
+  AgentRow,
+  AgentInput,
+  AdminQuoteRequestRow,
+  AdminQuoteRequestDetail,
+  ModerationReview
 } from './admin.models';
+import { SubmitQuote } from '../quotes/quotes.models';
 
-export type EditableEntity = 'destinations' | 'places' | 'collections';
+export type EditableEntity = 'destinations' | 'places' | 'collections' | 'packages';
 
 function query(params: Record<string, string | number | undefined | null>): string {
   const search = new URLSearchParams();
@@ -85,6 +92,42 @@ export class AdminApiService {
 
   collectionDocument(id: string): Observable<Editable<CollectionDocument>> {
     return this.get<CollectionDocument>('collections', id);
+  }
+
+  listPackages(params: { q?: string; status?: ContentStatus | ''; page?: number }): Observable<Page<PackageRow>> {
+    return this.api.get(`/admin/packages${query(params)}`);
+  }
+
+  agents(): Observable<AgentRow[]> {
+    return this.api.get('/admin/agents');
+  }
+
+  saveAgent(agent: AgentInput, id?: string): Observable<AgentRow> {
+    return id ? this.api.put(`/admin/agents/${id}`, agent) : this.api.post('/admin/agents', agent);
+  }
+
+  quoteRequests(status?: string): Observable<AdminQuoteRequestRow[]> {
+    return this.api.get(`/admin/quote-requests${query({ status })}`);
+  }
+
+  quoteRequest(id: string): Observable<AdminQuoteRequestDetail> {
+    return this.api.get(`/admin/quote-requests/${id}`);
+  }
+
+  routeQuoteRequest(id: string, agentIds: string[]): Observable<AdminQuoteRequestDetail> {
+    return this.api.post(`/admin/quote-requests/${id}/route`, { agentIds });
+  }
+
+  submitQuoteForAgent(id: string, agentId: string, quote: SubmitQuote): Observable<AdminQuoteRequestDetail> {
+    return this.api.post(`/admin/quote-requests/${id}/agents/${agentId}/quotes`, quote);
+  }
+
+  reviewQueue(status = 'PENDING'): Observable<ModerationReview[]> {
+    return this.api.get(`/admin/reviews${query({ status })}`);
+  }
+
+  moderateReview(id: string, decision: 'APPROVED' | 'REJECTED', note?: string): Observable<ModerationReview> {
+    return this.api.post(`/admin/reviews/${id}/moderate`, { decision, note });
   }
 
   tags(): Observable<TagRow[]> {

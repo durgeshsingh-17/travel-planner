@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { CollectionDocumentDto } from './documents/collection-document.dto';
 import { DestinationDocumentDto } from './documents/destination-document.dto';
 import { MediaRefDto } from './documents/common.dto';
+import { PackageDocumentDto } from './documents/package-document.dto';
 import { PlaceDocumentDto } from './documents/place-document.dto';
 import { TagDocumentDto } from './documents/tag-document.dto';
 import { decimalToNumber } from '../../common/utils/number.util';
@@ -519,6 +520,305 @@ export class ContentWriterService {
     };
   }
 
+  // ───────────────────────── Packages ─────────────────────────
+
+  async savePackage(
+    tx: Tx,
+    doc: PackageDocumentDto,
+    options: { id?: string; actorId?: string } = {}
+  ): Promise<SaveResult> {
+    const problems = this.packageProblems(doc);
+    const slugs = new Set<string>([
+      ...(doc.route ?? []).map((stop) => stop.destinationSlug),
+      ...(doc.stays ?? []).map((stay) => stay.destinationSlug),
+      ...(doc.days ?? []).flatMap((day) => [
+        ...(day.overnightDestinationSlug ? [day.overnightDestinationSlug] : []),
+        ...(day.places ?? []).map((place) => place.destinationSlug)
+      ])
+    ]);
+    const destinations = new Map(
+      (
+        await tx.destination.findMany({
+          where: { slug: { in: [...slugs] } },
+          select: { id: true, slug: true }
+        })
+      ).map((destination) => [destination.slug, destination.id])
+    );
+    [...slugs]
+      .filter((slug) => !destinations.has(slug))
+      .forEach((slug) => problems.push(`Unknown destination '${slug}'`));
+    const placeRefs = (doc.days ?? []).flatMap((day) => day.places ?? []);
+    const places = new Map(
+      (
+        await tx.place.findMany({
+          where: {
+            OR: placeRefs.map((ref) => ({ slug: ref.placeSlug, destination: { slug: ref.destinationSlug } }))
+          },
+          select: { id: true, slug: true, destination: { select: { slug: true } } }
+        })
+      ).map((place) => [`${place.destination.slug}/${place.slug}`, place.id])
+    );
+    placeRefs
+      .filter((ref) => !places.has(`${ref.destinationSlug}/${ref.placeSlug}`))
+      .forEach((ref) => problems.push(`Unknown place '${ref.destinationSlug}/${ref.placeSlug}'`));
+    const startLocation = doc.startLocationSlug
+      ? await tx.location.findUnique({ where: { slug: doc.startLocationSlug }, select: { id: true } })
+      : null;
+
+    if (doc.startLocationSlug && !startLocation) {
+      problems.push(`Unknown start city '${doc.startLocationSlug}'`);
+    }
+
+    const tagIds = doc.tags ? await this.resolveTags(tx, doc.tags, problems) : undefined;
+    const media = doc.media ? await this.resolveMedia(tx, doc.media, problems, options.actorId) : undefined;
+
+    if (problems.length) {
+      throw new ContentValidationError(problems);
+    }
+
+    await this.assertSlugFree(tx, 'package', doc.slug, options.id);
+    const scalars = {
+      slug: doc.slug,
+      title: doc.title.trim(),
+      summary: doc.summary.trim(),
+      overview: doc.overview ?? null,
+      durationDays: doc.durationDays,
+      durationNights: doc.durationNights,
+      startLocationId: startLocation?.id ?? null,
+      availableMonths: [...new Set(doc.availableMonths ?? [])].sort((a, b) => a - b),
+      minPax: doc.minPax ?? 1,
+      maxPax: doc.maxPax ?? null,
+      isCustomizable: doc.isCustomizable ?? true,
+      popularityScore: doc.popularityScore ?? 0,
+      isFeatured: doc.isFeatured ?? false,
+      seoTitle: doc.seoTitle ?? null,
+      seoDescription: doc.seoDescription ?? null
+    } satisfies Prisma.PackageUncheckedCreateInput;
+
+    let id = options.id;
+    let created = false;
+
+    if (id) {
+      const existing = await tx.package.findUniqueOrThrow({ where: { id }, select: { slug: true, status: true } });
+      await tx.package.update({ where: { id }, data: scalars });
+
+      if (existing.slug !== doc.slug && existing.status === 'PUBLISHED') {
+        await this.recordRedirect(tx, 'PACKAGE', '', existing.slug, doc.slug);
+      }
+    } else {
+      id = (await tx.package.create({ data: scalars, select: { id: true } })).id;
+      created = true;
+    }
+
+    const packageId = id;
+
+    if (doc.route) {
+      await tx.packageDestination.deleteMany({ where: { packageId } });
+      await tx.packageDestination.createMany({
+        data: doc.route.map((stop, index) => ({
+          packageId,
+          destinationId: destinations.get(stop.destinationSlug)!,
+          nights: stop.nights,
+          sortOrder: index
+        }))
+      });
+    }
+
+    if (doc.tiers) {
+      await tx.packageTier.deleteMany({ where: { packageId } });
+      await tx.packageTier.createMany({
+        data: doc.tiers.map((tier) => ({
+          packageId,
+          level: tier.level,
+          pricePerPerson: tier.pricePerPerson,
+          compareAtPrice: tier.compareAtPrice ?? null,
+          childPrice: tier.childPrice ?? null,
+          singleSupplement: tier.singleSupplement ?? null,
+          taxesIncluded: tier.taxesIncluded ?? false,
+          hotelCategory: tier.hotelCategory ?? null,
+          transportNote: tier.transportNote ?? null
+        }))
+      });
+    }
+
+    const tiers = await tx.packageTier.findMany({ where: { packageId }, select: { pricePerPerson: true } });
+    await tx.package.update({
+      where: { id: packageId },
+      data: { fromPrice: tiers.length ? Math.min(...tiers.map((tier) => tier.pricePerPerson)) : null }
+    });
+
+    if (doc.days) {
+      await tx.packageDay.deleteMany({ where: { packageId } });
+
+      for (const day of [...doc.days].sort((a, b) => a.dayNumber - b.dayNumber)) {
+        await tx.packageDay.create({
+          data: {
+            packageId,
+            dayNumber: day.dayNumber,
+            title: day.title.trim(),
+            description: day.description.trim(),
+            overnightDestinationId: day.overnightDestinationSlug
+              ? destinations.get(day.overnightDestinationSlug)!
+              : null,
+            mealsIncluded: ['B', 'L', 'D'].filter((meal) => (day.mealsIncluded ?? []).includes(meal)),
+            places: {
+              create: (day.places ?? []).map((ref, index) => ({
+                placeId: places.get(`${ref.destinationSlug}/${ref.placeSlug}`)!,
+                sortOrder: index
+              }))
+            }
+          }
+        });
+      }
+    }
+
+    if (doc.stays) {
+      await tx.packageStay.deleteMany({ where: { packageId } });
+      await tx.packageStay.createMany({
+        data: doc.stays.map((stay, index) => ({
+          packageId,
+          tierLevel: stay.tierLevel,
+          destinationId: destinations.get(stay.destinationSlug)!,
+          nights: stay.nights,
+          hotelName: stay.hotelName.trim(),
+          orSimilar: stay.orSimilar ?? true,
+          hotelCategory: stay.hotelCategory ?? null,
+          roomType: stay.roomType ?? null,
+          mealPlan: stay.mealPlan,
+          sortOrder: index
+        }))
+      });
+    }
+
+    if (doc.inclusions || doc.exclusions) {
+      const replace = [
+        ...(doc.inclusions ? (['INCLUSION'] as const) : []),
+        ...(doc.exclusions ? (['EXCLUSION'] as const) : [])
+      ];
+      await tx.packageInclusion.deleteMany({ where: { packageId, type: { in: [...replace] } } });
+      await tx.packageInclusion.createMany({
+        data: [
+          ...(doc.inclusions ?? []).map((text, index) => ({ packageId, type: 'INCLUSION' as const, text: text.trim(), sortOrder: index })),
+          ...(doc.exclusions ?? []).map((text, index) => ({ packageId, type: 'EXCLUSION' as const, text: text.trim(), sortOrder: index }))
+        ].filter((entry) => entry.text)
+      });
+    }
+
+    if (doc.policies) {
+      await tx.packagePolicy.deleteMany({ where: { packageId } });
+      await tx.packagePolicy.createMany({
+        data: doc.policies.map((policy) => ({ packageId, kind: policy.kind, body: policy.body.trim() }))
+      });
+    }
+
+    if (tagIds) {
+      await tx.packageTag.deleteMany({ where: { packageId } });
+      await tx.packageTag.createMany({ data: tagIds.map((tagId) => ({ packageId, tagId })) });
+    }
+
+    if (doc.faqs) {
+      await tx.faq.deleteMany({ where: { packageId } });
+      await tx.faq.createMany({
+        data: doc.faqs.map((faq, index) => ({ packageId, question: faq.question.trim(), answer: faq.answer.trim(), sortOrder: index }))
+      });
+    }
+
+    if (media) {
+      await this.replaceAttachments(tx, { packageId }, media);
+    }
+
+    return { id: packageId, created };
+  }
+
+  async exportPackage(tx: Tx, id: string): Promise<PackageDocumentDto> {
+    const pkg = await tx.package.findUniqueOrThrow({
+      where: { id },
+      include: {
+        startLocation: { select: { slug: true } },
+        destinations: { orderBy: { sortOrder: 'asc' }, include: { destination: { select: { slug: true } } } },
+        tiers: true,
+        days: {
+          orderBy: { dayNumber: 'asc' },
+          include: {
+            overnightDestination: { select: { slug: true } },
+            places: {
+              orderBy: { sortOrder: 'asc' },
+              include: { place: { select: { slug: true, destination: { select: { slug: true } } } } }
+            }
+          }
+        },
+        stays: { orderBy: [{ tierLevel: 'asc' }, { sortOrder: 'asc' }], include: { destination: { select: { slug: true } } } },
+        inclusions: { orderBy: [{ type: 'asc' }, { sortOrder: 'asc' }] },
+        policies: true,
+        tags: { include: { tag: { select: { slug: true } } } },
+        faqs: { orderBy: { sortOrder: 'asc' } },
+        media: { orderBy: { sortOrder: 'asc' }, include: { media: true } }
+      }
+    });
+    const tierOrder = ['BUDGET', 'MID_RANGE', 'PREMIUM', 'LUXURY'];
+    const policyOrder = ['CANCELLATION', 'PAYMENT', 'CHILD', 'GENERAL'];
+
+    return {
+      slug: pkg.slug,
+      title: pkg.title,
+      summary: pkg.summary,
+      overview: pkg.overview,
+      durationDays: pkg.durationDays,
+      durationNights: pkg.durationNights,
+      startLocationSlug: pkg.startLocation?.slug ?? null,
+      availableMonths: pkg.availableMonths,
+      minPax: pkg.minPax,
+      maxPax: pkg.maxPax,
+      isCustomizable: pkg.isCustomizable,
+      popularityScore: pkg.popularityScore,
+      isFeatured: pkg.isFeatured,
+      seoTitle: pkg.seoTitle,
+      seoDescription: pkg.seoDescription,
+      tags: pkg.tags.map((entry) => entry.tag.slug).sort(),
+      route: pkg.destinations.map((stop) => ({ destinationSlug: stop.destination.slug, nights: stop.nights })),
+      tiers: [...pkg.tiers]
+        .sort((a, b) => tierOrder.indexOf(a.level) - tierOrder.indexOf(b.level))
+        .map((tier) => ({
+          level: tier.level,
+          pricePerPerson: tier.pricePerPerson,
+          compareAtPrice: tier.compareAtPrice,
+          childPrice: tier.childPrice,
+          singleSupplement: tier.singleSupplement,
+          taxesIncluded: tier.taxesIncluded,
+          hotelCategory: tier.hotelCategory,
+          transportNote: tier.transportNote
+        })),
+      days: pkg.days.map((day) => ({
+        dayNumber: day.dayNumber,
+        title: day.title,
+        description: day.description,
+        overnightDestinationSlug: day.overnightDestination?.slug ?? null,
+        mealsIncluded: day.mealsIncluded,
+        places: day.places.map((entry) => ({
+          destinationSlug: entry.place.destination.slug,
+          placeSlug: entry.place.slug
+        }))
+      })),
+      stays: pkg.stays.map((stay) => ({
+        tierLevel: stay.tierLevel,
+        destinationSlug: stay.destination.slug,
+        nights: stay.nights,
+        hotelName: stay.hotelName,
+        orSimilar: stay.orSimilar,
+        hotelCategory: stay.hotelCategory,
+        roomType: stay.roomType,
+        mealPlan: stay.mealPlan
+      })),
+      inclusions: pkg.inclusions.filter((entry) => entry.type === 'INCLUSION').map((entry) => entry.text),
+      exclusions: pkg.inclusions.filter((entry) => entry.type === 'EXCLUSION').map((entry) => entry.text),
+      policies: [...pkg.policies]
+        .sort((a, b) => policyOrder.indexOf(a.kind) - policyOrder.indexOf(b.kind))
+        .map((policy) => ({ kind: policy.kind, body: policy.body })),
+      faqs: pkg.faqs.map((faq) => ({ question: faq.question, answer: faq.answer })),
+      media: pkg.media.map((attachment) => this.exportMediaRef(attachment))
+    };
+  }
+
   // ───────────────────────── Diffing (importer dry runs) ─────────────────────────
 
   /** Names of fields in `incoming` whose value differs from `existing`. */
@@ -645,6 +945,83 @@ export class ContentWriterService {
     return problems;
   }
 
+  private packageProblems(doc: PackageDocumentDto): string[] {
+    const problems: string[] = [];
+
+    if (doc.durationDays < doc.durationNights || doc.durationDays > doc.durationNights + 1) {
+      problems.push('Days must equal nights or nights + 1 (for example 4N/5D)');
+    }
+
+    if (doc.maxPax != null && doc.minPax != null && doc.minPax > doc.maxPax) {
+      problems.push('Minimum group size cannot exceed the maximum');
+    }
+
+    const months = doc.availableMonths ?? [];
+    if (new Set(months).size !== months.length) {
+      problems.push('Each available month can appear only once');
+    }
+
+    if (doc.route?.length) {
+      const routeNights = doc.route.reduce((sum, stop) => sum + stop.nights, 0);
+
+      if (routeNights !== doc.durationNights) {
+        problems.push(`Route nights add up to ${routeNights}, but the package is ${doc.durationNights} nights`);
+      }
+    }
+
+    const tiers = doc.tiers ?? [];
+    const levels = new Set(tiers.map((tier) => tier.level));
+    if (levels.size !== tiers.length) {
+      problems.push('Each tier level can appear only once');
+    }
+
+    tiers.forEach((tier) => {
+      if (tier.compareAtPrice != null && tier.compareAtPrice <= tier.pricePerPerson) {
+        problems.push(`${tier.level}: the "was" price must be higher than the price`);
+      }
+    });
+
+    if (doc.days?.length) {
+      const numbers = [...doc.days.map((day) => day.dayNumber)].sort((a, b) => a - b);
+      const expected = Array.from({ length: doc.durationDays }, (_, index) => index + 1);
+
+      if (JSON.stringify(numbers) !== JSON.stringify(expected)) {
+        problems.push(`Itinerary must have exactly one entry for each day 1–${doc.durationDays}`);
+      }
+    }
+
+    if (doc.stays?.length) {
+      if (doc.tiers) {
+        doc.stays
+          .filter((stay) => !levels.has(stay.tierLevel))
+          .forEach((stay) => problems.push(`Stay at ${stay.hotelName} is for tier ${stay.tierLevel}, which the package does not offer`));
+      }
+
+      const routeSlugs = new Set((doc.route ?? []).map((stop) => stop.destinationSlug));
+      if (doc.route) {
+        doc.stays
+          .filter((stay) => !routeSlugs.has(stay.destinationSlug))
+          .forEach((stay) => problems.push(`Stay at ${stay.hotelName} is in ${stay.destinationSlug}, which is not on the route`));
+      }
+
+      const nightsByTier = new Map<string, number>();
+      doc.stays.forEach((stay) => nightsByTier.set(stay.tierLevel, (nightsByTier.get(stay.tierLevel) ?? 0) + stay.nights));
+      nightsByTier.forEach((nights, tier) => {
+        if (nights !== doc.durationNights) {
+          problems.push(`${tier} stays cover ${nights} nights, but the package is ${doc.durationNights} nights`);
+        }
+      });
+    }
+
+    const policies = doc.policies ?? [];
+    if (new Set(policies.map((policy) => policy.kind)).size !== policies.length) {
+      problems.push('Each policy type can appear only once');
+    }
+
+    this.checkCovers(doc.media, problems);
+    return problems;
+  }
+
   private checkCovers(media: MediaRefDto[] | undefined, problems: string[]): void {
     if ((media ?? []).filter((ref) => ref.isCover).length > 1) {
       problems.push('Only one image can be the cover');
@@ -710,7 +1087,7 @@ export class ContentWriterService {
 
   private async replaceAttachments(
     tx: Tx,
-    owner: { destinationId: string } | { placeId: string } | { collectionId: string },
+    owner: { destinationId: string } | { placeId: string } | { collectionId: string } | { packageId: string },
     media: ResolvedMedia[]
   ): Promise<void> {
     await tx.mediaAttachment.deleteMany({ where: owner });
@@ -789,7 +1166,7 @@ export class ContentWriterService {
 
   private async assertSlugFree(
     tx: Tx,
-    entity: 'tag' | 'destination' | 'collection',
+    entity: 'tag' | 'destination' | 'collection' | 'package',
     slug: string,
     exceptId?: string
   ): Promise<void> {
@@ -799,7 +1176,9 @@ export class ContentWriterService {
         ? await tx.tag.findFirst({ where, select: { id: true } })
         : entity === 'destination'
           ? await tx.destination.findFirst({ where, select: { id: true } })
-          : await tx.collection.findFirst({ where, select: { id: true } });
+          : entity === 'package'
+            ? await tx.package.findFirst({ where, select: { id: true } })
+            : await tx.collection.findFirst({ where, select: { id: true } });
 
     if (clash) {
       throw new ConflictException(`A ${entity} with slug '${slug}' already exists`);

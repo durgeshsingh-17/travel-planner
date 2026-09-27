@@ -3,6 +3,7 @@ import { Prisma, TagKind } from '@prisma/client';
 
 import { indiaClock } from '../../common/utils/india-time.util';
 import { LocationsService } from '../locations/locations.service';
+import { packageCard, packageCardInclude } from '../packages/package-views';
 import { PrismaService } from '../../database/prisma.service';
 import {
   coverInclude,
@@ -107,11 +108,11 @@ export class PublicContentService {
     const q = rawQuery.trim();
 
     if (q.length < 2) {
-      return { destinations: [], places: [], collections: [], locations: [] };
+      return { destinations: [], places: [], packages: [], collections: [], locations: [] };
     }
 
     const contains = { contains: q, mode: 'insensitive' as const };
-    const [destinations, places, collections, locationIds] = await Promise.all([
+    const [destinations, places, packages, collections, locationIds] = await Promise.all([
       this.prisma.destination.findMany({
         where: { ...PUBLISHED, OR: [{ name: contains }, { state: contains }] },
         select: { slug: true, name: true, state: true },
@@ -123,6 +124,12 @@ export class PublicContentService {
         select: { slug: true, name: true, category: true, destination: { select: { slug: true, name: true } } },
         orderBy: [{ rankInDestination: { sort: 'asc', nulls: 'last' } }, { name: 'asc' }],
         take: 5
+      }),
+      this.prisma.package.findMany({
+        where: { ...PUBLISHED, title: contains },
+        select: { slug: true, title: true, durationDays: true, durationNights: true },
+        orderBy: { popularityScore: 'desc' },
+        take: 3
       }),
       this.prisma.collection.findMany({
         where: { ...PUBLISHED, title: contains },
@@ -141,6 +148,7 @@ export class PublicContentService {
     return {
       destinations,
       places,
+      packages,
       collections,
       locations: locationIds
         .map((id) => locations.find((location) => location.id === id))
@@ -150,7 +158,7 @@ export class PublicContentService {
 
   /** Everything the home page needs in one cacheable call. */
   async home(month = indiaClock().month) {
-    const [featured, trending, collections, themes, stats] = await Promise.all([
+    const [featured, trending, collections, themes, stats, packages] = await Promise.all([
       this.prisma.destination.findMany({
         where: PUBLISHED,
         include: destinationCardInclude,
@@ -165,7 +173,13 @@ export class PublicContentService {
       }),
       this.collections(),
       this.tags('THEME'),
-      this.stats()
+      this.stats(),
+      this.prisma.package.findMany({
+        where: { ...PUBLISHED, fromPrice: { not: null } },
+        include: packageCardInclude,
+        orderBy: [{ isFeatured: 'desc' }, { popularityScore: 'desc' }],
+        take: 6
+      })
     ]);
 
     return {
@@ -174,6 +188,7 @@ export class PublicContentService {
       trending: trending.map(destinationCard),
       collections: collections.filter((collection) => collection.itemCount > 0).slice(0, 6),
       themes: themes.filter((theme) => theme.destinationCount > 0),
+      packages: packages.map(packageCard),
       stats
     };
   }
@@ -192,15 +207,16 @@ export class PublicContentService {
 
   /** Paths and last-modified dates for every public, indexable page. */
   async sitemapEntries() {
-    const [destinations, places, collections] = await Promise.all([
+    const [destinations, places, collections, packages] = await Promise.all([
       this.prisma.destination.findMany({ where: PUBLISHED, select: { slug: true, updatedAt: true } }),
       this.prisma.place.findMany({
         where: { ...PUBLISHED, destination: PUBLISHED },
         select: { slug: true, updatedAt: true, destination: { select: { slug: true } } }
       }),
-      this.prisma.collection.findMany({ where: PUBLISHED, select: { slug: true, updatedAt: true } })
+      this.prisma.collection.findMany({ where: PUBLISHED, select: { slug: true, updatedAt: true } }),
+      this.prisma.package.findMany({ where: PUBLISHED, select: { slug: true, updatedAt: true } })
     ]);
-    const latest = [...destinations, ...places, ...collections]
+    const latest = [...destinations, ...places, ...collections, ...packages]
       .map((entry) => entry.updatedAt)
       .sort((a, b) => b.getTime() - a.getTime())[0];
 
@@ -218,7 +234,9 @@ export class PublicContentService {
       ...collections.map((collection) => ({
         path: `/collections/${collection.slug}`,
         lastmod: collection.updatedAt.toISOString()
-      }))
+      })),
+      { path: '/packages', lastmod: latest?.toISOString() ?? null },
+      ...packages.map((pkg) => ({ path: `/packages/${pkg.slug}`, lastmod: pkg.updatedAt.toISOString() }))
     ];
   }
 
