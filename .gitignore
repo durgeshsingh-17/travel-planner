@@ -6,6 +6,10 @@
 node_modules/
 dist/
 coverage/
+
+# Playwright output
+apps/web/test-results/
+apps/web/playwright-report/
 .angular/
 .turbo/
 .cache/

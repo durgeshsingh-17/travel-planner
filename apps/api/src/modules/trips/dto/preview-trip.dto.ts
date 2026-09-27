@@ -7,10 +7,11 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  Max,
   Min,
   ValidateNested
 } from 'class-validator';
-import { TravelMode } from '@prisma/client';
+import { TravelMode, TravelPace } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 import { TripLocationDto } from './trip-location.dto';
@@ -62,4 +63,16 @@ export class PreviewTripDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  /** Stops per day: relaxed 2, balanced 3, packed 4. Defaults to the traveller's profile. */
+  @IsOptional()
+  @IsEnum(TravelPace)
+  pace?: TravelPace;
+
+  /** Longest drive per day before the plan adds an overnight halt. */
+  @IsOptional()
+  @IsInt()
+  @Min(2)
+  @Max(14)
+  maxDriveHoursPerDay?: number;
 }

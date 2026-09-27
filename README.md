@@ -145,11 +145,19 @@ The production web build calls the API at the relative `/api/v1`, so either set 
 | `MEDIA_PUBLIC_BASE_URL` | Public base URL for uploaded images (`/uploads` behind the SSR proxy, or a CDN). URLs are computed on read, so changing it never breaks existing images. |
 | `FUEL_PRICE_PETROL_INR` | Configurable petrol price for later cost calculations. |
 | `FUEL_PRICE_DIESEL_INR` | Configurable diesel price for later cost calculations. |
+| `WRITE_RATE_LIMIT_PER_MINUTE` | Per-client limit for creating trips, generating or re-planning itineraries, quote requests, reviews and route estimates. Defaults to `20`. |
+| `ROUTING_PROVIDER` | `estimate` (offline: straight-line distance × 1.35) or `osrm` for real road distance and time. Defaults to `estimate`. If OSRM fails or times out, planning falls back to the estimate and says so. |
+| `OSRM_BASE_URL` | OSRM server. The public demo server is for development only; in production run your own with an India extract. |
+| `ROUTING_TIMEOUT_MS`, `ROUTING_CACHE_DAYS` | Road-router timeout (default `4000`) and how long answers are cached in `RouteCache` (default `30`). |
+| `MAINTENANCE_INTERVAL_MINUTES` | Housekeeping interval: expires stale quotes, prunes old OTPs, expired refresh tokens and old cached routes. `0` turns it off; it never runs in tests. Defaults to `60`. |
+| `SITE_URL`, `ALLOWED_HOSTS`, `SSR_API_BASE_URL`, `API_PROXY_TARGET` | SSR server settings: public origin (canonical URLs, sitemap, HSTS when https), allowed Host headers, API URL used while rendering, and the optional same-origin proxy for `/api` and `/uploads`. |
+
+With `NODE_ENV=production` the API refuses to start, listing every problem, when `AUTH_TOKEN_SECRET` is short, `OTP_FIXED_CODE` is set, `SMS_PROVIDER` is `log`, `API_CORS_ORIGIN` points at localhost or `MEDIA_PUBLIC_BASE_URL` is missing.
 
 ## API
 
 - Base prefix: `/api/v1`
-- Health endpoint: `GET /api/v1/health`
+- Health: `GET /api/v1/health/live` (process up, no dependencies) and `GET /api/v1/health/ready` (503 while the database is unreachable). `GET /api/v1/health` is kept as an alias of ready. The SSR server answers `GET /healthz`.
 - Swagger docs: `GET /api/docs`
 
 API responses use a consistent envelope:
@@ -191,11 +199,41 @@ npm run build
 E2E_DATABASE_URL=postgresql://…/travel_planner_e2e npm run test:e2e
 ```
 
+Browser tests (Playwright) run the built API and SSR server against the same kind of database, with starter content imported:
+
+```bash
+npm run build:api && npm run build:web
+cd apps/api && DATABASE_URL=postgresql://…/travel_planner_e2e node dist/cli/import-content.js prisma/content/starter-content.json --apply
+cd ../web
+npx playwright install chromium          # or PLAYWRIGHT_CHROME_PATH=/path/to/chrome
+E2E_DATABASE_URL=postgresql://…/travel_planner_e2e npm run e2e
+```
+
+They cover public browsing (SSR HTML, 404 status, security headers, sitemap, phone layout), itinerary editing (drag across days, menu reorder, add, remove, re-plan, shared read-only view, planner pace), the quote flow end to end, and admin publishing. The servers use ports 3400 and 4400 (`E2E_API_PORT`, `E2E_WEB_PORT`). Start from a fresh database each run: the quote test expects only its own agencies.
+
 CI (`.github/workflows/ci.yml`) runs all of the above on every pull request, and fails if `schema.prisma` changes without a matching migration.
 
 ### Access rules
 
 Every API route requires sign-in unless it is decorated with `@Public()`. `src/route-access.spec.ts` lists the public routes explicitly, so adding one fails the tests until it is added to that list on purpose. Admin routes must also declare `@Roles(...)`.
+
+## Itinerary editing
+
+Owners can change a generated plan; every change re-times the day (local travel at 25 km/h between stops, meals keep their slot unless the day runs into them), marks the stop as edited and refreshes the cost estimate:
+
+| Route | What it does |
+| --- | --- |
+| `PUT /trips/:id/days/:dayNumber/order` | New order for a day (`{ activityIds }`, every stop exactly once). |
+| `POST /trips/:id/days/:dayNumber/activities` | Add a published place (`placeId`) or your own stop (`title`, `durationMinutes`). A place already in the plan is refused with 409. |
+| `PATCH /trips/:id/activities/:activityId` | Rename, change duration, pin a `startTime`, or move to another `dayNumber`/`position`. |
+| `DELETE /trips/:id/activities/:activityId` | Remove a stop. |
+| `POST /trips/:id/days/:dayNumber/regenerate` | Re-plan one day with places not already on other days. |
+
+Changing a trip's dates, places, travellers, travel mode, pace or drive limit clears the old plan, which has to be generated again.
+
+## Deployment
+
+`apps/api/Dockerfile` and `apps/web/Dockerfile` build from the repository root; `docker-compose.prod.yml` wires Postgres, a one-off `migrate` job, the API and the SSR web server. See [docs/LAUNCH_CHECKLIST.md](docs/LAUNCH_CHECKLIST.md) before going live.
 
 ## Verification
 

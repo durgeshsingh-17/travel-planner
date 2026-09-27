@@ -241,6 +241,29 @@
       @if (isInvalid('travelMode')) {
         <p class="error">Select a travel mode.</p>
       }
+
+      <div class="pace-row">
+        <div>
+          <h3 id="pace-heading">Pace</h3>
+          <p class="muted-note">How many stops a day. Leave it unselected to use the pace in your profile.</p>
+          <mat-button-toggle-group formControlName="pace" aria-labelledby="pace-heading">
+            @for (pace of paceOptions; track pace.value) {
+              <mat-button-toggle [value]="pace.value">{{ pace.label }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        </div>
+        @if (form.controls.travelMode.value && form.controls.travelMode.value !== 'FLIGHT') {
+          <mat-form-field appearance="outline" class="compact">
+            <mat-label>Longest drive in a day</mat-label>
+            <mat-select formControlName="maxDriveHoursPerDay">
+              @for (limit of driveLimitOptions; track limit.value) {
+                <mat-option [value]="limit.value">{{ limit.label }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>Longer journeys get an overnight halt on the way.</mat-hint>
+          </mat-form-field>
+        }
+      </div>
     </mat-card>
 
     <mat-card appearance="outlined" aria-labelledby="vehicle-heading">

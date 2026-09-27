@@ -1,13 +1,13 @@
 import { Module } from '@nestjs/common';
 
-import { ITINERARY_GENERATOR } from './contracts/itinerary-generator.contract';
 import { DatabaseItineraryGenerator } from './generators/database-itinerary.generator';
+import { ITINERARY_GENERATOR } from './contracts/itinerary-generator.contract';
+import { RoutingModule } from '../routing/routing.module';
 import { TripCostService } from './services/trip-cost.service';
-import { TripDistanceService } from './services/trip-distance.service';
 
 @Module({
+  imports: [RoutingModule],
   providers: [
-    TripDistanceService,
     TripCostService,
     DatabaseItineraryGenerator,
     {
@@ -15,6 +15,6 @@ import { TripDistanceService } from './services/trip-distance.service';
       useExisting: DatabaseItineraryGenerator
     }
   ],
-  exports: [ITINERARY_GENERATOR, TripCostService, TripDistanceService]
+  exports: [ITINERARY_GENERATOR, TripCostService, RoutingModule]
 })
 export class ItineraryModule {}

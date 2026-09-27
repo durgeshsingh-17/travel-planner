@@ -166,7 +166,7 @@ Checklist grouped by the phases in the roadmap. ✅ = done today, ⬜ = to do.
 - ⬜ Content volume: the starter bundle has 6 destinations and 20 places (4 destinations as drafts for review). The ≥ 50 / ≥ 500 target is editorial work, not engineering.
 - ✅ SSR (public pages), per-page meta, canonical, Open Graph, JSON-LD, real 404 and 301 status, `/sitemap.xml`, `robots.txt`
 - ⬜ Image resizing and responsive variants (uploads are stored as-is; a sharp or CDN step is the next media task)
-- ⬜ Location ↔ Destination link, so the planner can offer guide content for a chosen destination
+- 🟡 Location ↔ Destination link: a generated trip now links the destination guide it used (`Trip.destinationId`, matched by name or within 20 km); planner locations themselves are still not linked to guides
 
 ### Marketplace (weeks 4–5)
 
@@ -180,20 +180,29 @@ Checklist grouped by the phases in the roadmap. ✅ = done today, ⬜ = to do.
 - ✅ Package listing with facets; package detail with tiers, itinerary, hotels, policies, reviews and SEO markup
 - ✅ `QuoteRequest` → up to 3 agencies → `Quote` → compare → accept; OTP phone verification (Twilio or dev log)
 - ⬜ Notifications: agencies and travellers are not emailed or texted about new requests and quotes yet (in-app only)
-- ⬜ Scheduled expiry: requests and quotes expire lazily on read; add a job scheduler if timely emails are needed
+- ✅ Scheduled expiry: an hourly housekeeping job expires stale requests and quotes (they still also expire on read)
 - ✅ `Review` for packages, destinations and places, with moderation and a verified badge for accepted quotes
 
 ### Planner intelligence (weeks 4–6)
-- ⬜ Real routing (OSRM or a commercial routing API) with cached polylines
-- ⬜ Place clustering per day, opening-hours awareness, pace setting, drag-reorder editing
+
+> **Update 2026-09-27:** Week 6 is built on `feature/week6-routing-editing-hardening` (uncommitted, for review).
+
+- ✅ Real routing: OSRM road distance, time and polyline, cached in `RouteCache` for 30 days, falling back to a straight-line estimate (labelled in the UI) when the router is down; flights use air distance plus airport time
+- ✅ Smarter generator (`db-v2`): long drives split at real towns along the route (per-mode or personal daily drive limit), nearest-next stop grouping, opening hours respected (closed days skipped, no visit ending after closing), lunch and dinner at real food stops nearby, pace (2/3/4 stops a day), coverage reported as full, partial or none
+- ✅ Itinerary editing: drag within and across days (and a keyboard menu), add a guide place or your own stop, remove, pin a time, re-plan one day; days re-time automatically and costs refresh; opening-hours warnings on each stop
+- ✅ Cost estimate explains itself: fares for bus and flight, local transport, and an assumptions list shown in the Budget tab
 - ⬜ "Convert package → my trip" and "Request quote for my trip"
-- ⬜ Cost engine v2: per-mode, per-region rates in DB, fuel prices by state, confidence ranges
+- ⬜ Cost engine v2: per-region rates in the database, fuel prices by state, confidence ranges
+- ⬜ Self-hosted OSRM with an India extract (the public demo server is development-only)
 - ⬜ PWA offline for saved trips
 
 ### Production readiness (continuous)
-- ⬜ Integration tests (Testcontainers Postgres), component tests, Playwright E2E
-- ⬜ Dockerfiles, staging environment, backups, Sentry, uptime monitor
-- ⬜ Rate limiting, CSP tuning, audit log, GDPR/DPDP-style data export and delete
+- ✅ Playwright browser suite in CI (public pages, itinerary editing, quotes, admin publishing), plus API e2e and component tests
+- ✅ Dockerfiles for API (with a migrate target) and web, `docker-compose.prod.yml`, `docs/LAUNCH_CHECKLIST.md`
+- ✅ Production environment validation, liveness and readiness probes, graceful shutdown, housekeeping job
+- ✅ Write rate limits on trips, generation, quote requests and reviews; SSR security headers; real 404 page
+- ⬜ Staging environment, backups, Sentry, uptime monitor (operations work)
+- ⬜ Nonce-based CSP for scripts; GDPR/DPDP-style data export
 
 ---
 

@@ -40,6 +40,7 @@ export async function startApi(env: Record<string, string> = {}): Promise<ApiSer
       AUTH_TOKEN_SECRET: 'e2e-secret-that-is-comfortably-longer-than-32-chars',
       AUTH_RATE_LIMIT_PER_MINUTE: '1000',
       API_RATE_LIMIT_PER_MINUTE: '10000',
+      WRITE_RATE_LIMIT_PER_MINUTE: '1000',
       OTP_FIXED_CODE: '123456',
       ...env
     },

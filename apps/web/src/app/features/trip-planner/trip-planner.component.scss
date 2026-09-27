@@ -268,3 +268,20 @@ button[disabled] {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.pace-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 28px;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.pace-row h3 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+}
+
+.pace-row mat-button-toggle-group {
+  margin-top: 10px;
+}

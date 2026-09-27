@@ -1,17 +1,14 @@
 export interface TripPlace {
   id: string;
-  destinationId: string;
-  name: string;
   slug: string;
+  name: string;
   category: string;
-  description: string;
-  latitude: number;
-  longitude: number;
+  destinationSlug: string;
+  /** False when the place has no public page (draft or archived). */
+  hasPage: boolean;
+  rating?: number | null;
   averageVisitMinutes?: number | null;
   estimatedCost?: number | null;
-  openingTime?: string | null;
-  closingTime?: string | null;
-  rating?: number | null;
 }
 
 export interface TripActivity {
@@ -23,6 +20,13 @@ export interface TripActivity {
   activityType: string;
   startTime?: string | null;
   endTime?: string | null;
+  durationMinutes?: number | null;
+  /** The traveller changed this stop by hand. */
+  isUserEdited?: boolean;
+  /** Opening-hours problem for this visit, e.g. "Closed on Mondays". */
+  warning?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
   estimatedCost?: number | null;
   distanceFromPreviousKm?: number | null;
   travelTimeFromPreviousMinutes?: number | null;
@@ -35,14 +39,23 @@ export interface TripDay {
   date: string;
   title: string;
   description?: string | null;
+  /** Where the night is spent: the destination or a halt on a long drive. */
+  overnightLocation?: string | null;
   estimatedDistanceKm?: number | null;
   estimatedCost?: number | null;
   activities: TripActivity[];
 }
 
+export interface CostAssumption {
+  item: string;
+  basis: string;
+}
+
 export interface TripCostBreakdown {
   fuel: number;
   tolls: number;
+  fares: number;
+  localTransport: number;
   stay: number;
   food: number;
   activities: number;
@@ -52,7 +65,12 @@ export interface TripCostBreakdown {
   fuelRequiredLitres: number;
   fuelPricePerLitre: number;
   mileageKmPerLitre: number;
+  isIndicative: boolean;
+  assumptions: CostAssumption[];
 }
+
+export type TravelPace = 'RELAXED' | 'BALANCED' | 'PACKED';
+export type PlanCoverage = 'FULL' | 'PARTIAL' | 'NONE';
 
 export interface TripVehicle {
   id: string;
@@ -100,6 +118,14 @@ export interface Trip {
   preferences: string[];
   notes?: string | null;
   status: string;
+  pace?: TravelPace;
+  maxDriveHoursPerDay?: number | null;
+  /** How much of the plan comes from curated places. */
+  coverage?: PlanCoverage | null;
+  /** 'osrm' for real road routing, 'estimate' for straight-line estimates, 'air' for flights. */
+  routeProvider?: 'osrm' | 'estimate' | 'air' | null;
+  /** The published destination guide the plan used, if any. */
+  destinationGuide?: { slug: string; name: string } | null;
   estimatedDistanceKm?: number | null;
   estimatedDurationMinutes?: number | null;
   estimatedTotalCost?: number | null;
@@ -143,4 +169,21 @@ export interface CreateTripRequest {
   interests: string[];
   preferences?: string[];
   notes?: string;
+  pace?: TravelPace;
+  maxDriveHoursPerDay?: number;
+}
+
+export interface AddActivityRequest {
+  placeId?: string;
+  title?: string;
+  durationMinutes?: number;
+  position?: number;
+}
+
+export interface UpdateActivityRequest {
+  title?: string;
+  durationMinutes?: number;
+  startTime?: string;
+  dayNumber?: number;
+  position?: number;
 }

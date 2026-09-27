@@ -35,7 +35,9 @@ import {
 import {
   interestOptions,
   preferenceOptions,
-  travelModes
+  travelModes,
+  paceOptions,
+  driveLimitOptions
 } from './models/trip-planner-options.model';
 import { CreateTripRequest } from '../trip-result/models/trip.model';
 import { Location } from '../locations/location.model';
@@ -92,6 +94,8 @@ export class TripPlannerComponent {
   private readonly tripsApi = inject(TripsApiService);
 
   protected readonly travelModes = travelModes;
+  protected readonly paceOptions = paceOptions;
+  protected readonly driveLimitOptions = driveLimitOptions;
   protected readonly interestOptions = interestOptions;
   protected readonly preferenceOptions = preferenceOptions;
   protected readonly genderOptions = [
@@ -266,6 +270,8 @@ export class TripPlannerComponent {
       endDate: '',
       passengers: [],
       travelMode: '',
+      pace: '',
+      maxDriveHoursPerDay: 0,
       userVehicleId: '',
       budget: null,
       interests: [],
@@ -432,6 +438,8 @@ export class TripPlannerComponent {
       })),
       budget: value.budget === null ? undefined : Number(value.budget),
       travelMode: value.travelMode,
+      pace: value.pace || undefined,
+      maxDriveHoursPerDay: value.travelMode !== 'FLIGHT' && value.maxDriveHoursPerDay ? value.maxDriveHoursPerDay : undefined,
       userVehicleId: value.userVehicleId || undefined,
       interests: value.interests,
       preferences: value.preferences,

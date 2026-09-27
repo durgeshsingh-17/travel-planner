@@ -22,6 +22,36 @@ const apiProxyTarget = process.env['API_PROXY_TARGET']?.replace(/\/$/, '');
 const app = express();
 app.disable('x-powered-by');
 
+if (process.env['TRUST_PROXY']) {
+  // Behind a load balancer: trust X-Forwarded-Proto so req.protocol is right.
+  app.set('trust proxy', process.env['TRUST_PROXY'] === 'true' ? 1 : process.env['TRUST_PROXY']);
+}
+
+/**
+ * Baseline security headers for every page. The CSP only restricts framing,
+ * <base> and plugins: Angular's hydration needs inline scripts, so script
+ * sources are left to a future nonce-based policy.
+ */
+app.use((_req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), payment=(), geolocation=(self)');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'self'; base-uri 'self'; object-src 'none'; form-action 'self'");
+
+  if (siteUrl.startsWith('https://')) {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+
+  next();
+});
+
+/** Liveness for the web container; does not depend on the API. */
+app.get('/healthz', (_req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ status: 'ok' });
+});
+
 /**
  * Optional same-origin mode: forward /api and /uploads to the API so the
  * browser talks to one origin (no CORS, first-party refresh cookie). Leave
@@ -140,13 +170,16 @@ app.use((req, res, next) => {
 
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
   const port = process.env['PORT'] || 4000;
-  app.listen(port, (error) => {
+  const server = app.listen(port, (error) => {
     if (error) {
       throw error;
     }
 
     console.log(`Node Express server listening on http://localhost:${port}`);
   });
+
+  // Finish in-flight requests before exiting on deploys.
+  process.on('SIGTERM', () => server.close(() => process.exit(0)));
 }
 
 /** Request handler used by the Angular CLI (dev server and build). */

@@ -1,0 +1,55 @@
+# Production-like stack on one host: Postgres, a one-off migration job, API and SSR web.
+#   cp .env.example .env.production   # fill in real values
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build: { context: ., dockerfile: apps/api/Dockerfile, target: migrate }
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      postgres: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    build: { context: ., dockerfile: apps/api/Dockerfile, target: runtime }
+    restart: unless-stopped
+    env_file: .env.production
+    environment:
+      TRUST_PROXY: "true"
+    volumes:
+      - media:/data/uploads
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build: { context: ., dockerfile: apps/web/Dockerfile }
+    restart: unless-stopped
+    environment:
+      SITE_URL: ${SITE_URL}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      SSR_API_BASE_URL: http://api:3000/api/v1
+      API_PROXY_TARGET: http://api:3000
+      TRUST_PROXY: "true"
+    ports:
+      - "${WEB_PORT:-4000}:4000"
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  postgres_data:
+  media:

@@ -111,7 +111,7 @@
 	        <mat-card class="overview-card cost-card" appearance="outlined">
 	          <h2>Cost snapshot</h2>
 	          <div class="total-cost">{{ formatCurrency(trip.estimatedTotalCost) }}</div>
-	          <p>Includes fuel, tolls, stay, food, activities, parking and buffer.</p>
+	          <p>{{ costSummary() }}</p>
 	        </mat-card>
 
 	        <mat-card class="overview-card travellers-card" appearance="outlined">
@@ -136,44 +136,7 @@
       </mat-tab>
 
       <mat-tab label="Itinerary">
-      <section class="itinerary-list">
-        @for (day of trip.days; track day.id) {
-          <mat-card class="day-card" appearance="outlined">
-            <div class="day-card__header">
-              <span>Day {{ day.dayNumber }}</span>
-              <div>
-                <h2>{{ day.title }}</h2>
-                <p>{{ day.date }} • {{ day.estimatedDistanceKm ?? 0 }} km</p>
-              </div>
-            </div>
-
-            <div class="timeline">
-              @for (activity of day.activities; track activity.id) {
-                <div class="timeline-item">
-                  <time>{{ activity.startTime ?? '--:--' }}</time>
-	                  <div>
-	                    <h3>{{ activity.title }}</h3>
-	                    @if (activity.place) {
-	                      <div class="activity-meta">
-	                        <span>{{ activity.place.category }}</span>
-	                        @if (activity.place.rating) {
-	                          <span>{{ activity.place.rating }}/5</span>
-	                        }
-	                        @if (activity.place.averageVisitMinutes) {
-	                          <span>{{ activity.place.averageVisitMinutes }} min</span>
-	                        }
-	                      </div>
-	                    }
-	                    @if (activity.description) {
-	                      <p>{{ activity.description }}</p>
-	                    }
-                  </div>
-                </div>
-              }
-            </div>
-          </mat-card>
-        }
-      </section>
+        <app-trip-itinerary class="itinerary-list" [trip]="trip" [editable]="!isSharedView()" (tripChange)="onItineraryEdited($event)" />
       </mat-tab>
 
       <mat-tab label="Route">
@@ -182,9 +145,11 @@
           <h2>{{ trip.sourceName }} to {{ trip.destinationName }}</h2>
           <p>
             {{ trip.estimatedDistanceKm ?? 0 }} km round trip • {{ durationLabel() }}
-            estimated drive time
+            {{ trip.travelMode === 'FLIGHT' ? 'door to door' : 'on the road' }}
           </p>
+          <p class="route-source">{{ routeSource() }}</p>
         </div>
+        <a mat-stroked-button [href]="directionsUrl()" target="_blank" rel="noopener">Open directions in OpenStreetMap</a>
         <app-route-map
           [sourceLatitude]="trip.sourceLatitude"
           [sourceLongitude]="trip.sourceLongitude"
@@ -208,6 +173,20 @@
             </div>
           }
         </div>
+        @if (trip.costBreakdown?.assumptions?.length) {
+          <details class="assumptions" open>
+            <summary>How we worked this out</summary>
+            <dl>
+              @for (assumption of trip.costBreakdown!.assumptions; track assumption.item) {
+                <div>
+                  <dt>{{ assumption.item }}</dt>
+                  <dd>{{ assumption.basis }}</dd>
+                </div>
+              }
+            </dl>
+            <p>These are typical figures, not quotes. Hotel and fare prices change with dates and demand.</p>
+          </details>
+        }
       </mat-card>
       </mat-tab>
 

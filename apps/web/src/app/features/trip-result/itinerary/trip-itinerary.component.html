@@ -1,0 +1,159 @@
+@if (coverageMessage(); as message) {
+  <aside class="coverage" [class.coverage--none]="trip().coverage === 'NONE'" role="note">
+    <p>{{ message }}</p>
+    @if (trip().destinationGuide; as guide) {
+      <a [routerLink]="['/destinations', guide.slug]">Browse the {{ guide.name }} guide</a>
+    }
+  </aside>
+} @else if (trip().destinationGuide; as guide) {
+  <p class="guide-link">
+    Stops come from our <a [routerLink]="['/destinations', guide.slug]">{{ guide.name }} guide</a>, timed around opening hours.
+  </p>
+}
+
+@if (editable()) {
+  <p class="edit-hint">Drag stops to reorder them or move them to another day. Times update automatically.</p>
+}
+
+<section class="days" cdkDropListGroup [attr.aria-busy]="busy()">
+  @for (day of days(); track day.id) {
+    <article class="day" [attr.aria-labelledby]="'day-title-' + day.dayNumber">
+      <header class="day__header">
+        <span class="day__number" aria-hidden="true">{{ day.dayNumber }}</span>
+        <div class="day__heading">
+          <h2 [id]="'day-title-' + day.dayNumber"><span class="visually-hidden">Day {{ day.dayNumber }}: </span>{{ day.title }}</h2>
+          <p>
+            {{ day.date }} · {{ day.estimatedDistanceKm ?? 0 }} km
+            @if (day.overnightLocation) {
+              · Night in {{ day.overnightLocation }}
+            }
+          </p>
+          @if (day.description) {
+            <p class="day__description">{{ day.description }}</p>
+          }
+        </div>
+        @if (editable()) {
+          <div class="day__actions">
+            <button mat-stroked-button type="button" [disabled]="busy()" (click)="openAdd(day)">Add a stop</button>
+            <button mat-button type="button" [disabled]="busy()" (click)="regenerate(day)">Re-plan day</button>
+          </div>
+        }
+      </header>
+
+      <ol
+        class="stops"
+        cdkDropList
+        [cdkDropListData]="day"
+        [cdkDropListDisabled]="!editable() || busy()"
+        (cdkDropListDropped)="dayDropped($event)"
+        [attr.aria-label]="'Stops on day ' + day.dayNumber"
+      >
+        @for (activity of day.activities; track activity.id; let index = $index, first = $first, last = $last) {
+          <li class="stop" cdkDrag [cdkDragData]="activity" [class.stop--travel]="activity.activityType === 'TRAVEL'">
+            @if (editable()) {
+              <button class="stop__handle" type="button" cdkDragHandle [attr.aria-label]="'Drag ' + activity.title">
+                <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9 5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 7a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM18 5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 8.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM18 19a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Z"/></svg>
+              </button>
+            }
+            <time class="stop__time">{{ activity.startTime ?? '--:--' }}</time>
+            <div class="stop__body">
+              <h3>
+                @if (activity.place?.hasPage) {
+                  <a [routerLink]="['/destinations', activity.place!.destinationSlug, 'places', activity.place!.slug]">{{ activity.title }}</a>
+                } @else {
+                  {{ activity.title }}
+                }
+              </h3>
+              <div class="stop__meta">
+                @if (activity.place) {
+                  <span>{{ labelize(activity.place.category) }}</span>
+                }
+                @if (duration(activity); as length) {
+                  <span>{{ length }}</span>
+                }
+                @if (activity.place?.rating) {
+                  <span>{{ activity.place!.rating }}/5</span>
+                }
+                @if (activity.travelTimeFromPreviousMinutes && activity.activityType !== 'TRAVEL' && !first) {
+                  <span>{{ activity.travelTimeFromPreviousMinutes }} min from last stop</span>
+                }
+                @if (activity.isUserEdited) {
+                  <span class="stop__edited">Edited</span>
+                }
+              </div>
+              @if (activity.warning) {
+                <p class="stop__warning" role="status">{{ activity.warning }}</p>
+              }
+              @if (activity.description) {
+                <p class="stop__description">{{ activity.description }}</p>
+              }
+              @if (activity.activityType !== 'TRAVEL' && directionsUrl(activity, previousWithLocation(day, index)); as url) {
+                <a class="stop__directions" [href]="url" target="_blank" rel="noopener">Directions</a>
+              }
+            </div>
+            @if (editable()) {
+              <button mat-icon-button type="button" class="stop__more" [matMenuTriggerFor]="menu" [attr.aria-label]="'Options for ' + activity.title" [disabled]="busy()">
+                <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4Zm0 7a2 2 0 1 1 0-4 2 2 0 0 1 0 4Z"/></svg>
+              </button>
+              <mat-menu #menu="matMenu">
+                <button mat-menu-item type="button" [disabled]="first" (click)="move(day, index, -1)">Move up</button>
+                <button mat-menu-item type="button" [disabled]="last" (click)="move(day, index, 1)">Move down</button>
+                @if (days().length > 1) {
+                  <button mat-menu-item type="button" [matMenuTriggerFor]="dayMenu">Move to day…</button>
+                }
+                <button mat-menu-item type="button" (click)="remove(activity)">Remove</button>
+              </mat-menu>
+              <mat-menu #dayMenu="matMenu">
+                @for (other of days(); track other.id) {
+                  @if (other.dayNumber !== day.dayNumber) {
+                    <button mat-menu-item type="button" (click)="moveToDay(activity, other.dayNumber)">Day {{ other.dayNumber }}</button>
+                  }
+                }
+              </mat-menu>
+            }
+          </li>
+        } @empty {
+          <li class="stop stop--empty">Nothing planned yet. Drop a stop here or add one.</li>
+        }
+      </ol>
+
+      @if (addingTo() === day.dayNumber) {
+        <form class="add" (ngSubmit)="add(day)">
+          <h3>Add a stop to day {{ day.dayNumber }}</h3>
+          @if (trip().destinationGuide) {
+            <mat-form-field appearance="outline">
+              <mat-label>Place from the guide</mat-label>
+              <mat-select [ngModel]="choice()" (ngModelChange)="choice.set($event)" name="place">
+                <mat-option value="">None: my own stop</mat-option>
+                @for (place of sparePlaces(); track place.id) {
+                  <mat-option [value]="place.id">{{ place.name }} · {{ labelize(place.category) }}</mat-option>
+                }
+              </mat-select>
+              @if (places() !== null && sparePlaces().length === 0) {
+                <mat-hint>Every place in the guide is already in your plan.</mat-hint>
+              }
+            </mat-form-field>
+          }
+          @if (!choice()) {
+            <div class="add__custom">
+              <mat-form-field appearance="outline">
+                <mat-label>Your own stop</mat-label>
+                <input matInput [ngModel]="customTitle()" (ngModelChange)="customTitle.set($event)" name="title" maxlength="120" placeholder="e.g. Evening aarti at the ghat" />
+              </mat-form-field>
+              <mat-form-field appearance="outline" class="add__minutes">
+                <mat-label>Minutes</mat-label>
+                <input matInput type="number" min="15" max="600" step="15" [ngModel]="customMinutes()" (ngModelChange)="customMinutes.set($event)" name="minutes" />
+              </mat-form-field>
+            </div>
+          }
+          <div class="add__actions">
+            <button mat-flat-button color="primary" type="submit" [disabled]="busy()">Add stop</button>
+            <button mat-button type="button" (click)="addingTo.set(null)">Cancel</button>
+          </div>
+        </form>
+      }
+    </article>
+  } @empty {
+    <p class="empty">Generate the itinerary to see a day-by-day plan.</p>
+  }
+</section>
