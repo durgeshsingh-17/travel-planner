@@ -79,7 +79,10 @@ describe('TripsService', () => {
         vehicle: null
       })
     );
-    const service = createService({ trip: { create: tripCreate } });
+    const service = createService({
+      trip: { create: tripCreate },
+      userProfile: { findUnique: vi.fn().mockResolvedValue({ pace: 'RELAXED' }) }
+    });
 
     const result = await service.create(
       {
@@ -104,6 +107,8 @@ describe('TripsService', () => {
         data: expect.objectContaining({
           user: { connect: { id: 'owner-1' } },
           travellerCount: 2,
+          // Falls back to the pace saved on the traveller's profile.
+          pace: 'RELAXED',
           travellers: {
             create: [
               expect.objectContaining({ fullName: 'Asha Singh', sortOrder: 1 }),
@@ -258,5 +263,90 @@ describe('TripsService', () => {
     const result = await service.disableSharing('trip-1', 'owner-1');
 
     expect(result).toEqual({ id: 'trip-1', visibility: 'PRIVATE', shareSlug: null });
+  });
+
+  it('clears the generated plan when the dates change, but not for a title edit', async () => {
+    const existing = {
+      id: 'trip-1',
+      startDate: new Date('2026-10-10T00:00:00Z'),
+      endDate: new Date('2026-10-12T00:00:00Z'),
+      sourceLatitude: 28.6139,
+      sourceLongitude: 77.209,
+      destinationLatitude: 30.0869,
+      destinationLongitude: 78.2676,
+      travellerCount: 2,
+      travelMode: 'CAR',
+      pace: 'BALANCED',
+      maxDriveHoursPerDay: null
+    };
+    const update = vi.fn().mockResolvedValue(storedTrip());
+    const service = createService({ trip: { findFirst: vi.fn().mockResolvedValue(existing), update } });
+
+    await service.update('trip-1', { title: 'Weekend away', startDate: '2026-10-10', travelMode: TravelMode.CAR }, 'owner-1');
+    expect(update.mock.calls[0][0].data).not.toHaveProperty('days');
+
+    await service.update('trip-1', { endDate: '2026-10-14' }, 'owner-1');
+    expect(update.mock.calls[1][0].data).toMatchObject({ status: 'DRAFT', days: { deleteMany: {} }, destination: { disconnect: true } });
+  });
+
+  it('warns when a planned stop is closed that day', async () => {
+    const service = createService({
+      trip: {
+        findFirst: vi.fn().mockResolvedValue(
+          storedTrip({
+            days: [
+              {
+                id: 'day-1',
+                dayNumber: 1,
+                // 2026-10-12 is a Monday.
+                date: new Date('2026-10-12T00:00:00Z'),
+                title: 'Day 1',
+                description: null,
+                overnightLocation: 'Rishikesh',
+                estimatedDistanceKm: 4,
+                estimatedCost: 200,
+                activities: [
+                  {
+                    id: 'activity-1',
+                    placeId: 'place-1',
+                    title: 'Museum',
+                    description: null,
+                    activityType: 'SIGHTSEEING',
+                    startTime: '10:00',
+                    endTime: '11:00',
+                    durationMinutes: 60,
+                    isUserEdited: false,
+                    sortOrder: 1,
+                    latitude: 30.1,
+                    longitude: 78.3,
+                    estimatedCost: 200,
+                    distanceFromPreviousKm: 4,
+                    travelTimeFromPreviousMinutes: 12,
+                    place: {
+                      id: 'place-1',
+                      slug: 'museum',
+                      name: 'Museum',
+                      category: 'ATTRACTION',
+                      status: 'PUBLISHED',
+                      rating: 4.2,
+                      averageVisitMinutes: 60,
+                      timeRequiredMinMinutes: null,
+                      estimatedCost: 100,
+                      destination: { slug: 'rishikesh' },
+                      timings: [{ dayOfWeek: 1, opensAt: null, closesAt: null, isClosed: true }]
+                    }
+                  }
+                ]
+              }
+            ]
+          })
+        )
+      }
+    });
+
+    const trip = await service.findById('trip-1', 'owner-1');
+
+    expect(trip.days[0].activities[0].warning).toBe('Closed on Mondays');
+    expect(trip.days[0].activities[0].place).toEqual(expect.objectContaining({ destinationSlug: 'rishikesh', hasPage: true }));
   });
 });

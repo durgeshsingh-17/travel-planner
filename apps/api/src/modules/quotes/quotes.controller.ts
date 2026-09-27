@@ -11,6 +11,7 @@ import {
   Query
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { QuoteRequestStatus } from '@prisma/client';
 
 import { AdminQuotesService } from './admin-quotes.service';
@@ -20,6 +21,7 @@ import { CreateQuoteRequestDto, DeclineRequestDto, SubmitQuoteDto } from './dto/
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { QuoteRequestsService } from './quote-requests.service';
 import { Roles } from '../auth/roles.decorator';
+import { WRITE_THROTTLE } from '../../common/throttle/write.throttle';
 
 const uuid = new ParseUUIDPipe();
 
@@ -29,6 +31,7 @@ const uuid = new ParseUUIDPipe();
 export class QuotesController {
   constructor(private readonly requests: QuoteRequestsService) {}
 
+  @Throttle(WRITE_THROTTLE)
   @Post('quote-requests')
   create(@CurrentUserId() userId: string, @Body() dto: CreateQuoteRequestDto) {
     return this.requests.create(userId, dto);

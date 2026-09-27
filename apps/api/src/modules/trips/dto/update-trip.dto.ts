@@ -7,10 +7,11 @@ import {
   IsArray,
   IsString,
   IsUUID,
+  Max,
   Min,
   ValidateNested
 } from 'class-validator';
-import { TravelMode, TripStatus } from '@prisma/client';
+import { TravelMode, TravelPace, TripStatus } from '@prisma/client';
 import { Type } from 'class-transformer';
 
 import { TripLocationDto } from './trip-location.dto';
@@ -86,4 +87,14 @@ export class UpdateTripDto {
   @IsOptional()
   @IsEnum(TripStatus)
   status?: TripStatus;
+
+  @IsOptional()
+  @IsEnum(TravelPace)
+  pace?: TravelPace;
+
+  @IsOptional()
+  @IsInt()
+  @Min(2)
+  @Max(14)
+  maxDriveHoursPerDay?: number | null;
 }

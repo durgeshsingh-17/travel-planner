@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { configuration } from './config/configuration';
+import { validateEnvironment } from './config/env.validation';
 import { DatabaseModule } from './database/database.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AuthGuard } from './modules/auth/auth.guard';
@@ -14,6 +15,7 @@ import { RolesGuard } from './modules/auth/roles.guard';
 import { DestinationsModule } from './modules/destinations/destinations.module';
 import { HealthModule } from './modules/health/health.module';
 import { LocationsModule } from './modules/locations/locations.module';
+import { MaintenanceModule } from './modules/maintenance/maintenance.module';
 import { MapsModule } from './modules/maps/maps.module';
 import { PackagesModule } from './modules/packages/packages.module';
 import { PlacesModule } from './modules/places/places.module';
@@ -21,6 +23,7 @@ import { QuotesModule } from './modules/quotes/quotes.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { VerificationModule } from './modules/verification/verification.module';
 import { SavedTripsModule } from './modules/saved-trips/saved-trips.module';
+import { RoutingModule } from './modules/routing/routing.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { UsersModule } from './modules/users/users.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
@@ -31,7 +34,8 @@ import { WeatherModule } from './modules/weather/weather.module';
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: ['.env', '../../.env'],
-      load: [configuration]
+      load: [configuration],
+      validate: validateEnvironment
     }),
     ThrottlerModule.forRoot([
       {
@@ -42,6 +46,7 @@ import { WeatherModule } from './modules/weather/weather.module';
     ]),
     DatabaseModule,
     HealthModule,
+    MaintenanceModule,
     AuthModule,
     UsersModule,
     TripsModule,
@@ -57,6 +62,7 @@ import { WeatherModule } from './modules/weather/weather.module';
     PlacesModule,
     VehiclesModule,
     MapsModule,
+    RoutingModule,
     WeatherModule
   ],
   providers: [

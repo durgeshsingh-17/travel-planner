@@ -80,6 +80,9 @@ async function bootstrap(): Promise<void> {
   const document = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('api/docs', app, document);
 
+  // Close the database pool and stop timers cleanly on SIGTERM (deploys, scaling).
+  app.enableShutdownHooks();
+
   const port = config.get<number>('API_PORT', 3000);
   await app.listen(port, config.get<string>('API_HOST', '127.0.0.1'));
 }

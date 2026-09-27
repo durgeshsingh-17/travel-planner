@@ -9,6 +9,7 @@ import {
   Post
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { CurrentUserId } from '../auth/current-user.decorator';
 import { CreateTripDto } from './dto/create-trip.dto';
@@ -16,6 +17,7 @@ import { PreviewTripDto } from './dto/preview-trip.dto';
 import { TripsService } from './trips.service';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { Public } from '../auth/public.decorator';
+import { WRITE_THROTTLE } from '../../common/throttle/write.throttle';
 
 @ApiTags('trips')
 @Controller({
@@ -26,11 +28,13 @@ export class TripsController {
   constructor(private readonly tripsService: TripsService) {}
 
   @Public()
+  @Throttle(WRITE_THROTTLE)
   @Post('preview')
   preview(@Body() dto: PreviewTripDto) {
     return this.tripsService.preview(dto);
   }
 
+  @Throttle(WRITE_THROTTLE)
   @Post()
   create(@Body() dto: CreateTripDto, @CurrentUserId() userId: string) {
     return this.tripsService.create(dto, userId);
@@ -66,6 +70,7 @@ export class TripsController {
     return this.tripsService.delete(id, userId);
   }
 
+  @Throttle(WRITE_THROTTLE)
   @Post(':id/generate-itinerary')
   generateItinerary(
     @Param('id', new ParseUUIDPipe()) id: string,

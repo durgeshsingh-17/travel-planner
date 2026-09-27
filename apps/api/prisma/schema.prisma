@@ -167,6 +167,13 @@ enum TravelPace {
   PACKED
 }
 
+/// How much curated content the generated plan could use.
+enum PlanCoverage {
+  FULL
+  PARTIAL
+  NONE
+}
+
 enum TripVisibility {
   PRIVATE
   UNLISTED
@@ -313,6 +320,7 @@ model Destination {
   packageDays      PackageDay[]
   quoteRequests    QuoteRequest[]
   reviews          Review[]
+  trips            Trip[]
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 
@@ -424,12 +432,26 @@ model Trip {
   travellers               TripTraveller[]
   days                     TripDay[]
   savedBy                  SavedItem[]
+  /// Destination guide the plan was built from, when one matched.
+  destinationId            String?         @db.Uuid
+  destination              Destination?    @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  pace                     TravelPace      @default(BALANCED)
+  maxDriveHoursPerDay      Int?
+  generatedAt              DateTime?
+  generatorVersion         String?
+  /// Encoded polyline (precision 5) of the outbound drive, when a road router answered.
+  routePolyline            String?
+  routeProvider            String?
+  coverage                 PlanCoverage?
+  /// Rates and rules the cost estimate used, so the numbers can be explained.
+  costAssumptions          Json?
   createdAt                DateTime        @default(now())
   updatedAt                DateTime        @updatedAt
 
   @@index([userId])
   @@index([vehicleId])
   @@index([userVehicleId])
+  @@index([destinationId])
 }
 
 model SavedItem {
@@ -470,6 +492,8 @@ model TripDay {
   estimatedCost       Decimal?       @db.Decimal(10, 2)
   trip                Trip           @relation(fields: [tripId], references: [id], onDelete: Cascade)
   activities          TripActivity[]
+  /// Where the traveller sleeps that night (destination or a halt on a long drive).
+  overnightLocation   String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
 
@@ -494,6 +518,9 @@ model TripActivity {
   sortOrder                     Int
   tripDay                       TripDay          @relation(fields: [tripDayId], references: [id], onDelete: Cascade)
   place                         Place?           @relation(fields: [placeId], references: [id], onDelete: SetNull)
+  durationMinutes               Int?
+  /// Set when the traveller changed this activity by hand; regeneration keeps such days only on request.
+  isUserEdited                  Boolean          @default(false)
   createdAt                     DateTime         @default(now())
   updatedAt                     DateTime         @updatedAt
 
@@ -1012,4 +1039,17 @@ model Review {
   @@index([destinationId, status, createdAt])
   @@index([placeId, status, createdAt])
   @@index([status, createdAt])
+}
+
+/// Road distances and durations from the routing provider, keyed by rounded endpoints and mode.
+model RouteCache {
+  id              String   @id @default(uuid()) @db.Uuid
+  key             String   @unique
+  provider        String
+  distanceKm      Decimal  @db.Decimal(10, 2)
+  durationMinutes Int
+  polyline        String?
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
 }

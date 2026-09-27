@@ -16,6 +16,7 @@ import { SavedTripsService } from '../saved-trips/saved-trips.service';
 import { SessionService } from '../../core/auth/session.service';
 import { ToastService } from '../../shared/services/toast.service';
 import { Trip } from './models/trip.model';
+import { TripItineraryComponent } from './itinerary/trip-itinerary.component';
 import { TripsApiService } from './services/trips-api.service';
 
 @Component({
@@ -30,7 +31,8 @@ import { TripsApiService } from './services/trips-api.service';
     MatProgressBarModule,
     MatTabsModule,
     RouterLink,
-    RouteMapComponent
+    RouteMapComponent,
+    TripItineraryComponent
   ],
   templateUrl: './trip-result.component.html',
   styleUrl: './trip-result.component.scss',
@@ -91,15 +93,42 @@ export class TripResultComponent {
       return [];
     }
 
-    return [
+    const mode = this.trip()?.travelMode;
+    const rows: [string, number][] = [
       ['Fuel', breakdown.fuel],
       ['Tolls', breakdown.tolls],
+      [mode === 'FLIGHT' ? 'Flights' : 'Bus fares', breakdown.fares ?? 0],
+      ['Local transport', breakdown.localTransport ?? 0],
       ['Stay', breakdown.stay],
       ['Food', breakdown.food],
       ['Activities', breakdown.activities],
       ['Parking', breakdown.parking],
-      ['Miscellaneous', breakdown.miscellaneous]
-    ] as const;
+      ['Buffer', breakdown.miscellaneous]
+    ];
+    // Road trips have no fares, flights have no fuel: hide the zero rows that do not apply.
+    return rows.filter(([label, value]) => value > 0 || ['Stay', 'Food', 'Activities'].includes(label));
+  });
+  protected readonly costSummary = computed(() => {
+    const labels = this.costRows().map(([label]) => label.toLowerCase());
+    return labels.length ? `Includes ${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}.` : 'Generate the itinerary to see costs.';
+  });
+  protected readonly routeSource = computed(() => {
+    switch (this.trip()?.routeProvider) {
+      case 'osrm':
+        return 'Road distance and time from OpenStreetMap routing. Traffic and breaks can add time.';
+      case 'air':
+        return 'Flight time plus airport time; distance is as the crow flies.';
+      case 'estimate':
+        return 'Road routing was unavailable, so distance and time are estimated from the straight-line distance.';
+      default:
+        return 'Generate the itinerary for road distance and time.';
+    }
+  });
+  protected readonly directionsUrl = computed(() => {
+    const trip = this.trip();
+    if (!trip) return '';
+    const engine = trip.travelMode === 'BIKE' ? 'fossgis_osrm_bike' : 'fossgis_osrm_car';
+    return `https://www.openstreetmap.org/directions?engine=${engine}&route=${trip.sourceLatitude},${trip.sourceLongitude};${trip.destinationLatitude},${trip.destinationLongitude}`;
   });
 
   constructor() {
@@ -128,6 +157,10 @@ export class TripResultComponent {
           this.isLoading.set(false);
         }
       });
+  }
+
+  protected onItineraryEdited(trip: Trip): void {
+    this.trip.set(trip);
   }
 
   protected formatCurrency(value?: number | null): string {

@@ -25,6 +25,10 @@ export class TripPlannerFormService {
         endDate: this.fb.nonNullable.control('', [Validators.required]),
         passengers: this.fb.array([this.createPassengerFormGroup()]),
         travelMode: this.fb.nonNullable.control('', [Validators.required]),
+        /** Empty: the server uses the pace saved on the traveller's profile. */
+        pace: this.fb.nonNullable.control<'' | 'RELAXED' | 'BALANCED' | 'PACKED'>(''),
+        /** 0: the usual limit for the travel mode. */
+        maxDriveHoursPerDay: this.fb.nonNullable.control(0),
         userVehicleId: this.fb.nonNullable.control(''),
         budget: this.fb.control<number | null>(null, [
           Validators.required,

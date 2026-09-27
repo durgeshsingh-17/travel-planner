@@ -12,6 +12,7 @@ import {
   Query
 } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { ReviewStatus } from '@prisma/client';
 
 import { CreateReviewDto, ListReviewsQueryDto, ModerateReviewDto, UpdateReviewDto } from './dto/review.dto';
@@ -19,6 +20,7 @@ import { CurrentUserId } from '../auth/current-user.decorator';
 import { Public } from '../auth/public.decorator';
 import { ReviewsService } from './reviews.service';
 import { Roles } from '../auth/roles.decorator';
+import { WRITE_THROTTLE } from '../../common/throttle/write.throttle';
 
 const uuid = new ParseUUIDPipe();
 
@@ -33,6 +35,7 @@ export class ReviewsController {
     return this.reviews.listPublic(query);
   }
 
+  @Throttle(WRITE_THROTTLE)
   @Post('reviews')
   create(@CurrentUserId() userId: string, @Body() dto: CreateReviewDto) {
     return this.reviews.create(userId, dto);

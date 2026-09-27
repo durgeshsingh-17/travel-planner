@@ -9,10 +9,14 @@ import { randomBytes } from 'crypto';
 
 import { assertDateRange, toDateOnly, toIsoDate } from '../../common/utils/date.util';
 import { decimalToNumber } from '../../common/utils/number.util';
+import { openingHoursWarning } from '../../common/utils/opening-hours.util';
 import { CreateTripDto } from './dto/create-trip.dto';
 import {
+  GENERATOR_VERSION,
+  GeneratedTripActivity,
   ITINERARY_GENERATOR,
-  ItineraryGenerator
+  ItineraryGenerator,
+  ItineraryGeneratorInput
 } from '../itinerary/contracts/itinerary-generator.contract';
 import { PreviewTripDto } from './dto/preview-trip.dto';
 import { PrismaService } from '../../database/prisma.service';
@@ -21,13 +25,14 @@ import { UpdateTripDto } from './dto/update-trip.dto';
 
 type TripWithRelations = Prisma.TripGetPayload<{
   include: {
+    destination: { select: { slug: true; name: true; status: true } };
     vehicle: true;
     userVehicle: true;
     days: {
       include: {
         activities: {
           include: {
-            place: true;
+            place: { include: { timings: true; destination: { select: { slug: true } } } };
           };
         };
       };
@@ -75,6 +80,9 @@ export class TripsService {
     this.assertValidDateRange(dto.startDate, dto.endDate);
     this.assertTravellerCount(dto.travellerCount, dto.travellers.length);
     const vehicle = await this.resolveVehicleSelection(ownerUserId, dto);
+    const profile = dto.pace
+      ? null
+      : await this.prisma.userProfile.findUnique({ where: { userId: ownerUserId }, select: { pace: true } });
 
     const trip = await this.prisma.trip.create({
       data: {
@@ -98,6 +106,8 @@ export class TripsService {
         interests: dto.interests,
         preferences: dto.preferences ?? [],
         notes: dto.notes,
+        pace: dto.pace ?? profile?.pace ?? 'BALANCED',
+        maxDriveHoursPerDay: dto.maxDriveHoursPerDay ?? null,
         vehicle: vehicle?.vehicleId ? { connect: { id: vehicle.vehicleId } } : undefined,
         userVehicle: vehicle?.userVehicleId
           ? { connect: { id: vehicle.userVehicleId } }
@@ -194,8 +204,27 @@ export class TripsService {
       interests: dto.interests,
       preferences: dto.preferences,
       notes: dto.notes,
+      pace: dto.pace,
+      maxDriveHoursPerDay: dto.maxDriveHoursPerDay,
       ...this.vehicleUpdateInput(vehicle),
       status: dto.status,
+      // A plan built for other dates, places or people is wrong now: clear it.
+      ...(this.changesPlan(dto, existing)
+        ? {
+            status: 'DRAFT' as const,
+            days: { deleteMany: {} },
+            estimatedDistanceKm: null,
+            estimatedDurationMinutes: null,
+            estimatedTotalCost: null,
+            estimatedFuelCost: null,
+            coverage: null,
+            routePolyline: null,
+            routeProvider: null,
+            generatedAt: null,
+            costAssumptions: Prisma.DbNull,
+            destination: { disconnect: true }
+          }
+        : {}),
       travellers: dto.travellers
         ? {
             deleteMany: {},
@@ -266,17 +295,66 @@ export class TripsService {
   async generateItinerary(id: string, ownerUserId: string) {
     const trip = await this.prisma.trip.findFirst({
       where: { id, userId: ownerUserId },
-      include: {
-        vehicle: true,
-        userVehicle: true
-      }
+      include: { vehicle: true, userVehicle: true }
     });
 
     if (!trip) {
       throw this.tripNotFound(id);
     }
 
-    const generatedPlan = await this.itineraryGenerator.generateTripPlan({
+    const plan = await this.itineraryGenerator.generateTripPlan(this.planInput(trip));
+    const costBreakdown = this.tripCostService.calculate({
+      distanceKm: plan.estimatedDistanceKm,
+      oneWayKm: plan.outbound.distanceKm,
+      travellerCount: trip.travellerCount,
+      dayCount: plan.days.length,
+      travelMode: trip.travelMode,
+      mileageKmPerLitre: this.effectiveMileage(trip),
+      fuelType: trip.vehicle?.fuelType,
+      plannedActivityCost: plan.activityCost
+    });
+
+    const updatedTrip = await this.prisma.$transaction(async (tx) => {
+      await tx.tripDay.deleteMany({ where: { tripId: trip.id } });
+
+      return tx.trip.update({
+        where: { id: trip.id },
+        data: {
+          status: 'GENERATED',
+          estimatedDistanceKm: plan.estimatedDistanceKm,
+          estimatedDurationMinutes: plan.estimatedDurationMinutes,
+          estimatedTotalCost: costBreakdown.total,
+          estimatedFuelCost: costBreakdown.fuel,
+          generatedAt: new Date(),
+          generatorVersion: GENERATOR_VERSION,
+          destination: plan.destinationId ? { connect: { id: plan.destinationId } } : { disconnect: true },
+          coverage: plan.coverage,
+          routePolyline: plan.outbound.polyline,
+          routeProvider: plan.outbound.provider,
+          costAssumptions: costBreakdown.assumptions as unknown as Prisma.InputJsonValue,
+          days: {
+            create: plan.days.map((day) => ({
+              dayNumber: day.dayNumber,
+              date: toDateOnly(day.date),
+              title: day.title,
+              description: day.description,
+              overnightLocation: day.overnightLocation ?? null,
+              estimatedDistanceKm: day.estimatedDistanceKm,
+              estimatedCost: day.estimatedCost,
+              activities: { create: day.activities.map((activity) => this.activityData(activity)) }
+            }))
+          }
+        },
+        include: this.tripInclude()
+      });
+    });
+
+    return this.serializeTripWithRelations(updatedTrip);
+  }
+
+  /** Generator input for a stored trip. */
+  planInput(trip: Trip, excludePlaceIds: string[] = []): ItineraryGeneratorInput {
+    return {
       tripId: trip.id,
       sourceName: trip.sourceName,
       sourceLatitude: decimalToNumber(trip.sourceLatitude) ?? 0,
@@ -290,64 +368,78 @@ export class TripsService {
       travelMode: trip.travelMode,
       interests: trip.interests,
       preferences: trip.preferences,
-      notes: trip.notes
-    });
-    const costBreakdown = this.tripCostService.calculate({
-      distanceKm: generatedPlan.estimatedDistanceKm,
-      travellerCount: trip.travellerCount,
-      dayCount: generatedPlan.days.length,
-      mileageKmPerLitre: this.effectiveMileage(trip),
-      fuelType: trip.vehicle?.fuelType
-    });
+      pace: trip.pace,
+      maxDriveHoursPerDay: trip.maxDriveHoursPerDay,
+      excludePlaceIds
+    };
+  }
 
-    const updatedTrip = await this.prisma.$transaction(async (tx) => {
-      await tx.tripDay.deleteMany({
-        where: {
-          tripId: trip.id
+  activityData(activity: GeneratedTripActivity) {
+    return {
+      title: activity.title,
+      description: activity.description,
+      activityType: activity.activityType,
+      placeId: activity.placeId,
+      startTime: activity.startTime,
+      endTime: activity.endTime,
+      durationMinutes: activity.durationMinutes,
+      latitude: activity.latitude,
+      longitude: activity.longitude,
+      estimatedCost: activity.estimatedCost,
+      distanceFromPreviousKm: activity.distanceFromPreviousKm,
+      travelTimeFromPreviousMinutes: activity.travelTimeFromPreviousMinutes,
+      sortOrder: activity.sortOrder
+    };
+  }
+
+  /** Recomputes and stores the trip total after its activities changed. */
+  async refreshCost(tripId: string, tx: Prisma.TransactionClient = this.prisma): Promise<void> {
+    const trip = await tx.trip.findUniqueOrThrow({ where: { id: tripId }, include: this.tripInclude() });
+    const breakdown = this.buildCostBreakdown(trip);
+
+    if (breakdown) {
+      await tx.trip.update({
+        where: { id: tripId },
+        data: {
+          estimatedTotalCost: breakdown.total,
+          estimatedFuelCost: breakdown.fuel,
+          costAssumptions: breakdown.assumptions as unknown as Prisma.InputJsonValue
         }
       });
+    }
+  }
 
-      return tx.trip.update({
-        where: { id: trip.id },
-        data: {
-          status: 'GENERATED',
-          estimatedDistanceKm: generatedPlan.estimatedDistanceKm,
-          estimatedDurationMinutes: generatedPlan.estimatedDurationMinutes,
-          estimatedTotalCost: costBreakdown.total,
-          estimatedFuelCost: costBreakdown.fuel,
-          days: {
-            create: generatedPlan.days.map((day) => ({
-              dayNumber: day.dayNumber,
-              date: toDateOnly(day.date),
-              title: day.title,
-              description: day.description,
-              estimatedDistanceKm: day.estimatedDistanceKm,
-              estimatedCost: day.estimatedCost,
-              activities: {
-                create: day.activities.map((activity) => ({
-                  title: activity.title,
-                  description: activity.description,
-                  activityType: activity.activityType,
-                  placeId: activity.placeId,
-                  startTime: activity.startTime,
-                  endTime: activity.endTime,
-                  latitude: activity.latitude,
-                  longitude: activity.longitude,
-                  estimatedCost: activity.estimatedCost,
-                  distanceFromPreviousKm: activity.distanceFromPreviousKm,
-                  travelTimeFromPreviousMinutes:
-                    activity.travelTimeFromPreviousMinutes,
-                  sortOrder: activity.sortOrder
-                }))
-              }
-            }))
-          }
-        },
-        include: this.tripInclude()
-      });
-    });
+  /** True when the edit touches something the generated plan was built from. */
+  private changesPlan(
+    dto: UpdateTripDto,
+    existing: Pick<
+      Trip,
+      | 'startDate'
+      | 'endDate'
+      | 'sourceLatitude'
+      | 'sourceLongitude'
+      | 'destinationLatitude'
+      | 'destinationLongitude'
+      | 'travellerCount'
+      | 'travelMode'
+      | 'pace'
+      | 'maxDriveHoursPerDay'
+    >
+  ): boolean {
+    const moved = (point: { latitude: number; longitude: number } | undefined, latitude: Prisma.Decimal, longitude: Prisma.Decimal) =>
+      point !== undefined && (point.latitude !== decimalToNumber(latitude) || point.longitude !== decimalToNumber(longitude));
+    const differs = <T>(next: T | undefined, current: T) => next !== undefined && next !== current;
 
-    return this.serializeTripWithRelations(updatedTrip);
+    return (
+      moved(dto.source, existing.sourceLatitude, existing.sourceLongitude) ||
+      moved(dto.destination, existing.destinationLatitude, existing.destinationLongitude) ||
+      differs(dto.startDate, toIsoDate(existing.startDate)) ||
+      differs(dto.endDate, toIsoDate(existing.endDate)) ||
+      differs(dto.travellers?.length ?? dto.travellerCount, existing.travellerCount) ||
+      differs(dto.travelMode, existing.travelMode) ||
+      differs(dto.pace, existing.pace) ||
+      differs(dto.maxDriveHoursPerDay, existing.maxDriveHoursPerDay)
+    );
   }
 
   private assertValidDateRange(startDate: string, endDate: string): void {
@@ -439,7 +531,15 @@ export class TripsService {
         startDate: true,
         endDate: true,
         visibility: true,
-        shareSlug: true
+        shareSlug: true,
+        sourceLatitude: true,
+        sourceLongitude: true,
+        destinationLatitude: true,
+        destinationLongitude: true,
+        travellerCount: true,
+        travelMode: true,
+        pace: true,
+        maxDriveHoursPerDay: true
       }
     });
 
@@ -461,6 +561,7 @@ export class TripsService {
 
   private tripInclude() {
     return {
+      destination: { select: { slug: true, name: true, status: true } },
       vehicle: true,
       userVehicle: true,
       travellers: {
@@ -478,7 +579,7 @@ export class TripsService {
               sortOrder: 'asc'
             },
             include: {
-              place: true
+              place: { include: { timings: true, destination: { select: { slug: true } } } }
             }
           }
         }
@@ -515,9 +616,16 @@ export class TripsService {
           }
         : null,
       travellers: trip.travellers,
+      destinationGuide: this.guideOf(trip),
       costBreakdown: this.buildCostBreakdown(trip),
       days: this.serializeDays(trip.days)
     };
+  }
+
+  private guideOf(trip: TripWithRelations) {
+    return trip.destination?.status === 'PUBLISHED'
+      ? { slug: trip.destination.slug, name: trip.destination.name }
+      : null;
   }
 
   /**
@@ -545,6 +653,10 @@ export class TripsService {
       estimatedDurationMinutes: trip.estimatedDurationMinutes,
       estimatedTotalCost: decimalToNumber(trip.estimatedTotalCost),
       estimatedFuelCost: decimalToNumber(trip.estimatedFuelCost),
+      pace: trip.pace,
+      coverage: trip.coverage,
+      routeProvider: trip.routeProvider,
+      destinationGuide: this.guideOf(trip),
       vehicle: trip.vehicle
         ? {
             id: trip.vehicle.id,
@@ -561,31 +673,51 @@ export class TripsService {
   }
 
   private serializeDays(days: TripWithRelations['days']) {
-    return days.map((day) => ({
-      id: day.id,
-      dayNumber: day.dayNumber,
-      date: toIsoDate(day.date),
-      title: day.title,
-      description: day.description,
-      estimatedDistanceKm: decimalToNumber(day.estimatedDistanceKm),
-      estimatedCost: decimalToNumber(day.estimatedCost),
-      activities: day.activities.map((activity) => ({
-        ...activity,
-        place: activity.place
-          ? {
-              ...activity.place,
-              latitude: decimalToNumber(activity.place.latitude),
-              longitude: decimalToNumber(activity.place.longitude),
-              estimatedCost: decimalToNumber(activity.place.estimatedCost),
-              rating: decimalToNumber(activity.place.rating)
-            }
-          : null,
-        latitude: decimalToNumber(activity.latitude),
-        longitude: decimalToNumber(activity.longitude),
-        estimatedCost: decimalToNumber(activity.estimatedCost),
-        distanceFromPreviousKm: decimalToNumber(activity.distanceFromPreviousKm)
-      }))
-    }));
+    return days.map((day) => {
+      const date = toIsoDate(day.date);
+
+      return {
+        id: day.id,
+        dayNumber: day.dayNumber,
+        date,
+        title: day.title,
+        description: day.description,
+        overnightLocation: day.overnightLocation,
+        estimatedDistanceKm: decimalToNumber(day.estimatedDistanceKm),
+        estimatedCost: decimalToNumber(day.estimatedCost),
+        activities: day.activities.map((activity) => ({
+          id: activity.id,
+          placeId: activity.placeId,
+          title: activity.title,
+          description: activity.description,
+          activityType: activity.activityType,
+          startTime: activity.startTime,
+          endTime: activity.endTime,
+          durationMinutes: activity.durationMinutes,
+          isUserEdited: activity.isUserEdited,
+          sortOrder: activity.sortOrder,
+          latitude: decimalToNumber(activity.latitude),
+          longitude: decimalToNumber(activity.longitude),
+          estimatedCost: decimalToNumber(activity.estimatedCost),
+          distanceFromPreviousKm: decimalToNumber(activity.distanceFromPreviousKm),
+          travelTimeFromPreviousMinutes: activity.travelTimeFromPreviousMinutes,
+          warning: activity.place ? openingHoursWarning(activity.place.timings, date, activity.startTime, activity.durationMinutes) : null,
+          place: activity.place
+            ? {
+                id: activity.place.id,
+                slug: activity.place.slug,
+                name: activity.place.name,
+                category: activity.place.category,
+                destinationSlug: activity.place.destination.slug,
+                hasPage: activity.place.status === 'PUBLISHED',
+                rating: decimalToNumber(activity.place.rating),
+                averageVisitMinutes: activity.place.timeRequiredMinMinutes ?? activity.place.averageVisitMinutes,
+                estimatedCost: decimalToNumber(activity.place.estimatedCost)
+              }
+            : null
+        }))
+      };
+    });
   }
 
   private buildCostBreakdown(trip: TripWithRelations) {
@@ -595,12 +727,24 @@ export class TripsService {
       return null;
     }
 
+    const activities = trip.days.flatMap((day) => day.activities);
+    const travelKm = activities
+      .filter((activity) => activity.activityType === 'TRAVEL')
+      .reduce((sum, activity) => sum + (decimalToNumber(activity.distanceFromPreviousKm) ?? 0), 0);
+    // Meals are covered by the per-day food allowance; only entry fees count here.
+    const plannedActivityCost = activities
+      .filter((activity) => activity.activityType !== 'TRAVEL' && activity.activityType !== 'MEAL')
+      .reduce((sum, activity) => sum + (decimalToNumber(activity.estimatedCost) ?? 0), 0);
+
     return this.tripCostService.calculate({
       distanceKm: estimatedDistanceKm,
+      oneWayKm: travelKm ? travelKm / 2 : undefined,
       travellerCount: trip.travellerCount,
       dayCount: Math.max(trip.days.length, 1),
+      travelMode: trip.travelMode,
       mileageKmPerLitre: this.effectiveMileage(trip),
-      fuelType: trip.vehicle?.fuelType
+      fuelType: trip.vehicle?.fuelType,
+      plannedActivityCost: trip.days.length ? plannedActivityCost : null
     });
   }
 }

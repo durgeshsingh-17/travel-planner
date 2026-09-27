@@ -14,6 +14,13 @@ export const configuration = () => ({
       process.env.MEDIA_PUBLIC_BASE_URL ??
       `http://localhost:${process.env.API_PORT ?? '3000'}/uploads`
   },
+  routing: {
+    /** 'osrm' calls an OSRM server; 'estimate' uses straight-line distance (offline, tests). */
+    provider: process.env.ROUTING_PROVIDER ?? 'estimate',
+    osrmBaseUrl: process.env.OSRM_BASE_URL ?? 'https://router.project-osrm.org',
+    timeoutMs: parseInt(process.env.ROUTING_TIMEOUT_MS ?? '4000', 10),
+    cacheDays: parseInt(process.env.ROUTING_CACHE_DAYS ?? '30', 10)
+  },
   sms: {
     provider: process.env.SMS_PROVIDER ?? 'log',
     twilioAccountSid: process.env.TWILIO_ACCOUNT_SID,

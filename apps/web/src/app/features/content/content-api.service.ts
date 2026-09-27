@@ -82,11 +82,12 @@ export class ContentApiService {
 
   destinationPlaces(
     slug: string,
-    query: { category?: string; page?: number } = {}
+    query: { category?: string; page?: number; pageSize?: number } = {}
   ): Observable<Page<PlaceCard> & { destination: { id: string; slug: string; name: string } }> {
     const params = new URLSearchParams();
     if (query.category) params.set('category', query.category);
     if (query.page) params.set('page', String(query.page));
+    if (query.pageSize) params.set('pageSize', String(query.pageSize));
     const search = params.toString();
     return this.api.get(`/destinations/${encodeURIComponent(slug)}/places${search ? `?${search}` : ''}`);
   }
