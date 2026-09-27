@@ -12,6 +12,8 @@ export const serverRoutes: ServerRoute[] = [
   { path: 'destinations/:slug/places', renderMode: RenderMode.Server },
   { path: 'destinations/:slug/places/:placeSlug', renderMode: RenderMode.Server },
   { path: 'collections/:slug', renderMode: RenderMode.Server },
+  { path: 'packages', renderMode: RenderMode.Server },
+  { path: 'packages/:slug', renderMode: RenderMode.Server },
   { path: 't/:shareSlug', renderMode: RenderMode.Server },
   { path: '**', renderMode: RenderMode.Client }
 ];

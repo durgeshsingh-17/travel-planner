@@ -190,3 +190,64 @@
     }
   }
 }
+
+.agent {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 64px;
+
+  .small {
+    font-size: 0.85rem;
+  }
+
+  .decline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+  }
+}
+
+.editor-layout {
+  h3 {
+    margin: 16px 0 8px;
+  }
+
+  .day-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > strong,
+    .wide-field,
+    .meals {
+      grid-column: 1 / -1;
+    }
+
+    > strong {
+      margin-bottom: 6px;
+    }
+  }
+
+  .meals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 12px;
+  }
+}
+
+.admin-page {
+  .small {
+    font-size: 0.8rem;
+  }
+
+  .warn {
+    color: var(--danger);
+  }
+
+  .assign {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+  }
+}

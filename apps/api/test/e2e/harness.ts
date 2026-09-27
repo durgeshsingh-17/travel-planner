@@ -40,6 +40,7 @@ export async function startApi(env: Record<string, string> = {}): Promise<ApiSer
       AUTH_TOKEN_SECRET: 'e2e-secret-that-is-comfortably-longer-than-32-chars',
       AUTH_RATE_LIMIT_PER_MINUTE: '1000',
       API_RATE_LIMIT_PER_MINUTE: '10000',
+      OTP_FIXED_CODE: '123456',
       ...env
     },
     stdio: ['ignore', 'pipe', 'pipe']
@@ -167,6 +168,11 @@ export function runCli(script: string, args: string[]): Promise<string> {
     child.stderr.on('data', (chunk) => (output += chunk));
     child.on('exit', (code) => (code === 0 ? resolve(output) : reject(new Error(output))));
   });
+}
+
+/** A random, valid Indian mobile number so each test user gets fresh OTP limits. */
+export function uniquePhone(): string {
+  return `9${Math.floor(100_000_000 + Math.random() * 899_999_999)}`;
 }
 
 export function uniqueEmail(label: string): string {

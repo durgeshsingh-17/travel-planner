@@ -98,6 +98,8 @@ export interface DestinationDetail extends Omit<DestinationCard, 'bestMonths'> {
   places: PlaceCard[];
   placeCount: number;
   similar: DestinationCard[];
+  packages: PackageCard[];
+  reviewSummary: ReviewSummary;
 }
 
 export type OpenState =
@@ -144,6 +146,7 @@ export interface PlaceDetail {
   tags: TagView[];
   timings: PlaceTiming[];
   openNow: OpenState;
+  reviewSummary: ReviewSummary;
   faqs: Faq[];
   nearby: PlaceCard[];
 }
@@ -191,12 +194,14 @@ export interface HomeContent {
   trending: DestinationCard[];
   collections: CollectionCard[];
   themes: Array<TagView & { description: string | null; destinationCount: number }>;
+  packages: PackageCard[];
   stats: { destinations: number; places: number; collections: number; tripsPlanned: number };
 }
 
 export interface SearchSuggestions {
   destinations: Array<{ slug: string; name: string; state: string }>;
   places: Array<{ slug: string; name: string; category: string; destination: { slug: string; name: string } }>;
+  packages: Array<{ slug: string; title: string; durationDays: number; durationNights: number }>;
   collections: Array<{ slug: string; title: string }>;
   locations: Array<{ id: string; slug: string; name: string; state: string; aliases: string[] }>;
 }
@@ -211,4 +216,159 @@ export interface DestinationQuery {
   sort?: 'popular' | 'name';
   page?: number;
   pageSize?: number;
+}
+
+// ───────────────────────── Packages ─────────────────────────
+
+export type TierLevel = 'BUDGET' | 'MID_RANGE' | 'PREMIUM' | 'LUXURY';
+
+export interface PackageCard {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  durationDays: number;
+  durationNights: number;
+  fromPrice: number | null;
+  compareAtPrice: number | null;
+  priceBasis: string;
+  rating: number | null;
+  reviewCount: number;
+  route: Array<{ slug: string; name: string; state: string; nights: number }>;
+  tiers: TierLevel[];
+  highlights: string[];
+  cover: ImageView | null;
+  tags: TagView[];
+}
+
+export interface PackageStay {
+  destination: { slug: string; name: string };
+  nights: number;
+  hotelName: string;
+  orSimilar: boolean;
+  hotelCategory: number | null;
+  roomType: string | null;
+  mealPlan: 'EP' | 'CP' | 'MAP' | 'AP';
+}
+
+export interface PackageTier {
+  level: TierLevel;
+  pricePerPerson: number;
+  compareAtPrice: number | null;
+  childPrice: number | null;
+  singleSupplement: number | null;
+  taxesIncluded: boolean;
+  hotelCategory: number | null;
+  transportNote: string | null;
+  stays: PackageStay[];
+}
+
+export interface ReviewSummary {
+  average: number | null;
+  count: number;
+}
+
+export interface PackageDetail {
+  id: string;
+  slug: string;
+  title: string;
+  summary: string;
+  overview: string | null;
+  durationDays: number;
+  durationNights: number;
+  fromPrice: number | null;
+  priceBasis: string;
+  availableMonths: number[];
+  minPax: number;
+  maxPax: number | null;
+  isCustomizable: boolean;
+  seoTitle: string | null;
+  seoDescription: string | null;
+  updatedAt: string;
+  startLocation: { slug: string; name: string; state: string } | null;
+  route: Array<{ slug: string; name: string; state: string; nights: number; hasGuide: boolean }>;
+  tiers: PackageTier[];
+  days: Array<{
+    dayNumber: number;
+    title: string;
+    description: string;
+    overnight: { slug: string; name: string } | null;
+    mealsIncluded: string[];
+    places: Array<{ slug: string; name: string; category: string; destinationSlug: string; hasPage: boolean }>;
+  }>;
+  inclusions: string[];
+  exclusions: string[];
+  policies: Array<{ kind: 'CANCELLATION' | 'PAYMENT' | 'CHILD' | 'GENERAL'; body: string }>;
+  faqs: Faq[];
+  tags: TagView[];
+  gallery: ImageView[];
+  reviewSummary: ReviewSummary;
+  similar: PackageCard[];
+}
+
+export interface PackageFacets {
+  destinations: Array<{ slug: string; name: string; state: string; count: number }>;
+  tags: Array<TagView & { count: number }>;
+  price: { min: number | null; max: number | null };
+  nights: { min: number | null; max: number | null };
+}
+
+export interface PackageQuery {
+  q?: string;
+  destination?: string;
+  state?: string;
+  month?: number;
+  nightsMin?: number;
+  nightsMax?: number;
+  tag?: string[];
+  priceMin?: number;
+  priceMax?: number;
+  tier?: TierLevel;
+  sort?: 'popular' | 'price_asc' | 'price_desc' | 'duration' | 'rating';
+  page?: number;
+  pageSize?: number;
+}
+
+// ───────────────────────── Reviews ─────────────────────────
+
+export interface ReviewTarget {
+  packageSlug?: string;
+  destinationSlug?: string;
+  placeSlug?: string;
+}
+
+export type TravellerType = 'SOLO' | 'COUPLE' | 'FAMILY' | 'FRIENDS' | 'BUSINESS';
+
+export interface PublicReview {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string;
+  travelledMonth: string | null;
+  travellerType: TravellerType | null;
+  isVerified: boolean;
+  createdAt: string;
+  author: string;
+}
+
+export interface ReviewList {
+  summary: ReviewSummary & { distribution: Array<{ stars: number; count: number }> };
+  items: PublicReview[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
+export interface OwnReview {
+  id: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  moderationNote: string | null;
+  rating: number;
+  title: string | null;
+  body: string;
+  travelledMonth: string | null;
+  travellerType: TravellerType | null;
+  isVerified: boolean;
+  createdAt: string;
+  target: { type: 'PACKAGE' | 'DESTINATION' | 'PLACE'; name: string; path: string };
 }

@@ -1,0 +1,157 @@
+<main class="content-page quote-page">
+  <header>
+    <p class="eyebrow">Get quotes</p>
+    <h1>{{ summary() ?? 'Tell us about your trip' }}</h1>
+    <p class="muted">Free and no obligation. Up to three verified agencies will send quotes you can compare side by side.</p>
+  </header>
+
+  <ol class="stepper" aria-label="Progress">
+    @for (label of steps; track label; let index = $index) {
+      <li [class.active]="index === step()" [class.done]="index < step()" [attr.aria-current]="index === step() ? 'step' : null">
+        <span>{{ index + 1 }}</span> {{ label }}
+      </li>
+    }
+  </ol>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="card">
+    @if (step() === 0) {
+      <div class="form-grid" formGroupName="trip">
+        @if (pkg(); as current) {
+          @if (current.tiers.length) {
+            <mat-form-field appearance="outline">
+              <mat-label>Hotel tier</mat-label>
+              <mat-select formControlName="packageTier">
+                @for (tier of current.tiers; track tier.level) {
+                  <mat-option [value]="tier.level">{{ tierLabels[tier.level] }} · from {{ format(tier.pricePerPerson) }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        } @else {
+          <mat-form-field appearance="outline">
+            <mat-label>Destination</mat-label>
+            <mat-select formControlName="destinationSlug">
+              @for (destination of destinations(); track destination.slug) {
+                <mat-option [value]="destination.slug">{{ destination.name }}, {{ destination.state }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+        <mat-form-field appearance="outline">
+          <mat-label>Nights</mat-label>
+          <input matInput type="number" min="1" max="60" formControlName="nights" />
+        </mat-form-field>
+        <div class="wide">
+          <mat-radio-group formControlName="dateMode" aria-label="Dates">
+            <mat-radio-button value="exact">I know my dates</mat-radio-button>
+            <mat-radio-button value="flexible">My dates are flexible</mat-radio-button>
+          </mat-radio-group>
+        </div>
+        @if (form.controls.trip.controls.dateMode.value === 'exact') {
+          <mat-form-field appearance="outline">
+            <mat-label>Start date</mat-label>
+            <input matInput type="date" [min]="today" formControlName="startDate" />
+          </mat-form-field>
+        } @else {
+          <mat-form-field appearance="outline">
+            <mat-label>Month</mat-label>
+            <mat-select formControlName="flexibleMonth">
+              @for (month of months; track month.value) { <mat-option [value]="month.value">{{ month.label }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+        }
+        <mat-form-field appearance="outline">
+          <mat-label>Travelling from (optional)</mat-label>
+          <input matInput formControlName="departureCity" [matAutocomplete]="cities" />
+          <mat-autocomplete #cities="matAutocomplete">
+            @for (city of cityOptions(); track city.id) {
+              <mat-option [value]="city.name + ', ' + city.state" (onSelectionChange)="selectCity(city)">{{ city.name }}, {{ city.state }}</mat-option>
+            }
+          </mat-autocomplete>
+        </mat-form-field>
+      </div>
+    }
+
+    @if (step() === 1) {
+      <div class="form-grid" formGroupName="people">
+        <mat-form-field appearance="outline"><mat-label>Adults</mat-label><input matInput type="number" min="1" max="30" formControlName="adults" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Rooms</mat-label><input matInput type="number" min="1" max="20" formControlName="rooms" /></mat-form-field>
+        <div class="wide children">
+          <p class="label">Children</p>
+          @for (control of childAges.controls; track control; let index = $index) {
+            <span class="child">
+              <label>Child {{ index + 1 }} age <input type="number" min="0" max="17" [formControl]="$any(control)" /></label>
+              <button mat-button type="button" (click)="removeChild(index)" [attr.aria-label]="'Remove child ' + (index + 1)">Remove</button>
+            </span>
+          }
+          <button mat-stroked-button type="button" (click)="addChild()">Add a child</button>
+        </div>
+        <mat-form-field appearance="outline"><mat-label>Budget per person from (₹)</mat-label><input matInput type="number" min="0" formControlName="budgetPerPersonMin" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Budget per person up to (₹)</mat-label><input matInput type="number" min="0" formControlName="budgetPerPersonMax" /></mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>Hotel category</mat-label>
+          <mat-select formControlName="hotelCategory">
+            <mat-option [value]="0">No preference</mat-option>
+            <mat-option [value]="3">3-star</mat-option>
+            <mat-option [value]="4">4-star</mat-option>
+            <mat-option [value]="5">5-star</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <mat-form-field appearance="outline" class="wide">
+          <mat-label>Anything else agencies should know?</mat-label>
+          <textarea matInput rows="3" formControlName="notes" maxlength="1000"></textarea>
+        </mat-form-field>
+      </div>
+    }
+
+    @if (step() === 2) {
+      <div class="form-grid" formGroupName="contact">
+        <mat-form-field appearance="outline"><mat-label>Your name</mat-label><input matInput formControlName="contactName" autocomplete="name" /></mat-form-field>
+        <mat-form-field appearance="outline"><mat-label>Email (optional)</mat-label><input matInput type="email" formControlName="contactEmail" autocomplete="email" /></mat-form-field>
+
+        <div class="wide phone">
+          @if (verifiedPhone(); as phone) {
+            <p><strong>Mobile:</strong> {{ phone }} <span class="verified">Verified</span>
+              <button mat-button type="button" (click)="changePhone()">Use a different number</button></p>
+          } @else {
+            <p class="label">Verify your mobile number so agencies can reach you</p>
+            <div class="phone-row">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                <mat-label>Mobile number</mat-label>
+                <span matTextPrefix>+91&nbsp;</span>
+                <input matInput formControlName="phone" inputmode="tel" autocomplete="tel-national" />
+              </mat-form-field>
+              <button mat-stroked-button type="button" [disabled]="busy()" (click)="sendCode()">{{ codeSentTo() ? 'Resend code' : 'Send code' }}</button>
+            </div>
+            @if (codeSentTo()) {
+              <div class="phone-row">
+                <mat-form-field appearance="outline" subscriptSizing="dynamic">
+                  <mat-label>6-digit code</mat-label>
+                  <input matInput formControlName="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" />
+                </mat-form-field>
+                <button mat-flat-button color="primary" type="button" [disabled]="busy()" (click)="confirmCode()">Verify</button>
+              </div>
+            }
+          }
+        </div>
+
+        <mat-checkbox class="wide" formControlName="consent">
+          Share my request and contact details with up to three verified travel agencies so they can send me quotes.
+        </mat-checkbox>
+      </div>
+    }
+
+    @if (duplicateId()) {
+      <p class="notice">You already have an open request for this trip. <a routerLink="/quotes">See my quotes</a></p>
+    }
+
+    <div class="actions">
+      @if (step() > 0) { <button mat-button type="button" (click)="back()">Back</button> }
+      @if (step() < steps.length - 1) {
+        <button mat-flat-button color="primary" type="button" (click)="next()">Continue</button>
+      } @else {
+        <button mat-flat-button color="primary" type="submit" [disabled]="busy()">Send request</button>
+      }
+    </div>
+  </form>
+</main>

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { decimalToNumber } from '../../common/utils/number.util';
 import { haversineKm } from '../../common/utils/geo.util';
 import { openState } from '../../common/utils/india-time.util';
+import { PackagesService } from '../packages/packages.service';
 import { PrismaService } from '../../database/prisma.service';
 import {
   ListDestinationPlacesQueryDto,
@@ -27,7 +28,10 @@ export type Resolved<T> = { redirectTo: string } | { data: T };
 
 @Injectable()
 export class DestinationsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly packages: PackagesService
+  ) {}
 
   async findAll(query: ListDestinationsQueryDto): Promise<Paginated<ReturnType<typeof destinationCard>>> {
     const page = query.page ?? 1;
@@ -104,7 +108,7 @@ export class DestinationsService {
     }
 
     const publishedPlaces = { destinationId: destination.id, status: 'PUBLISHED' } as const;
-    const [places, placeCount, similar] = await Promise.all([
+    const [places, placeCount, similar, packages, reviews] = await Promise.all([
       this.prisma.place.findMany({
         where: publishedPlaces,
         include: placeCardInclude,
@@ -112,7 +116,9 @@ export class DestinationsService {
         take: 12
       }),
       this.prisma.place.count({ where: publishedPlaces }),
-      this.similarDestinations(destination.id, destination.state, destination.tags.map((entry) => entry.tagId))
+      this.similarDestinations(destination.id, destination.state, destination.tags.map((entry) => entry.tagId)),
+      this.packages.forDestination(destination.id),
+      this.reviewSummary({ destinationId: destination.id })
     ]);
     const gallery = destination.media.map(imageView);
     const cover = destination.media.find((attachment) => attachment.isCover) ?? destination.media[0];
@@ -171,7 +177,9 @@ export class DestinationsService {
         faqs: destination.faqs.map((faq) => ({ question: faq.question, answer: faq.answer })),
         places: places.map(placeCard),
         placeCount,
-        similar
+        similar,
+        packages,
+        reviewSummary: reviews
       }
     };
   }
@@ -269,9 +277,23 @@ export class DestinationsService {
           isClosed: timing.isClosed
         })),
         openNow: openState(place.timings, now),
+        reviewSummary: await this.reviewSummary({ placeId: place.id }),
         faqs: place.faqs.map((faq) => ({ question: faq.question, answer: faq.answer })),
         nearby
       }
+    };
+  }
+
+  private async reviewSummary(where: { destinationId: string } | { placeId: string }) {
+    const result = await this.prisma.review.aggregate({
+      where: { ...where, status: 'APPROVED' },
+      _avg: { rating: true },
+      _count: { _all: true }
+    });
+
+    return {
+      average: result._avg.rating ? Math.round(result._avg.rating * 10) / 10 : null,
+      count: result._count._all
     };
   }
 

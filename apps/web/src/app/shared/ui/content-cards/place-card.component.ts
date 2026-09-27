@@ -16,7 +16,7 @@ import { durationRange, formatInr, labelize } from '../../utils/content-format.u
     <a class="card" [routerLink]="['/destinations', item.destination.slug, 'places', item.slug]">
       <div class="media">
         @if (item.cover; as cover) {
-          <img appHideOnError [ngSrc]="cover.url" [alt]="cover.altText" fill sizes="(max-width: 640px) 100vw, 280px" />
+          <img appHideOnError [ngSrc]="cover.url" [alt]="cover.altText" fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw" />
         }
         @if (item.rankInDestination && showRank()) {
           <span class="rank">#{{ item.rankInDestination }}</span>

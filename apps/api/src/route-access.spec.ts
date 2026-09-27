@@ -33,6 +33,10 @@ const PUBLIC_ROUTES = [
   'GET /tags',
   'GET /search/suggest',
   'GET /home',
+  'GET /packages',
+  'GET /packages/facets',
+  'GET /packages/:slug',
+  'GET /reviews',
   'GET /seo/sitemap-entries',
   'GET /places',
   'GET /vehicles',
@@ -121,6 +125,13 @@ describe('route access rules', () => {
   it('only exposes the routes on the public allow-list', () => {
     const publicRoutes = routes.filter((route) => route.isPublic).map((route) => route.key);
     expect(publicRoutes.sort()).toEqual(PUBLIC_ROUTES);
+  });
+
+  it('limits agency routes to agency accounts', () => {
+    const agentRoutes = routes.filter((route) => route.key.split(' ')[1].startsWith('/agent'));
+
+    expect(agentRoutes.length).toBeGreaterThan(0);
+    agentRoutes.forEach((route) => expect(route.roles, route.key).toEqual(['AGENT']));
   });
 
   it('requires a role on every admin route', () => {

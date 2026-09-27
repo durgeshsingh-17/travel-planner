@@ -1,0 +1,186 @@
+@if (isLoading()) {
+  <main class="content-page"><app-loading-state label="Loading package" /></main>
+} @else if (pkg(); as item) {
+  <main class="content-page">
+    <section class="page-hero">
+      @if (item.gallery[0]; as cover) {
+        <img appHideOnError [ngSrc]="cover.url" [alt]="cover.altText" fill priority sizes="100vw" />
+      }
+      <ol class="breadcrumbs" aria-label="Breadcrumb">
+        <li><a routerLink="/packages">Packages</a></li>
+        <li>{{ item.durationNights }}N / {{ item.durationDays }}D</li>
+      </ol>
+      <h1>{{ item.title }}</h1>
+      <p class="route">{{ routeText() }}</p>
+      @if (item.reviewSummary.count) {
+        <p><a class="rating-link" href="#reviews">★ {{ item.reviewSummary.average }} · {{ item.reviewSummary.count }} reviews</a></p>
+      }
+    </section>
+
+    <div class="layout">
+      <div class="main">
+        <dl class="fact-list">
+          <div><dt>Duration</dt><dd>{{ item.durationNights }} nights / {{ item.durationDays }} days</dd></div>
+          <div><dt>Best season</dt><dd>{{ season() }}</dd></div>
+          @if (item.startLocation) { <div><dt>Starts from</dt><dd>{{ item.startLocation.name }}</dd></div> }
+          <div><dt>Group size</dt><dd>{{ item.minPax }}{{ item.maxPax ? '–' + item.maxPax : '+' }} travellers</dd></div>
+        </dl>
+
+        <div class="prose">
+          <p class="lead">{{ item.summary }}</p>
+          @for (paragraph of overview(); track $index) { <p>{{ paragraph }}</p> }
+        </div>
+
+        <section class="content-section">
+          <h2>Route</h2>
+          <ol class="route-list">
+            @for (stop of item.route; track stop.slug) {
+              <li>
+                @if (stop.hasGuide) {
+                  <a [routerLink]="['/destinations', stop.slug]">{{ stop.name }}</a>
+                } @else {
+                  <span>{{ stop.name }}</span>
+                }
+                <span class="muted">{{ stop.nights }} night{{ stop.nights === 1 ? '' : 's' }}</span>
+              </li>
+            }
+          </ol>
+        </section>
+
+        <section class="content-section" id="itinerary">
+          <h2>Day-by-day plan</h2>
+          <div class="days">
+            @for (day of item.days; track day.dayNumber; let first = $first) {
+              <details [open]="first">
+                <summary><span class="day">Day {{ day.dayNumber }}</span> {{ day.title }}</summary>
+                <p>{{ day.description }}</p>
+                @if (day.places.length) {
+                  <p class="muted">
+                    Visits:
+                    @for (place of day.places; track place.slug; let last = $last) {
+                      @if (place.hasPage) {
+                        <a [routerLink]="['/destinations', place.destinationSlug, 'places', place.slug]">{{ place.name }}</a>
+                      } @else { {{ place.name }} }
+                      @if (!last) {, }
+                    }
+                  </p>
+                }
+                <p class="muted small">
+                  @if (day.overnight) { Overnight in {{ day.overnight.name }}. }
+                  @if (day.mealsIncluded.length) { Meals: {{ day.mealsIncluded.map(mealName).join(', ') }}. }
+                </p>
+              </details>
+            }
+          </div>
+        </section>
+
+        @if (tier(); as selected) {
+          @if (selected.stays.length) {
+            <section class="content-section">
+              <h2>Where you'll stay ({{ tierLabels[selected.level] }})</h2>
+              <table class="stays">
+                <tr><th>Destination</th><th>Hotel</th><th>Nights</th><th>Meals</th></tr>
+                @for (stay of selected.stays; track $index) {
+                  <tr>
+                    <td>{{ stay.destination.name }}</td>
+                    <td>
+                      {{ stay.hotelName }}{{ stay.orSimilar ? ' or similar' : '' }}
+                      @if (stay.hotelCategory) { <span class="muted"> · {{ stay.hotelCategory }}★</span> }
+                      @if (stay.roomType) { <div class="muted small">{{ stay.roomType }}</div> }
+                    </td>
+                    <td>{{ stay.nights }}</td>
+                    <td>{{ mealPlans[stay.mealPlan] }}</td>
+                  </tr>
+                }
+              </table>
+            </section>
+          }
+        }
+
+        @if (item.inclusions.length || item.exclusions.length) {
+          <section class="content-section">
+            <h2>What's included</h2>
+            <div class="included">
+              <ul class="yes">
+                @for (entry of item.inclusions; track entry) { <li>{{ entry }}</li> }
+              </ul>
+              <ul class="no">
+                @for (entry of item.exclusions; track entry) { <li>{{ entry }}</li> }
+              </ul>
+            </div>
+          </section>
+        }
+
+        @if (item.policies.length) {
+          <section class="content-section faq-list">
+            <h2>Policies</h2>
+            <div>
+              @for (policy of item.policies; track policy.kind) {
+                <details><summary>{{ policyLabels[policy.kind] }}</summary><p>{{ policy.body }}</p></details>
+              }
+            </div>
+          </section>
+        }
+
+        @if (item.faqs.length) {
+          <section class="content-section faq-list">
+            <h2>Frequently asked questions</h2>
+            <div>
+              @for (faq of item.faqs; track faq.question) {
+                <details><summary>{{ faq.question }}</summary><p>{{ faq.answer }}</p></details>
+              }
+            </div>
+          </section>
+        }
+
+        <app-reviews-section [target]="{ packageSlug: item.slug }" />
+      </div>
+
+      <aside class="price-card" aria-label="Price">
+        @if (item.tiers.length > 1) {
+          <mat-button-toggle-group hideSingleSelectionIndicator [value]="tier()?.level" (change)="selectedTier.set($event.value)" aria-label="Hotel tier">
+            @for (option of item.tiers; track option.level) {
+              <mat-button-toggle [value]="option.level">{{ tierLabels[option.level] }}</mat-button-toggle>
+            }
+          </mat-button-toggle-group>
+        }
+        @if (tier(); as selected) {
+          <p class="price">
+            @if (selected.compareAtPrice) { <s>{{ format(selected.compareAtPrice) }}</s> }
+            <strong>{{ format(selected.pricePerPerson) }}</strong>
+            <span class="muted">per person, twin sharing</span>
+          </p>
+          <ul class="muted small terms">
+            <li>{{ selected.taxesIncluded ? 'Taxes included' : 'Plus applicable taxes' }}</li>
+            @if (selected.childPrice != null) { <li>Child: {{ format(selected.childPrice) }}</li> }
+            @if (selected.singleSupplement != null) { <li>Single room: +{{ format(selected.singleSupplement) }}</li> }
+            @if (selected.transportNote) { <li>{{ selected.transportNote }}</li> }
+          </ul>
+        }
+        <a mat-flat-button color="primary" routerLink="/quote" [queryParams]="quoteParams()">Get quotes</a>
+        <p class="muted small">Free, no obligation. Up to three verified agencies will send you a quote; you compare and decide.</p>
+      </aside>
+    </div>
+
+    @if (item.similar.length) {
+      <section class="content-section">
+        <header><h2>Similar packages</h2></header>
+        <div class="card-grid">
+          @for (similar of item.similar; track similar.id) { <app-package-card [pkg]="similar" /> }
+        </div>
+      </section>
+    }
+
+    <div class="mobile-cta">
+      @if (tier(); as selected) { <span><strong>{{ format(selected.pricePerPerson) }}</strong> <small>per person</small></span> }
+      <a mat-flat-button color="primary" routerLink="/quote" [queryParams]="quoteParams()">Get quotes</a>
+    </div>
+  </main>
+} @else {
+  <main class="content-page">
+    <div class="state-message">
+      <h1>We could not find that package</h1>
+      <a mat-flat-button color="primary" routerLink="/packages">Browse packages</a>
+    </div>
+  </main>
+}

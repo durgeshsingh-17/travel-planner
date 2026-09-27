@@ -84,8 +84,79 @@ enum ReachMode {
   BUS
 }
 
+enum PackageTierLevel {
+  BUDGET
+  MID_RANGE
+  PREMIUM
+  LUXURY
+}
+
+/// Indian hotel meal plans: room only, breakfast, breakfast + one meal, all meals.
+enum MealPlan {
+  EP
+  CP
+  MAP
+  AP
+}
+
+enum InclusionType {
+  INCLUSION
+  EXCLUSION
+}
+
+enum PolicyKind {
+  CANCELLATION
+  PAYMENT
+  CHILD
+  GENERAL
+}
+
+enum QuoteRequestStatus {
+  NEW
+  ROUTED
+  QUOTED
+  ACCEPTED
+  CLOSED
+  EXPIRED
+  CANCELLED
+}
+
+enum QuoteRoutingStatus {
+  NOTIFIED
+  VIEWED
+  DECLINED
+  QUOTED
+}
+
+enum QuoteStatus {
+  SENT
+  WITHDRAWN
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum TravellerType {
+  SOLO
+  COUPLE
+  FAMILY
+  FRIENDS
+  BUSINESS
+}
+
+enum OtpPurpose {
+  VERIFY_PHONE
+}
+
 enum UserRole {
   TRAVELLER
+  AGENT
   EDITOR
   ADMIN
 }
@@ -113,20 +184,24 @@ enum TravellerGender {
 }
 
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
-  name          String
-  email         String         @unique
-  phone         String?
-  avatarUrl     String?
-  passwordHash  String?
-  role          UserRole       @default(TRAVELLER)
-  profile       UserProfile?
-  refreshTokens RefreshToken[]
-  trips         Trip[]
-  vehicles      UserVehicle[]
-  savedItems    SavedItem[]
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id              String         @id @default(uuid()) @db.Uuid
+  name            String
+  email           String         @unique
+  phone           String?
+  avatarUrl       String?
+  passwordHash    String?
+  role            UserRole       @default(TRAVELLER)
+  profile         UserProfile?
+  refreshTokens   RefreshToken[]
+  trips           Trip[]
+  vehicles        UserVehicle[]
+  savedItems      SavedItem[]
+  phoneVerifiedAt DateTime?
+  quoteRequests   QuoteRequest[]
+  reviews         Review[]
+  agent           Agent?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 }
 
 model UserProfile {
@@ -233,6 +308,11 @@ model Destination {
   faqs             Faq[]
   media            MediaAttachment[]
   collectionItems  CollectionItem[]
+  packageStops     PackageDestination[]
+  packageStays     PackageStay[]
+  packageDays      PackageDay[]
+  quoteRequests    QuoteRequest[]
+  reviews          Review[]
   createdAt        DateTime               @default(now())
   updatedAt        DateTime               @updatedAt
 
@@ -242,19 +322,21 @@ model Destination {
 }
 
 model Location {
-  id             String        @id @default(uuid()) @db.Uuid
+  id             String         @id @default(uuid()) @db.Uuid
   name           String
-  slug           String        @unique
+  slug           String         @unique
   state          String
-  country        String        @default("India")
-  latitude       Decimal       @db.Decimal(9, 6)
-  longitude      Decimal       @db.Decimal(9, 6)
-  isActive       Boolean       @default(true)
+  country        String         @default("India")
+  latitude       Decimal        @db.Decimal(9, 6)
+  longitude      Decimal        @db.Decimal(9, 6)
+  isActive       Boolean        @default(true)
   homeOfProfiles UserProfile[]
-  aliases        String[]      @default([])
-  popularity     Int           @default(0)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  aliases        String[]       @default([])
+  popularity     Int            @default(0)
+  quoteRequests  QuoteRequest[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  packages       Package[]
 
   @@index([state])
   @@index([name])
@@ -298,6 +380,8 @@ model Place {
   faqs                   Faq[]
   media                  MediaAttachment[]
   collectionItems        CollectionItem[]
+  packageDays            PackageDayPlace[]
+  reviews                Review[]
   createdAt              DateTime          @default(now())
   updatedAt              DateTime          @updatedAt
 
@@ -439,6 +523,7 @@ model Tag {
   description  String?
   destinations DestinationTag[]
   places       PlaceTag[]
+  packages     PackageTag[]
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 }
@@ -500,14 +585,17 @@ model Faq {
   id            String       @id @default(uuid()) @db.Uuid
   destinationId String?      @db.Uuid
   placeId       String?      @db.Uuid
+  packageId     String?      @db.Uuid
   question      String
   answer        String
   sortOrder     Int          @default(0)
   destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
   place         Place?       @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  package       Package?     @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   @@index([destinationId, sortOrder])
   @@index([placeId, sortOrder])
+  @@index([packageId, sortOrder])
 }
 
 model Collection {
@@ -571,17 +659,20 @@ model MediaAttachment {
   destinationId String?      @db.Uuid
   placeId       String?      @db.Uuid
   collectionId  String?      @db.Uuid
+  packageId     String?      @db.Uuid
   isCover       Boolean      @default(false)
   sortOrder     Int          @default(0)
   media         Media        @relation(fields: [mediaId], references: [id], onDelete: Restrict)
   destination   Destination? @relation(fields: [destinationId], references: [id], onDelete: Cascade)
   place         Place?       @relation(fields: [placeId], references: [id], onDelete: Cascade)
   collection    Collection?  @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+  package       Package?     @relation(fields: [packageId], references: [id], onDelete: Cascade)
 
   @@index([mediaId])
   @@index([destinationId, sortOrder])
   @@index([placeId, sortOrder])
   @@index([collectionId, sortOrder])
+  @@index([packageId, sortOrder])
 }
 
 model SlugRedirect {
@@ -609,4 +700,316 @@ model AuditLog {
 
   @@index([entityType, entityId])
   @@index([createdAt])
+}
+
+// ───────────────────────── Packages ─────────────────────────
+
+model Package {
+  id              String               @id @default(uuid()) @db.Uuid
+  slug            String               @unique
+  title           String
+  summary         String
+  overview        String?
+  durationDays    Int
+  durationNights  Int
+  startLocationId String?              @db.Uuid
+  /// Lowest tier price per person; kept in sync on save for sorting and filtering.
+  fromPrice       Int?
+  priceBasis      String               @default("PER_PERSON_TWIN_SHARING")
+  /// Months (1–12) the package runs; empty means all year.
+  availableMonths Int[]                @default([])
+  minPax          Int                  @default(1)
+  maxPax          Int?
+  isCustomizable  Boolean              @default(true)
+  rating          Decimal?             @db.Decimal(2, 1)
+  reviewCount     Int                  @default(0)
+  popularityScore Int                  @default(0)
+  isFeatured      Boolean              @default(false)
+  status          ContentStatus        @default(DRAFT)
+  publishedAt     DateTime?
+  seoTitle        String?              @db.VarChar(70)
+  seoDescription  String?              @db.VarChar(170)
+  startLocation   Location?            @relation(fields: [startLocationId], references: [id], onDelete: SetNull)
+  destinations    PackageDestination[]
+  tiers           PackageTier[]
+  days            PackageDay[]
+  stays           PackageStay[]
+  inclusions      PackageInclusion[]
+  policies        PackagePolicy[]
+  tags            PackageTag[]
+  faqs            Faq[]
+  media           MediaAttachment[]
+  reviews         Review[]
+  quoteRequests   QuoteRequest[]
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  @@index([status, fromPrice])
+  @@index([status, durationNights])
+  @@index([status, popularityScore])
+}
+
+/// Route summary, e.g. Manali 2N → Kasol 1N.
+model PackageDestination {
+  id            String      @id @default(uuid()) @db.Uuid
+  packageId     String      @db.Uuid
+  destinationId String      @db.Uuid
+  nights        Int
+  sortOrder     Int
+  package       Package     @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+
+  @@unique([packageId, sortOrder])
+  @@index([destinationId])
+}
+
+model PackageTier {
+  id               String           @id @default(uuid()) @db.Uuid
+  packageId        String           @db.Uuid
+  level            PackageTierLevel
+  pricePerPerson   Int
+  /// Only set when there really was a higher earlier price.
+  compareAtPrice   Int?
+  childPrice       Int?
+  singleSupplement Int?
+  taxesIncluded    Boolean          @default(false)
+  hotelCategory    Int?
+  transportNote    String?
+  package          Package          @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, level])
+}
+
+model PackageDay {
+  id                     String            @id @default(uuid()) @db.Uuid
+  packageId              String            @db.Uuid
+  dayNumber              Int
+  title                  String
+  description            String
+  overnightDestinationId String?           @db.Uuid
+  /// Any of B (breakfast), L (lunch), D (dinner).
+  mealsIncluded          String[]          @default([])
+  package                Package           @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  overnightDestination   Destination?      @relation(fields: [overnightDestinationId], references: [id], onDelete: SetNull)
+  places                 PackageDayPlace[]
+
+  @@unique([packageId, dayNumber])
+}
+
+model PackageDayPlace {
+  packageDayId String     @db.Uuid
+  placeId      String     @db.Uuid
+  sortOrder    Int
+  day          PackageDay @relation(fields: [packageDayId], references: [id], onDelete: Cascade)
+  place        Place      @relation(fields: [placeId], references: [id], onDelete: Cascade)
+
+  @@id([packageDayId, placeId])
+}
+
+model PackageStay {
+  id            String           @id @default(uuid()) @db.Uuid
+  packageId     String           @db.Uuid
+  tierLevel     PackageTierLevel
+  destinationId String           @db.Uuid
+  nights        Int
+  hotelName     String
+  orSimilar     Boolean          @default(true)
+  hotelCategory Int?
+  roomType      String?
+  mealPlan      MealPlan
+  sortOrder     Int              @default(0)
+  package       Package          @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  destination   Destination      @relation(fields: [destinationId], references: [id], onDelete: Restrict)
+
+  @@index([packageId, tierLevel, sortOrder])
+}
+
+model PackageInclusion {
+  id        String        @id @default(uuid()) @db.Uuid
+  packageId String        @db.Uuid
+  type      InclusionType
+  text      String
+  sortOrder Int           @default(0)
+  package   Package       @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([packageId, type, sortOrder])
+}
+
+model PackagePolicy {
+  id        String     @id @default(uuid()) @db.Uuid
+  packageId String     @db.Uuid
+  kind      PolicyKind
+  body      String
+  package   Package    @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, kind])
+}
+
+model PackageTag {
+  packageId String  @db.Uuid
+  tagId     String  @db.Uuid
+  package   Package @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([packageId, tagId])
+  @@index([tagId])
+}
+
+// ───────────────────────── Quotes ─────────────────────────
+
+/// A travel agency that can receive quote requests. Managed by admins; an agency
+/// may have one linked user account (role AGENT) to answer requests in the app.
+model Agent {
+  id            String              @id @default(uuid()) @db.Uuid
+  slug          String              @unique
+  displayName   String
+  email         String
+  phone         String
+  city          String?
+  /// State names served; empty means all of India.
+  serviceStates String[]            @default([])
+  isActive      Boolean             @default(true)
+  maxOpenLeads  Int                 @default(20)
+  lastRoutedAt  DateTime?
+  notes         String?
+  userId        String?             @unique @db.Uuid
+  user          User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
+  routings      QuoteRequestAgent[]
+  quotes        Quote[]
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([isActive, lastRoutedAt])
+}
+
+model QuoteRequest {
+  id                  String              @id @default(uuid()) @db.Uuid
+  userId              String              @db.Uuid
+  packageId           String?             @db.Uuid
+  packageTier         PackageTierLevel?
+  destinationId       String?             @db.Uuid
+  departureLocationId String?             @db.Uuid
+  startDate           DateTime?           @db.Date
+  /// 1–12 when the traveller's dates are flexible.
+  flexibleMonth       Int?
+  nights              Int
+  adults              Int
+  childAges           Int[]               @default([])
+  rooms               Int
+  budgetPerPersonMin  Int?
+  budgetPerPersonMax  Int?
+  hotelCategory       Int?
+  notes               String?
+  contactName         String
+  /// E.164, verified by OTP before the request is created.
+  contactPhone        String
+  contactEmail        String?
+  phoneVerifiedAt     DateTime
+  consentAt           DateTime
+  /// PACKAGE | DESTINATION | TRIP | DIRECT
+  source              String
+  status              QuoteRequestStatus  @default(NEW)
+  expiresAt           DateTime
+  closedReason        String?
+  user                User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package             Package?            @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  destination         Destination?        @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  departureLocation   Location?           @relation(fields: [departureLocationId], references: [id], onDelete: SetNull)
+  routings            QuoteRequestAgent[]
+  quotes              Quote[]
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  @@index([userId, createdAt])
+  @@index([status, createdAt])
+}
+
+model QuoteRequestAgent {
+  quoteRequestId String             @db.Uuid
+  agentId        String             @db.Uuid
+  status         QuoteRoutingStatus @default(NOTIFIED)
+  notifiedAt     DateTime           @default(now())
+  viewedAt       DateTime?
+  respondedAt    DateTime?
+  declineReason  String?
+  request        QuoteRequest       @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  agent          Agent              @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  @@id([quoteRequestId, agentId])
+  @@index([agentId, status])
+}
+
+model Quote {
+  id              String            @id @default(uuid()) @db.Uuid
+  quoteRequestId  String            @db.Uuid
+  agentId         String            @db.Uuid
+  tier            PackageTierLevel?
+  totalPrice      Int
+  pricePerPerson  Int
+  taxesIncluded   Boolean
+  /// [{ destinationName, hotelName, hotelCategory, mealPlan, nights }]
+  hotels          Json
+  inclusions      String[]          @default([])
+  exclusions      String[]          @default([])
+  message         String?
+  validUntil      DateTime
+  status          QuoteStatus       @default(SENT)
+  createdByUserId String?           @db.Uuid
+  request         QuoteRequest      @relation(fields: [quoteRequestId], references: [id], onDelete: Cascade)
+  agent           Agent             @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@unique([quoteRequestId, agentId])
+  @@index([agentId, status])
+}
+
+model OtpChallenge {
+  id         String     @id @default(uuid()) @db.Uuid
+  phone      String
+  purpose    OtpPurpose
+  codeHash   String
+  attempts   Int        @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  ip         String?
+  createdAt  DateTime   @default(now())
+
+  @@index([phone, purpose, createdAt])
+}
+
+// ───────────────────────── Reviews ─────────────────────────
+
+model Review {
+  id             String         @id @default(uuid()) @db.Uuid
+  userId         String         @db.Uuid
+  packageId      String?        @db.Uuid
+  destinationId  String?        @db.Uuid
+  placeId        String?        @db.Uuid
+  rating         Int
+  title          String?        @db.VarChar(120)
+  body           String
+  /// First day of the month travelled.
+  travelledMonth DateTime?      @db.Date
+  travellerType  TravellerType?
+  /// Reviewer accepted a quote for this package through the platform.
+  isVerified     Boolean        @default(false)
+  status         ReviewStatus   @default(PENDING)
+  moderationNote String?
+  moderatedById  String?        @db.Uuid
+  moderatedAt    DateTime?
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package        Package?       @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  destination    Destination?   @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  place          Place?         @relation(fields: [placeId], references: [id], onDelete: Cascade)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@unique([userId, packageId])
+  @@unique([userId, destinationId])
+  @@unique([userId, placeId])
+  @@index([packageId, status, createdAt])
+  @@index([destinationId, status, createdAt])
+  @@index([placeId, status, createdAt])
+  @@index([status, createdAt])
 }

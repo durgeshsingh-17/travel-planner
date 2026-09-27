@@ -25,6 +25,7 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { ContentApiService } from '../content/content-api.service';
 import { DestinationCardComponent } from '../../shared/ui/content-cards/destination-card.component';
+import { PackageCardComponent } from '../../shared/ui/content-cards/package-card.component';
 import { HomeContent } from '../content/content.models';
 import { MONTH_NAMES } from '../../shared/utils/content-format.util';
 import { SearchBoxComponent } from '../../shared/ui/search-box/search-box.component';
@@ -54,6 +55,7 @@ function localIsoDate(date = new Date()): string {
     ReactiveFormsModule,
     RouterLink,
     DestinationCardComponent,
+    PackageCardComponent,
     SearchBoxComponent
   ],
   templateUrl: './home.component.html',

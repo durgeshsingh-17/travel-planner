@@ -1,0 +1,102 @@
+<main class="admin-page">
+  @if (!id) {
+    <div class="admin-toolbar">
+      <h1>Quote requests</h1>
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="status()" (selectionChange)="filter($event.value)">
+          <mat-option value="">All</mat-option>
+          @for (option of statuses; track option) { <mat-option [value]="option">{{ statusLabels[option] }}</mat-option> }
+        </mat-select>
+      </mat-form-field>
+    </div>
+    <table class="admin-table">
+      <tr><th>Trip</th><th>Traveller</th><th>When</th><th>Status</th><th>Agencies</th><th>Quotes</th></tr>
+      @for (row of rows(); track row.id) {
+        <tr>
+          <td><a [routerLink]="['/admin/quotes', row.id]">{{ row.package?.title ?? row.destination?.name ?? 'Custom trip' }}</a></td>
+          <td>{{ row.traveller.name }}<div class="muted small">{{ row.traveller.email }}</div></td>
+          <td>{{ when(row) }} · {{ row.nights }}N · {{ row.adults + row.children }} pax</td>
+          <td>{{ statusLabel(row.status) }}</td>
+          <td>
+            @if (row.unrouted) { <strong class="warn">Not routed</strong> }
+            @for (routing of row.routings; track routing.agent) { <div class="small">{{ routing.agent }} · {{ routing.status.toLowerCase() }}</div> }
+          </td>
+          <td>{{ row.quotesReceived }}</td>
+        </tr>
+      } @empty {
+        <tr><td colspan="6" class="muted">No requests.</td></tr>
+      }
+    </table>
+  } @else if (detail(); as item) {
+    <ol class="breadcrumbs" aria-label="Breadcrumb"><li><a routerLink="/admin/quotes">Quote requests</a></li><li>Request</li></ol>
+    <h1>{{ item.package?.title ?? item.destination?.name ?? 'Custom trip' }}</h1>
+    <p class="muted">{{ when(item) }} · {{ item.nights }} nights · {{ item.adults }} adults{{ item.childAges.length ? ' + ' + item.childAges.length + ' children' : '' }} · {{ statusLabel(item.status) }} · open until {{ item.expiresAt.slice(0, 10) }}</p>
+
+    <section class="admin-card">
+      <h2>Traveller</h2>
+      <p>{{ item.contactName }} · {{ item.contactPhone }}{{ item.contactEmail ? ' · ' + item.contactEmail : '' }}</p>
+      @if (item.notes) { <p class="muted">“{{ item.notes }}”</p> }
+    </section>
+
+    <section class="admin-card">
+      <h2>Agencies</h2>
+      <table class="admin-table">
+        <tr><th>Agency</th><th>Status</th><th>Sent</th><th>Opened</th><th>Responded</th></tr>
+        @for (routing of item.routings; track routing.agent.id) {
+          <tr>
+            <td>{{ routing.agent.displayName }}</td>
+            <td>{{ routing.status.toLowerCase() }}{{ routing.declineReason ? ': ' + routing.declineReason : '' }}</td>
+            <td>{{ routing.notifiedAt.slice(0, 16).replace('T', ' ') }}</td>
+            <td>{{ routing.viewedAt?.slice(0, 16)?.replace('T', ' ') ?? '—' }}</td>
+            <td>{{ routing.respondedAt?.slice(0, 16)?.replace('T', ' ') ?? '—' }}</td>
+          </tr>
+        } @empty {
+          <tr><td colspan="5" class="muted">Not sent to any agency yet.</td></tr>
+        }
+      </table>
+      @if (item.routings.length < 3 && ['NEW', 'ROUTED', 'QUOTED'].includes(item.status)) {
+        <form class="assign" [formGroup]="assignForm">
+          <mat-form-field appearance="outline" subscriptSizing="dynamic">
+            <mat-label>Send to agencies</mat-label>
+            <mat-select formControlName="agentIds" multiple>
+              @for (agent of assignable(); track agent.id) { <mat-option [value]="agent.id">{{ agent.displayName }} ({{ agent.serviceStates.join(', ') || 'All India' }})</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <button mat-flat-button color="primary" type="button" (click)="route(false)">Send</button>
+          <button mat-button type="button" (click)="route(true)">Pick automatically</button>
+        </form>
+      }
+    </section>
+
+    <section class="admin-card">
+      <h2>Quotes</h2>
+      <table class="admin-table">
+        <tr><th>Agency</th><th>Total</th><th>Per person</th><th>Status</th></tr>
+        @for (quote of item.quotes; track quote.id) {
+          <tr><td>{{ quote.agent.displayName }}</td><td>{{ format(quote.totalPrice) }}</td><td>{{ format(quote.pricePerPerson) }}</td><td>{{ quote.status.toLowerCase() }}</td></tr>
+        } @empty {
+          <tr><td colspan="4" class="muted">No quotes yet.</td></tr>
+        }
+      </table>
+
+      @if (awaiting().length && ['NEW', 'ROUTED', 'QUOTED'].includes(item.status)) {
+        <form class="form-grid" [formGroup]="quoteForm" (ngSubmit)="submitQuote()">
+          <h3 class="wide">Enter a quote an agency sent by phone or email</h3>
+          <mat-form-field appearance="outline">
+            <mat-label>Agency</mat-label>
+            <mat-select formControlName="agentId">
+              @for (routing of awaiting(); track routing.agent.id) { <mat-option [value]="routing.agent.id">{{ routing.agent.displayName }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Total price (₹)</mat-label><input matInput type="number" formControlName="totalPrice" /></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Valid until</mat-label><input matInput type="date" formControlName="validUntil" /></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Included (one per line)</mat-label><textarea matInput rows="4" formControlName="inclusions"></textarea></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Not included (one per line)</mat-label><textarea matInput rows="4" formControlName="exclusions"></textarea></mat-form-field>
+          <mat-form-field appearance="outline" class="wide"><mat-label>Message</mat-label><input matInput formControlName="message" /></mat-form-field>
+          <div class="wide"><button mat-flat-button color="primary" type="submit">Add quote</button></div>
+        </form>
+      }
+    </section>
+  }
+</main>

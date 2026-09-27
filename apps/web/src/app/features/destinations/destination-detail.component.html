@@ -73,6 +73,8 @@
         <a mat-flat-button color="primary" routerLink="/plan" [queryParams]="{ destination: item.name }">
           Plan this trip
         </a>
+        <p class="muted">Prefer someone to arrange it?</p>
+        <a mat-stroked-button routerLink="/quote" [queryParams]="{ destination: item.slug }">Get quotes from agencies</a>
       </aside>
     </section>
 
@@ -87,6 +89,20 @@
         <div class="card-grid">
           @for (place of item.places; track place.id) {
             <app-place-card [place]="place" />
+          }
+        </div>
+      </section>
+    }
+
+    @if (item.packages.length) {
+      <section class="content-section" id="packages">
+        <header>
+          <h2>Packages for {{ item.name }}</h2>
+          <a mat-button routerLink="/packages" [queryParams]="{ destination: item.slug }">See all packages</a>
+        </header>
+        <div class="card-grid">
+          @for (pkg of item.packages; track pkg.id) {
+            <app-package-card [pkg]="pkg" />
           }
         </div>
       </section>
@@ -177,6 +193,8 @@
         </div>
       </section>
     }
+
+    <app-reviews-section [target]="{ destinationSlug: item.slug }" />
 
     @if (item.similar.length) {
       <section class="content-section">

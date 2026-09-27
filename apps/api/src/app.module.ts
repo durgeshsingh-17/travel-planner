@@ -15,7 +15,11 @@ import { DestinationsModule } from './modules/destinations/destinations.module';
 import { HealthModule } from './modules/health/health.module';
 import { LocationsModule } from './modules/locations/locations.module';
 import { MapsModule } from './modules/maps/maps.module';
+import { PackagesModule } from './modules/packages/packages.module';
 import { PlacesModule } from './modules/places/places.module';
+import { QuotesModule } from './modules/quotes/quotes.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { VerificationModule } from './modules/verification/verification.module';
 import { SavedTripsModule } from './modules/saved-trips/saved-trips.module';
 import { TripsModule } from './modules/trips/trips.module';
 import { UsersModule } from './modules/users/users.module';
@@ -45,6 +49,10 @@ import { WeatherModule } from './modules/weather/weather.module';
     LocationsModule,
     DestinationsModule,
     ContentModule,
+    PackagesModule,
+    VerificationModule,
+    QuotesModule,
+    ReviewsModule,
     AdminModule,
     PlacesModule,
     VehiclesModule,

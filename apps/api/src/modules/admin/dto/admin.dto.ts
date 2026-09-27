@@ -18,6 +18,7 @@ import {
 import { CollectionDocumentDto } from '../../content/documents/collection-document.dto';
 import { DestinationDocumentDto } from '../../content/documents/destination-document.dto';
 import { MEDIA_LICENSES } from '../../content/documents/common.dto';
+import { PackageDocumentDto } from '../../content/documents/package-document.dto';
 import { PlaceDocumentDto } from '../../content/documents/place-document.dto';
 
 export class AdminListQueryDto {
@@ -56,6 +57,12 @@ export class UpdateDestinationDto extends DestinationDocumentDto {
 }
 
 export class UpdatePlaceDto extends PlaceDocumentDto {
+  @IsOptional()
+  @IsISO8601()
+  expectedUpdatedAt?: string;
+}
+
+export class UpdatePackageDto extends PackageDocumentDto {
   @IsOptional()
   @IsISO8601()
   expectedUpdatedAt?: string;

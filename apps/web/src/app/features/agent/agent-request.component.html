@@ -1,0 +1,102 @@
+<main class="admin-page agent">
+  @if (request(); as item) {
+    <ol class="breadcrumbs" aria-label="Breadcrumb"><li><a routerLink="/agent">Requests</a></li><li>Request</li></ol>
+    <h1>{{ item.package?.title ?? item.destination?.name ?? 'Custom trip' }}</h1>
+
+    <section class="admin-card">
+      <h2>Trip</h2>
+      <dl class="fact-list">
+        @if (item.package) { <div><dt>Package</dt><dd>{{ item.package.route }} ({{ item.package.durationNights }}N/{{ item.package.durationDays }}D)</dd></div> }
+        @if (item.packageTier) { <div><dt>Tier</dt><dd>{{ item.packageTier }}</dd></div> }
+        <div><dt>When</dt><dd>{{ when(item) }} · {{ item.nights }} nights</dd></div>
+        <div><dt>Travellers</dt><dd>{{ item.adults }} adults{{ item.childAges.length ? ', children aged ' + item.childAges.join(', ') : '' }} · {{ item.rooms }} room(s)</dd></div>
+        @if (item.departureLocation) { <div><dt>From</dt><dd>{{ item.departureLocation.name }}</dd></div> }
+        @if (item.budgetPerPersonMin || item.budgetPerPersonMax) {
+          <div><dt>Budget / person</dt><dd>{{ item.budgetPerPersonMin ? format(item.budgetPerPersonMin) : '' }}–{{ item.budgetPerPersonMax ? format(item.budgetPerPersonMax) : '' }}</dd></div>
+        }
+        @if (item.hotelCategory) { <div><dt>Hotels</dt><dd>{{ item.hotelCategory }}-star</dd></div> }
+        <div><dt>Contact</dt><dd>{{ item.contactName }} · {{ item.contactPhone }}{{ item.contactEmail ? ' · ' + item.contactEmail : '' }}</dd></div>
+      </dl>
+      @if (item.notes) { <p class="muted">“{{ item.notes }}”</p> }
+      <p class="muted small">Open until {{ item.expiresAt.slice(0, 10) }}. Use these details only to quote for this trip.</p>
+    </section>
+
+    @if (item.myQuote; as sent) {
+      <section class="admin-card">
+        <h2>Your quote</h2>
+        <p><strong>{{ format(sent.totalPrice) }}</strong> total ({{ format(sent.pricePerPerson) }} per person) · {{ sent.status.toLowerCase() }}</p>
+      </section>
+    } @else if (item.routingStatus === 'DECLINED') {
+      <section class="admin-card"><p>You declined this request.</p></section>
+    } @else if (canQuote()) {
+      <form class="admin-card" [formGroup]="form" (ngSubmit)="submit()">
+        <h2>Send a quote</h2>
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>Total price for the group (₹)</mat-label>
+            <input matInput type="number" min="1" formControlName="totalPrice" />
+            <mat-hint>{{ perPerson() }} per person for {{ travellers() }} travellers</mat-hint>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Tier</mat-label>
+            <mat-select formControlName="tier">
+              <mat-option value="">Not specified</mat-option>
+              @for (tier of tiers; track tier.value) { <mat-option [value]="tier.value">{{ tier.label }}</mat-option> }
+            </mat-select>
+          </mat-form-field>
+          <mat-form-field appearance="outline">
+            <mat-label>Valid until</mat-label>
+            <input matInput type="date" [min]="minDate" [max]="maxDate" formControlName="validUntil" />
+          </mat-form-field>
+          <mat-checkbox formControlName="taxesIncluded">Price includes taxes</mat-checkbox>
+        </div>
+
+        <h3>Hotels</h3>
+        <div class="row-list">
+          @for (group of hotels.controls; track group; let index = $index) {
+            <div class="row" [formGroup]="group">
+              <mat-form-field appearance="outline"><mat-label>Destination</mat-label><input matInput formControlName="destinationName" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Hotel</mat-label><input matInput formControlName="hotelName" /></mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Stars</mat-label><input matInput type="number" min="1" max="7" formControlName="hotelCategory" /></mat-form-field>
+              <mat-form-field appearance="outline">
+                <mat-label>Meals</mat-label>
+                <mat-select formControlName="mealPlan">
+                  <mat-option value="">—</mat-option>
+                  <mat-option value="EP">Room only</mat-option>
+                  <mat-option value="CP">Breakfast</mat-option>
+                  <mat-option value="MAP">Breakfast + dinner</mat-option>
+                  <mat-option value="AP">All meals</mat-option>
+                </mat-select>
+              </mat-form-field>
+              <mat-form-field appearance="outline"><mat-label>Nights</mat-label><input matInput type="number" min="1" formControlName="nights" /></mat-form-field>
+              <button mat-button type="button" (click)="removeHotel(index)">Remove</button>
+            </div>
+          }
+          <button mat-stroked-button type="button" (click)="addHotel()">Add hotel</button>
+        </div>
+
+        <div class="form-grid">
+          <mat-form-field appearance="outline"><mat-label>Included (one per line)</mat-label><textarea matInput rows="5" formControlName="inclusions"></textarea></mat-form-field>
+          <mat-form-field appearance="outline"><mat-label>Not included (one per line)</mat-label><textarea matInput rows="5" formControlName="exclusions"></textarea></mat-form-field>
+          <mat-form-field appearance="outline" class="wide"><mat-label>Message to the traveller</mat-label><textarea matInput rows="3" formControlName="message"></textarea></mat-form-field>
+        </div>
+        <div class="sticky-actions">
+          <button mat-flat-button color="primary" type="submit" [disabled]="busy()">Send quote</button>
+          <button mat-button type="button" (click)="declining.set(!declining())">Can't quote for this</button>
+        </div>
+        @if (declining()) {
+          <div class="decline">
+            <mat-form-field appearance="outline"><mat-label>Reason</mat-label><input matInput [formControl]="declineReason" /></mat-form-field>
+            <button mat-stroked-button type="button" [disabled]="busy()" (click)="decline()">Decline request</button>
+          </div>
+        }
+      </form>
+    } @else {
+      <section class="admin-card"><p>This request is {{ item.status.toLowerCase() }} and no longer takes quotes.</p></section>
+    }
+  } @else if (error()) {
+    <p>{{ error() }}</p>
+  } @else {
+    <app-loading-state label="Loading request" />
+  }
+</main>

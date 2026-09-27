@@ -2,7 +2,7 @@ import { Routes } from '@angular/router';
 
 import { ShellComponent } from './layout/shell/shell.component';
 import { authGuard } from './core/guards/auth.guard';
-import { editorGuard } from './core/guards/role.guard';
+import { agentGuard, editorGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   {
@@ -69,6 +69,43 @@ export const routes: Routes = [
           import('./features/places/place-detail.component').then(
             (component) => component.PlaceDetailComponent
           )
+      },
+      {
+        path: 'packages',
+        loadComponent: () =>
+          import('./features/packages/packages-list.component').then((component) => component.PackagesListComponent)
+      },
+      {
+        path: 'packages/:slug',
+        loadComponent: () =>
+          import('./features/packages/package-detail.component').then((component) => component.PackageDetailComponent)
+      },
+      {
+        path: 'quote',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/quotes/quote-request.component').then((component) => component.QuoteRequestComponent)
+      },
+      {
+        path: 'quotes',
+        canActivate: [authGuard],
+        loadComponent: () => import('./features/quotes/my-quotes.component').then((component) => component.MyQuotesComponent)
+      },
+      {
+        path: 'quotes/:id',
+        canActivate: [authGuard],
+        loadComponent: () =>
+          import('./features/quotes/quote-request-detail.component').then((component) => component.QuoteRequestDetailComponent)
+      },
+      {
+        path: 'agent',
+        canActivate: [agentGuard],
+        loadComponent: () => import('./features/agent/agent-inbox.component').then((component) => component.AgentInboxComponent)
+      },
+      {
+        path: 'agent/requests/:id',
+        canActivate: [agentGuard],
+        loadComponent: () => import('./features/agent/agent-request.component').then((component) => component.AgentRequestComponent)
       },
       {
         path: 'collections/:slug',

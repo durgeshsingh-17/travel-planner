@@ -14,6 +14,12 @@ export const configuration = () => ({
       process.env.MEDIA_PUBLIC_BASE_URL ??
       `http://localhost:${process.env.API_PORT ?? '3000'}/uploads`
   },
+  sms: {
+    provider: process.env.SMS_PROVIDER ?? 'log',
+    twilioAccountSid: process.env.TWILIO_ACCOUNT_SID,
+    twilioAuthToken: process.env.TWILIO_AUTH_TOKEN,
+    twilioFrom: process.env.TWILIO_FROM
+  },
   database: {
     url: process.env.DATABASE_URL
   },

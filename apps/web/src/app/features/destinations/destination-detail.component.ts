@@ -10,7 +10,9 @@ import { ContentApiService } from '../content/content-api.service';
 import { DestinationCardComponent } from '../../shared/ui/content-cards/destination-card.component';
 import { DestinationDetail, HowToReach, MonthRating } from '../content/content.models';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
+import { PackageCardComponent } from '../../shared/ui/content-cards/package-card.component';
 import { PlaceCardComponent } from '../../shared/ui/content-cards/place-card.component';
+import { ReviewsSectionComponent } from '../../shared/ui/reviews/reviews-section.component';
 import { RouteMapComponent } from '../../shared/ui/route-map/route-map.component';
 import { SeoService } from '../../core/seo/seo.service';
 import {
@@ -41,7 +43,9 @@ const RATING_LABELS: Record<MonthRating, string> = { GOOD: 'Great time', OK: 'Ok
     LoadingStateComponent,
     MatButtonModule,
     NgOptimizedImage,
+    PackageCardComponent,
     PlaceCardComponent,
+    ReviewsSectionComponent,
     RouteMapComponent,
     RouterLink
   ],

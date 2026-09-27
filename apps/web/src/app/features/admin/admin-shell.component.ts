@@ -45,11 +45,15 @@ export class AdminShellComponent {
       { path: '/admin/destinations', label: 'Destinations', exact: false },
       { path: '/admin/places', label: 'Places', exact: false },
       { path: '/admin/collections', label: 'Collections', exact: false },
+      { path: '/admin/packages', label: 'Packages', exact: false },
+      { path: '/admin/reviews', label: 'Reviews', exact: false },
       { path: '/admin/tags', label: 'Tags', exact: false },
       { path: '/admin/media', label: 'Media', exact: false },
       { path: '/admin/audit', label: 'Audit log', exact: false },
       ...(isAdmin
         ? [
+            { path: '/admin/quotes', label: 'Quote requests', exact: false },
+            { path: '/admin/agents', label: 'Agencies', exact: false },
             { path: '/admin/import', label: 'Import', exact: false },
             { path: '/admin/users', label: 'Users', exact: false }
           ]

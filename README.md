@@ -82,6 +82,19 @@ npm run content:import -- prisma/content/starter-content.json --apply  # write
 
 The admin area is at `/admin` (editors and admins). See `apps/api/prisma/content/README.md`.
 
+### Packages, quotes and reviews
+
+- **Packages** are platform-curated (Admin → Packages): route, price tiers, day-by-day plan, hotels per tier,
+  inclusions, policies. Public at `/packages`.
+- **Quotes:** travellers verify their mobile number by OTP, then request quotes for a package or destination.
+  Each request goes to up to three active agencies that serve the trip's state (least recently used first,
+  respecting each agency's open-lead limit). Agencies are managed in Admin → Agencies; link an agency to a
+  user account so it can answer at `/agent`, or enter its quotes from Admin → Quote requests. Travellers
+  compare quotes at `/quotes/:id`; accepting one declines the others and reveals that agency's contact details.
+  Requests expire after 14 days.
+- **Reviews** for packages, destinations and places are moderated (Admin → Reviews) before they appear.
+  Package reviews from travellers who accepted a quote are marked as verified.
+
 ### Server-side rendering
 
 Public pages (home, destinations, places, collections, shared trips) are server-rendered for search engines;
@@ -125,6 +138,9 @@ The production web build calls the API at the relative `/api/v1`, so either set 
 | `AUTH_RATE_LIMIT_PER_MINUTE` | Per-IP limit for sign-in, sign-up, refresh and password endpoints. Defaults to `10`. |
 | `API_RATE_LIMIT_PER_MINUTE` | Per-IP limit for everything else. Defaults to `300`. |
 | `TRUST_PROXY` | Set to `true` behind a load balancer so rate limits see the client IP. |
+| `SMS_PROVIDER` | `log` writes verification codes to the API log (refused when `NODE_ENV=production`); `twilio` sends real SMS. |
+| `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM` | Twilio credentials and sender number, when `SMS_PROVIDER=twilio`. |
+| `OTP_FIXED_CODE` | Tests only: a fixed 6-digit code. Ignored in production. |
 | `MEDIA_STORAGE_DIR` | Where uploaded images are stored (local disk driver). Defaults to `uploads`. |
 | `MEDIA_PUBLIC_BASE_URL` | Public base URL for uploaded images (`/uploads` behind the SSR proxy, or a CDN). URLs are computed on read, so changing it never breaks existing images. |
 | `FUEL_PRICE_PETROL_INR` | Configurable petrol price for later cost calculations. |

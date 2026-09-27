@@ -169,6 +169,23 @@
         </section>
       }
 
+      @if (home.packages.length) {
+        <section class="content-section">
+          <header>
+            <div>
+              <p class="eyebrow">Packages</p>
+              <h2>Let an agency arrange it</h2>
+            </div>
+            <a mat-button routerLink="/packages">See all packages</a>
+          </header>
+          <div class="card-grid">
+            @for (pkg of home.packages; track pkg.id) {
+              <app-package-card [pkg]="pkg" />
+            }
+          </div>
+        </section>
+      }
+
       @if (home.collections.length) {
         <section class="content-section">
           <header>

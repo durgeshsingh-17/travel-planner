@@ -168,11 +168,20 @@ Checklist grouped by the phases in the roadmap. ✅ = done today, ⬜ = to do.
 - ⬜ Image resizing and responsive variants (uploads are stored as-is; a sharp or CDN step is the next media task)
 - ⬜ Location ↔ Destination link, so the planner can offer guide content for a chosen destination
 
-### Marketplace (weeks 3–5)
-- ⬜ `Agent`, `Package`, `PackageTier`, `PackageDay`, `PackageStay`, `PackageInclusion`, `PackagePolicy`, `PackageDeparture`
-- ⬜ Package listing with facets; package detail with tiers and itinerary
-- ⬜ `QuoteRequest` → `Quote` (multi-agent) → compare → accept; OTP phone verification; notifications
-- ⬜ `Review` with moderation
+### Marketplace (weeks 4–5)
+
+> **Update 2026-10-01:** packages, the quote flow and reviews are built on `feature/packages-quotes-reviews`
+> (uncommitted, for review). Agents are deliberately minimal: an admin-managed directory plus an inbox for
+> linked agency users, because quote routing needs somewhere to send requests. Agency self-onboarding,
+> verification, agency-owned packages and performance analytics are not built.
+
+- ✅ `Package`, `PackageDestination`, `PackageTier`, `PackageDay`, `PackageStay`, `PackageInclusion`, `PackagePolicy`, `PackageTag` (fixed departures not modelled)
+- 🟡 `Agent`: admin-managed directory with an optional linked login; no self-onboarding or verification
+- ✅ Package listing with facets; package detail with tiers, itinerary, hotels, policies, reviews and SEO markup
+- ✅ `QuoteRequest` → up to 3 agencies → `Quote` → compare → accept; OTP phone verification (Twilio or dev log)
+- ⬜ Notifications: agencies and travellers are not emailed or texted about new requests and quotes yet (in-app only)
+- ⬜ Scheduled expiry: requests and quotes expire lazily on read; add a job scheduler if timely emails are needed
+- ✅ `Review` for packages, destinations and places, with moderation and a verified badge for accepted quotes
 
 ### Planner intelligence (weeks 4–6)
 - ⬜ Real routing (OSRM or a commercial routing API) with cached polylines

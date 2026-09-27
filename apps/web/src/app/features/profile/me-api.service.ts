@@ -18,6 +18,7 @@ export interface TravelProfile {
 }
 
 export interface Me extends SessionUser {
+  phoneVerifiedAt: string | null;
   createdAt: string;
   profile: TravelProfile;
 }

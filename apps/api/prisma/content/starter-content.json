@@ -1196,5 +1196,115 @@
       "seoTitle": "Rajasthan Heritage Cities Road Trip",
       "seoDescription": "Plan a Rajasthan heritage trip: Jaipur and Udaipur, forts and palaces, and the best winter months to travel."
     }
+  ],
+  "packages": [
+    {
+      "slug": "sample-rishikesh-riverside-weekend",
+      "title": "SAMPLE – Rishikesh riverside weekend",
+      "summary": "Two relaxed nights by the Ganga: an evening aarti, a morning on the river and time in the ashram quarter.",
+      "overview": "This is a sample package that shows how a package page is put together. Replace the prices, hotels and policies with real ones from your partner agencies, remove SAMPLE from the title, and review everything before publishing.",
+      "durationDays": 3,
+      "durationNights": 2,
+      "startLocationSlug": "delhi",
+      "availableMonths": [
+        10,
+        11,
+        12,
+        1,
+        2,
+        3,
+        4
+      ],
+      "route": [
+        {
+          "destinationSlug": "rishikesh",
+          "nights": 2
+        }
+      ],
+      "tiers": [
+        {
+          "level": "BUDGET",
+          "pricePerPerson": 1000,
+          "taxesIncluded": false
+        },
+        {
+          "level": "PREMIUM",
+          "pricePerPerson": 2000,
+          "taxesIncluded": false
+        }
+      ],
+      "days": [
+        {
+          "dayNumber": 1,
+          "title": "Drive to Rishikesh and evening aarti",
+          "description": "Leave Delhi early, check in by the afternoon and walk to the ghats for the evening aarti.",
+          "mealsIncluded": [
+            "D"
+          ]
+        },
+        {
+          "dayNumber": 2,
+          "title": "River morning and the ashram quarter",
+          "description": "A morning on the river with a licensed operator, then an unhurried afternoon around the old ashrams.",
+          "mealsIncluded": [
+            "B",
+            "D"
+          ],
+          "places": [
+            {
+              "destinationSlug": "rishikesh",
+              "placeSlug": "beatles-ashram"
+            }
+          ]
+        },
+        {
+          "dayNumber": 3,
+          "title": "Breakfast and drive back",
+          "description": "Slow breakfast by the river, then the drive back to Delhi.",
+          "mealsIncluded": [
+            "B"
+          ]
+        }
+      ],
+      "stays": [
+        {
+          "tierLevel": "BUDGET",
+          "destinationSlug": "rishikesh",
+          "nights": 2,
+          "hotelName": "Sample riverside guesthouse",
+          "mealPlan": "MAP"
+        },
+        {
+          "tierLevel": "PREMIUM",
+          "destinationSlug": "rishikesh",
+          "nights": 2,
+          "hotelName": "Sample river-view resort",
+          "mealPlan": "MAP",
+          "hotelCategory": 4
+        }
+      ],
+      "inclusions": [
+        "Two nights' stay",
+        "Breakfast and dinner",
+        "Morning river activity"
+      ],
+      "exclusions": [
+        "Travel to and from Rishikesh",
+        "Lunch",
+        "Personal expenses"
+      ],
+      "policies": [
+        {
+          "kind": "CANCELLATION",
+          "body": "Sample policy: replace with the partner agency's real cancellation terms before publishing."
+        }
+      ],
+      "tags": [
+        "spiritual",
+        "river",
+        "weekend-getaway"
+      ],
+      "status": "DRAFT"
+    }
   ]
 }

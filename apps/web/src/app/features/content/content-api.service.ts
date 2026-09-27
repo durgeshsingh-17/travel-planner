@@ -11,10 +11,39 @@ import {
   DestinationQuery,
   HomeContent,
   Page,
+  OwnReview,
+  PackageCard,
+  PackageDetail,
+  PackageFacets,
+  PackageQuery,
   PlaceCard,
   PlaceDetail,
-  SearchSuggestions
+  ReviewList,
+  ReviewTarget,
+  SearchSuggestions,
+  TravellerType
 } from './content.models';
+
+function toQueryString(query: object): string {
+  const params = new URLSearchParams();
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    if (Array.isArray(value)) value.forEach((entry) => params.append(key, String(entry)));
+    else params.set(key, String(value));
+  });
+
+  const search = params.toString();
+  return search ? `?${search}` : '';
+}
+
+export interface ReviewInput {
+  rating: number;
+  title?: string;
+  body: string;
+  travelledMonth?: string;
+  travellerType?: TravellerType;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ContentApiService {
@@ -74,6 +103,38 @@ export class ContentApiService {
 
   collection(slug: string): Observable<CollectionDetail> {
     return this.api.get<CollectionDetail>(`/collections/${encodeURIComponent(slug)}`);
+  }
+
+  packages(query: PackageQuery = {}): Observable<Page<PackageCard>> {
+    return this.api.get<Page<PackageCard>>(`/packages${toQueryString(query)}`);
+  }
+
+  packageFacets(): Observable<PackageFacets> {
+    return this.api.get<PackageFacets>('/packages/facets');
+  }
+
+  package(slug: string): Observable<PackageDetail> {
+    return this.api.get<PackageDetail>(`/packages/${encodeURIComponent(slug)}`);
+  }
+
+  reviews(target: ReviewTarget, page = 1): Observable<ReviewList> {
+    return this.api.get<ReviewList>(`/reviews${toQueryString({ ...target, page })}`);
+  }
+
+  createReview(target: ReviewTarget, input: ReviewInput): Observable<OwnReview> {
+    return this.api.post<OwnReview, ReviewTarget & ReviewInput>('/reviews', { ...target, ...input });
+  }
+
+  updateReview(id: string, input: ReviewInput): Observable<OwnReview> {
+    return this.api.put<OwnReview, ReviewInput>(`/me/reviews/${id}`, input);
+  }
+
+  deleteReview(id: string): Observable<{ deleted: boolean }> {
+    return this.api.delete<{ deleted: boolean }>(`/me/reviews/${id}`);
+  }
+
+  myReviews(): Observable<OwnReview[]> {
+    return this.api.get<OwnReview[]>('/me/reviews');
   }
 
   suggest(q: string): Observable<SearchSuggestions> {
