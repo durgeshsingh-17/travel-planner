@@ -118,6 +118,9 @@ jobs:
           cache: npm
       - run: npm install -g npm@11
       - run: npm ci
+      - name: Prisma client
+        working-directory: apps/api
+        run: npx prisma generate
       - name: Build API and web
         run: |
           npm run build:api
